@@ -1,3 +1,8 @@
+# AutoCarROS2 - ERP42 
+
+ERP42 자율주행 코드 Repository입니다.
+
+
 # AUTONOMOUS VEHICLE: CONTROL AND BEHAVIOUR
 
 <p align="center"><b>AutoCarROS has migrated to ROS 2 Foxy Fitzroy</b></p>
