@@ -20,19 +20,14 @@ class Localisation(Node):
         # Initialise subscribers
         self.odom_sub = self.create_subscription(Odometry, '/autocar/odom', self.vehicle_state_cb, 10)
 
-        # Load parameters
+        # Load parameters with proper type definition
         try:
-            self.declare_parameters(
-                namespace='',
-                parameters=[
-                    ('update_frequency', None)
-                ]
-            )
-
-            self.frequency = float(self.get_parameter("update_frequency").value)
-
-        except:
-            raise Exception("Missing ROS parameters. Check the configuration file.")
+            self.declare_parameter('update_frequency', 50.0)  # 기본값 50.0 설정
+            self.frequency = self.get_parameter('update_frequency').value
+            self.get_logger().info(f"Update frequency set to {self.frequency} Hz")
+        except Exception as e:
+            self.get_logger().error(f"Error loading parameters: {str(e)}")
+            self.frequency = 10.0  # 기본값으로 fallback
 
         # Class constants
         self.state = None
