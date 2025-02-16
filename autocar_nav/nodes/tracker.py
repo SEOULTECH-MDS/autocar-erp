@@ -4,6 +4,7 @@ import threading
 import numpy as np
 import rclpy
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Twist
 from rclpy.node import Node
 from std_msgs.msg import Float64
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -16,7 +17,8 @@ class PathTracker(Node):
         super().__init__('path_tracker')
 
         # 퍼블리셔 생성
-        self.tracker_pub = self.create_publisher(AckermannDriveStamped, '/autocar/autocar_cmd', 10)
+        # self.tracker_pub = self.create_publisher(AckermannDriveStamped, '/autocar/autocar_cmd', 10)
+        self.tracker_pub = self.create_publisher(Twist, '/autocar/cmd_vel', 10)
         self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte_error', 10)
         self.h_error_pub = self.create_publisher(Float64, '/autocar/he_error', 10)
         self.lateral_ref_pub = self.create_publisher(PoseStamped, '/autocar/lateral_ref', 10)
@@ -135,15 +137,28 @@ class PathTracker(Node):
         self.lock.release()
 
     # 차량 명령을 퍼블리시하는 함수
+    # def set_vehicle_command(self, velocity, steering_angle):
+    #     drive = AckermannDriveStamped()
+    #     drive.header.stamp = self.get_clock().now().to_msg()
+    #     drive.drive.speed = velocity
+    #     drive.drive.steering_angle = steering_angle
+    #     self.tracker_pub.publish(drive)
+    #     self.ct_error_pub.publish(Float64(data=self.crosstrack_error))
+    #     self.h_error_pub.publish(Float64(data=self.heading_error))
+    #     self.get_logger().info(f'속도: {velocity} | 조향각: {steering_angle}')
     def set_vehicle_command(self, velocity, steering_angle):
-        drive = AckermannDriveStamped()
-        drive.header.stamp = self.get_clock().now().to_msg()
-        drive.drive.speed = velocity
-        drive.drive.steering_angle = steering_angle
-        self.tracker_pub.publish(drive)
+        cmd_vel = Twist()
+        cmd_vel.linear.x = velocity  # 속도 설정
+        cmd_vel.angular.z = steering_angle  # 조향 각도 설정
+
+        self.tracker_pub.publish(cmd_vel)  # /autocar/cmd_vel 퍼블리시
+
+        # 기존 퍼블리시 코드 유지
         self.ct_error_pub.publish(Float64(data=self.crosstrack_error))
         self.h_error_pub.publish(Float64(data=self.heading_error))
-        self.get_logger().info(f'속도: {velocity} | 조향각: {steering_angle}')
+
+        self.get_logger().info(f'속도: {velocity:.2f} m/s | 조향각: {steering_angle:.2f} rad')
+
 
 # 메인 함수
 def main(args=None):
