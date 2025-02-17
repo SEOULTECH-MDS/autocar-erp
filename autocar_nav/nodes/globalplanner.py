@@ -6,11 +6,13 @@ import numpy as np
 import pandas as pd
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import Pose, Pose2D, PoseArray
+from geometry_msgs.msg import Pose, Pose2D, PoseArray, Point
 from rclpy.node import Node
 
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav.osm_handler import OSMHandler
+from visualization_msgs.msg import Marker
+
 
 
 class GlobalPathPlanner(Node):
@@ -24,6 +26,8 @@ class GlobalPathPlanner(Node):
         # Initialise publisher(s)
         self.goals_pub = self.create_publisher(Path2D, '/autocar/goals', 10)
         self.goals_viz_pub = self.create_publisher(PoseArray, '/autocar/viz_goals', 10)
+
+        self.waypoints_viz_pub = self.create_publisher(Marker, '/autocar/viz_waypoints', 10)
 
         # Initialise suscriber(s)
         self.localisation_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_state_cb, 10)
@@ -78,10 +82,9 @@ class GlobalPathPlanner(Node):
             self.ax.append(x)
             self.ay.append(y)
 
-        # print(self.ax)
-        # print(self.ay)
-        self.get_logger().info(str(self.ax))
-        self.get_logger().info(str(self.ay))
+        self.viz_waypoints()
+        # self.get_logger().info(str(self.ax))
+        # self.get_logger().info(str(self.ay))
 
         # Class constants
         self.waypoints = min(len(self.ax), len(self.ay))
@@ -92,6 +95,35 @@ class GlobalPathPlanner(Node):
         self.y = None
         self.theta = None
 
+    def viz_waypoints(self):
+        marker = Marker()
+        marker.header.frame_id = "world"
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.ns = "osm_nodes"
+        marker.id = 0
+        marker.type = Marker.SPHERE_LIST
+        marker.action = Marker.ADD
+
+        marker.scale.x = 0.3  # x, y, z 크기를 동일하게 설정하면 구 형태가 됨
+        marker.scale.y = 0.3
+        marker.scale.z = 0.3
+
+        marker.color.a = 1.0
+        marker.color.r = 0.0
+        marker.color.g = 0.0
+        marker.color.b = 1.0
+
+        # marker.lifetime = Duration(sec=0, nanosec=0)
+
+        for x, y in zip(self.ax, self.ay):
+            point = Point()
+            point.x = x
+            point.y = y
+            point.z = 0.0
+            marker.points.append(point)
+
+        self.waypoints_viz_pub.publish(marker)
+        self.get_logger().info("Published OSM Nodes to RViz")
     
     def vehicle_state_cb(self, msg):
         ''' 
