@@ -119,7 +119,7 @@ class PathTracker(Node):
 
         # 참조 좌표 퍼블리시
         pose = PoseStamped()
-        pose.header.frame_id = "odom"
+        pose.header.frame_id = "base_link"
         pose.header.stamp = self.get_clock().now().to_msg()
         pose.pose.position.x = self.cx[target_idx]
         pose.pose.position.y = self.cy[target_idx]

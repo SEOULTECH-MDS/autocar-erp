@@ -206,7 +206,7 @@ class GlobalPathPlanner(Node):
         goals = Path2D()
 
         viz_goals = PoseArray()
-        viz_goals.header.frame_id = "base"
+        viz_goals.header.frame_id = "base_link"
         viz_goals.header.stamp = self.get_clock().now().to_msg()
 
         for i in range(0, waypoints):

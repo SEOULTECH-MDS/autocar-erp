@@ -106,7 +106,7 @@ class LocalPathPlanner(Node):
         viz_path = Path()
         vpose = PoseStamped()
 
-        viz_path.header.frame_id = "odom"
+        viz_path.header.frame_id = "base_link"
         viz_path.header.stamp = self.get_clock().now().to_msg()
 
         for n in range(0, path_length):
@@ -118,7 +118,7 @@ class LocalPathPlanner(Node):
             target_path.poses.append(npose)
 
             # Appending to Visualization Path
-            vpose.header.frame_id = "odom"
+            vpose.header.frame_id = "base_link"
             vpose.header.stamp = self.get_clock().now().to_msg()
             vpose.pose.position.x = cx[n]
             vpose.pose.position.y = cy[n]

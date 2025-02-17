@@ -1,15 +1,17 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#! /usr/bin/env python3
 
-import pyproj
 import numpy as np
+import pyproj
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped, TransformStamped, Quaternion, Point, PoseArray, Vector3
+from geometry_msgs.msg import PoseStamped, TransformStamped, Quaternion, Point, Vector3
 from visualization_msgs.msg import MarkerArray
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import NavSatFix
+from autocar_msgs.msg import State2D 
+
+
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster, TransformListener, Buffer
-import tf_transformations
 
 # 위도, 경도를 UTM 좌표로 변환하는 함수
 def latlon_to_utm(lat, lon):
@@ -17,95 +19,92 @@ def latlon_to_utm(lat, lon):
     latlon_to_utm = pyproj.Proj(proj, preserve_units=True)
     return latlon_to_utm(lon, lat)
 
-# 쿼터니언을 오일러 각(roll, pitch, yaw)으로 변환하는 함수
-def euler_from_quaternion(q):
-    x, y, z, w = q.x, q.y, q.z, q.w
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    roll_x = np.arctan2(t0, t1)
-
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    pitch_y = np.arcsin(t2)
-
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    yaw_z = np.arctan2(t3, t4)
-
-    return roll_x, pitch_y, yaw_z
+# 오일러 각을 쿼터니언으로 변환하는 함수
+def quaternion_from_euler(roll, pitch, yaw):
+    cy = np.cos(yaw * 0.5)
+    sy = np.sin(yaw * 0.5)
+    cp = np.cos(pitch * 0.5)
+    sp = np.sin(pitch * 0.5)
+    cr = np.cos(roll * 0.5)
+    sr = np.sin(roll * 0.5)
+    
+    q = Quaternion()
+    q.w = cr * cp * cy + sr * sp * sy
+    q.x = sr * cp * cy - cr * sp * sy
+    q.y = cr * sp * cy + sr * cp * sy
+    q.z = cr * cp * sy - sr * sp * cy
+    return q
 
 # 로컬 좌표계를 글로벌 좌표계로 변환하는 함수
 def transform_local_to_global(position, orientation, local_point):
-    rot_matrix = tf_transformations.quaternion_matrix([orientation.x, orientation.y, orientation.z, orientation.w])
-    global_xy = np.dot(rot_matrix[:2, :2], local_point[:2]) + [position.x, position.y]
+    yaw = 2 * np.arctan2(orientation.z, orientation.w)  # Yaw 추출
+    rotation_matrix = np.array([
+        [np.cos(yaw), -np.sin(yaw)],
+        [np.sin(yaw),  np.cos(yaw)]
+    ])
+    global_xy = np.dot(rotation_matrix, local_point[:2]) + [position.x, position.y]
     global_z = local_point[2] + position.z
-
     return np.array([global_xy[0], global_xy[1], global_z])
 
-# ROS2 노드 정의
 class AutocarTF(Node):
     def __init__(self):
         super().__init__('autocar_tf')
+        
+        # 오프셋 회전 (yaw -1.444064°)
+        self.rot_offset_quat = quaternion_from_euler(0, 0, np.radians(-1.4440643432812905))
 
-        # 좌표 변환을 위한 오프셋 회전 (yaw -1.444064°)
-        self.rot_offset = tf_transformations.quaternion_from_euler(0, 0, np.radians(-1.4440643432812905))
-        self.rot_offset_quat = Quaternion(x=self.rot_offset[0], y=self.rot_offset[1], z=self.rot_offset[2], w=self.rot_offset[3])
-
-        # TF 브로드캐스터 (정적, 동적)
+        # TF 브로드캐스터
         self.tf_br_world_to_map = StaticTransformBroadcaster(self)
         self.tf_br_world_to_base_link = TransformBroadcaster(self)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         # ROS2 토픽 구독
-        self.local_origin_sub = self.create_subscription(PoseStamped, '/local_xy_origin', self.callback_local_origin, 10)
-        self.global_location_sub = self.create_subscription(Odometry, '/location', self.callback_global_location, 10)
-
-        # 맵 좌표계를 설정했는지 확인하는 플래그
+        # self.local_origin_sub = self.create_subscription(PoseStamped, '/local_xy_origin', self.callback_local_origin, 10)
+        # self.global_location_sub = self.create_subscription(Odometry, '/location', self.callback_global_location, 10)
+        self.local_origin_sub = self.create_subscription(NavSatFix, '/ublox_gps', self.callback_local_origin, 10)
+        self.global_location_sub = self.create_subscription(State2D, '/autocar/state2D', self.callback_global_location, 10)
+        
         self.flag_world_to_map = False
 
-    # /local_xy_origin 콜백 함수 (맵 좌표계 설정)
     def callback_local_origin(self, local_origin):
         if not self.flag_world_to_map:
-            # PoseStamped 메시지에서 위도, 경도 값 추출
-            lat = local_origin.pose.position.y
-            lon = local_origin.pose.position.x
+            # lat = local_origin.pose.position.y
+            # lon = local_origin.pose.position.x
+            lat = local_origin.latitude
+            lon = local_origin.longitude
             world_x, world_y = latlon_to_utm(lat, lon)
-
-            # world → map 변환 정의
+            
             t = TransformStamped()
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = "world"
             t.child_frame_id = "map"
             t.transform.translation = Vector3(x=float(world_x), y=float(world_y), z=0.0)
             t.transform.rotation = self.rot_offset_quat
-
-            # 변환 정보 브로드캐스트
+            
             self.tf_br_world_to_map.sendTransform(t)
-            self.flag_world_to_map = True  # 한 번만 실행되도록 플래그 설정
+            self.flag_world_to_map = True
 
-    # /location 콜백 함수 (차량 위치 정보 갱신)
     def callback_global_location(self, global_location_msg):
         self.location = {
-            "position": global_location_msg.pose.pose.position,
-            "orientation": global_location_msg.pose.pose.orientation
+            # "position": global_location_msg.pose.pose.position,
+            # "orientation": global_location_msg.pose.pose.orientation
+            "position": global_location_msg.pose,
+            "orientation": global_location_msg.twist
         }
 
-        # world → base_link 변환 정의
         t = TransformStamped()
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = "world"
         t.child_frame_id = "base_link"
 
         t.transform.translation = Vector3(
-            x=global_location_msg.pose.pose.position.x,
-            y=global_location_msg.pose.pose.position.y,
-            z=global_location_msg.pose.pose.position.z
+            x=global_location_msg.pose.x,
+            y=global_location_msg.pose.y,
+            z=0.0  # z는 0으로 설정
         )
-        t.transform.rotation = global_location_msg.pose.pose.orientation
+        t.transform.rotation = quaternion_from_euler(0, 0, global_location_msg.pose.theta)  # yaw 값을 회전으로 설정
 
-        # 변환 정보 브로드캐스트
         self.tf_br_world_to_base_link.sendTransform(t)
 
 # ROS2 노드 실행
