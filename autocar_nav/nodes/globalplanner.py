@@ -92,6 +92,7 @@ class GlobalPathPlanner(Node):
         self.y = None
         self.theta = None
 
+    
     def vehicle_state_cb(self, msg):
         ''' 
             Callback function to update vehicle state 
@@ -206,7 +207,7 @@ class GlobalPathPlanner(Node):
         goals = Path2D()
 
         viz_goals = PoseArray()
-        viz_goals.header.frame_id = "base_link"
+        viz_goals.header.frame_id = "world"
         viz_goals.header.stamp = self.get_clock().now().to_msg()
 
         for i in range(0, waypoints):
