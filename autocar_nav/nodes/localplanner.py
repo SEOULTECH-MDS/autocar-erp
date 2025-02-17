@@ -9,6 +9,7 @@ from std_msgs.msg import Float64
 
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav import generate_cubic_path, yaw_to_quaternion
+# from autocar_nav import utm_to_baselink
 
 
 class LocalPathPlanner(Node):
@@ -106,7 +107,7 @@ class LocalPathPlanner(Node):
         viz_path = Path()
         vpose = PoseStamped()
 
-        viz_path.header.frame_id = "base_link"
+        viz_path.header.frame_id = "world"
         viz_path.header.stamp = self.get_clock().now().to_msg()
 
         for n in range(0, path_length):
@@ -118,7 +119,7 @@ class LocalPathPlanner(Node):
             target_path.poses.append(npose)
 
             # Appending to Visualization Path
-            vpose.header.frame_id = "base_link"
+            vpose.header.frame_id = "world"
             vpose.header.stamp = self.get_clock().now().to_msg()
             vpose.pose.position.x = cx[n]
             vpose.pose.position.y = cy[n]
