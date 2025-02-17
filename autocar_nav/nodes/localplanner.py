@@ -105,7 +105,6 @@ class LocalPathPlanner(Node):
 
         target_path = Path2D()
         viz_path = Path()
-        vpose = PoseStamped()
 
         viz_path.header.frame_id = "world"
         viz_path.header.stamp = self.get_clock().now().to_msg()
@@ -119,6 +118,7 @@ class LocalPathPlanner(Node):
             target_path.poses.append(npose)
 
             # Appending to Visualization Path
+            vpose = PoseStamped()
             vpose.header.frame_id = "world"
             vpose.header.stamp = self.get_clock().now().to_msg()
             vpose.pose.position.x = cx[n]
@@ -130,7 +130,8 @@ class LocalPathPlanner(Node):
         self.local_planner_pub.publish(target_path)
         self.path_viz_pub.publish(viz_path)
         
-        self.get_logger().info(str(target_path))
+        #self.get_logger().info(str(target_path))
+        self.get_logger().info(str(viz_path)) 
 
 def main(args=None):
     ''' 
