@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs/ament_cmake_environment_hooks/local_setup.sh

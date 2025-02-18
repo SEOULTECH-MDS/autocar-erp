@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs/rosidl_generator_c/carla_msgs/srv/detail/spawn_object__type_support.h

@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/src/carla_ackermann_msgs/msg/EgoVehicleControlCurrent.msg

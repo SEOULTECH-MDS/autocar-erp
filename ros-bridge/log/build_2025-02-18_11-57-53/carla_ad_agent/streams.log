@@ -1,0 +1,25 @@
+[1.047s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/build --no-deps symlink_data
+[1.256s] running develop
+[1.358s] running egg_info
+[1.367s] creating src/carla_ad_agent.egg-info
+[1.368s] writing src/carla_ad_agent.egg-info/PKG-INFO
+[1.368s] writing dependency_links to src/carla_ad_agent.egg-info/dependency_links.txt
+[1.368s] writing entry points to src/carla_ad_agent.egg-info/entry_points.txt
+[1.368s] writing requirements to src/carla_ad_agent.egg-info/requires.txt
+[1.368s] writing top-level names to src/carla_ad_agent.egg-info/top_level.txt
+[1.368s] writing manifest file 'src/carla_ad_agent.egg-info/SOURCES.txt'
+[1.405s] reading manifest file 'src/carla_ad_agent.egg-info/SOURCES.txt'
+[1.406s] writing manifest file 'src/carla_ad_agent.egg-info/SOURCES.txt'
+[1.418s] running build_ext
+[1.418s] Creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/lib/python3.10/site-packages/carla-ad-agent.egg-link (link to src)
+[1.419s] Installing ad_agent script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/lib/carla_ad_agent
+[1.419s] Installing local_planner script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/lib/carla_ad_agent
+[1.419s] Installing testing_waypoints script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/lib/carla_ad_agent
+[1.419s] 
+[1.419s] Installed /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/src
+[1.419s] running symlink_data
+[1.419s] creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/share/ament_index/resource_index/packages
+[1.419s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/resource/carla_ad_agent -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/share/ament_index/resource_index/packages
+[1.420s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/package.xml -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/share/carla_ad_agent
+[1.420s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/launch/carla_ad_agent.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/share/carla_ad_agent
+[1.452s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_agent/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_agent/build --no-deps symlink_data

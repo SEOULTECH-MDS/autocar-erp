@@ -1,0 +1,9 @@
+source;share/carla_ad_agent/hook/pythonpath.ps1
+source;share/carla_ad_agent/hook/pythonpath.dsv
+source;share/carla_ad_agent/hook/pythonpath.sh
+source;share/carla_ad_agent/hook/ament_prefix_path.ps1
+source;share/carla_ad_agent/hook/ament_prefix_path.dsv
+source;share/carla_ad_agent/hook/ament_prefix_path.sh
+source;../../build/carla_ad_agent/src/share/carla_ad_agent/hook/pythonpath_develop.ps1
+source;../../build/carla_ad_agent/src/share/carla_ad_agent/hook/pythonpath_develop.dsv
+source;../../build/carla_ad_agent/src/share/carla_ad_agent/hook/pythonpath_develop.sh

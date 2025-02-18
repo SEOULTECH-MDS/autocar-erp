@@ -1,0 +1,1 @@
+Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_waypoint_types': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/hmmdyn/autocar-erp/ros-bridge/src/carla_waypoint_types -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_waypoint_types

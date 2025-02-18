@@ -1,0 +1,317 @@
+[0.271s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/hmmdyn/autocar-erp/ros-bridge/src/carla_ackermann_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs
+[0.550s] -- The C compiler identification is Clang 10.0.0
+[0.550s] -- The CXX compiler identification is Clang 10.0.0
+[0.551s] -- Detecting C compiler ABI info
+[0.551s] -- Detecting C compiler ABI info - done
+[0.551s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.551s] -- Detecting C compile features
+[0.551s] -- Detecting C compile features - done
+[0.551s] -- Detecting CXX compiler ABI info
+[0.569s] -- Detecting CXX compiler ABI info - done
+[0.575s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.575s] -- Detecting CXX compile features
+[0.575s] -- Detecting CXX compile features - done
+[0.577s] -- Found ros_environment: 3.2.2 (/opt/ros/humble/share/ros_environment/cmake)
+[0.578s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.797s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.841s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.861s] -- Found builtin_interfaces: 1.2.1 (/opt/ros/humble/share/builtin_interfaces/cmake)
+[0.887s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.891s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.898s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.908s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.921s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.933s] -- Found std_msgs: 4.2.4 (/opt/ros/humble/share/std_msgs/cmake)
+[0.943s] -- Found carla_msgs: 1.3.0 (/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/share/carla_msgs/cmake)
+[0.984s] -- Found rosidl_default_generators: 1.2.0 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+[1.240s] -- Found ament_cmake_cppcheck: 0.12.11 (/opt/ros/humble/share/ament_cmake_cppcheck/cmake)
+[1.242s] -- Found ament_cmake_cpplint: 0.12.11 (/opt/ros/humble/share/ament_cmake_cpplint/cmake)
+[1.244s] -- Found ament_cmake_uncrustify: 0.12.11 (/opt/ros/humble/share/ament_cmake_uncrustify/cmake)
+[1.245s] -- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+[1.551s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.658s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.672s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.10.12", minimum required is "3.6") 
+[1.673s] -- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+[1.690s] -- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.10.so (found suitable version "3.10.12", minimum required is "3.5") 
+[1.690s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[1.690s] -- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+[1.690s] -- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+[1.703s] -- Found PythonExtra: .so  
+[1.745s] -- Found ament_cmake_flake8: 0.12.11 (/opt/ros/humble/share/ament_cmake_flake8/cmake)
+[1.746s] -- Found ament_cmake_pep257: 0.12.11 (/opt/ros/humble/share/ament_cmake_pep257/cmake)
+[1.748s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[1.756s] -- Added test 'copyright' to check source files copyright and LICENSE
+[1.757s] -- Added test 'lint_cmake' to check CMake code style
+[1.757s] -- Added test 'xmllint' to check XML markup files
+[1.759s] -- Configuring done
+[1.784s] -- Generating done
+[1.791s] -- Build files have been written to: /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs
+[1.798s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/hmmdyn/autocar-erp/ros-bridge/src/carla_ackermann_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs
+[1.799s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs -- -j12 -l12
+[1.824s] [  1%] [34m[1mGenerating C code for ROS interfaces[0m
+[1.831s] [  3%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[1.835s] [  3%] Built target ament_cmake_python_symlink_carla_ackermann_msgs
+[1.967s] running egg_info
+[1.975s] creating carla_ackermann_msgs.egg-info
+[1.975s] writing carla_ackermann_msgs.egg-info/PKG-INFO
+[1.975s] writing dependency_links to carla_ackermann_msgs.egg-info/dependency_links.txt
+[1.975s] writing top-level names to carla_ackermann_msgs.egg-info/top_level.txt
+[1.975s] writing manifest file 'carla_ackermann_msgs.egg-info/SOURCES.txt'
+[2.000s] reading manifest file 'carla_ackermann_msgs.egg-info/SOURCES.txt'
+[2.000s] writing manifest file 'carla_ackermann_msgs.egg-info/SOURCES.txt'
+[2.022s] [  3%] Built target ament_cmake_python_build_carla_ackermann_msgs_egg
+[2.208s] [  3%] Built target carla_ackermann_msgs__cpp
+[2.216s] [  6%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[2.216s] [  6%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[2.216s] [  7%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[2.229s] [ 11%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_c.dir/rosidl_generator_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__functions.c.o[0m
+[2.229s] [ 11%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_c.dir/rosidl_generator_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__functions.c.o[0m
+[2.229s] [ 12%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_c.dir/rosidl_generator_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__functions.c.o[0m
+[2.231s] [ 14%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_c.dir/rosidl_generator_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__functions.c.o[0m
+[2.232s] [ 15%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_c.dir/rosidl_generator_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__functions.c.o[0m
+[2.277s] [ 17%] [32m[1mLinking C shared library libcarla_ackermann_msgs__rosidl_generator_c.so[0m
+[2.321s] [ 17%] Built target carla_ackermann_msgs__rosidl_generator_c
+[2.329s] [ 19%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[2.329s] [ 22%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[2.329s] [ 22%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[2.539s] [ 25%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/carla_ackermann_msgs/msg/ego_vehicle_control_status__type_support.cpp.o[0m
+[2.539s] [ 25%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/carla_ackermann_msgs/msg/ego_vehicle_control_target__type_support.cpp.o[0m
+[2.540s] [ 26%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/carla_ackermann_msgs/msg/ego_vehicle_control_current__type_support.cpp.o[0m
+[2.542s] [ 28%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/carla_ackermann_msgs/msg/ego_vehicle_control_info__type_support.cpp.o[0m
+[2.549s] [ 30%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/carla_ackermann_msgs/msg/ego_vehicle_control_maxima__type_support.cpp.o[0m
+[2.625s] [ 31%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__type_support.cpp.o[0m
+[2.627s] [ 33%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__type_support.cpp.o[0m
+[2.632s] [ 34%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__type_support.cpp.o[0m
+[2.703s] [ 36%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/carla_ackermann_msgs/msg/detail/dds_fastrtps/ego_vehicle_control_info__type_support.cpp.o[0m
+[2.771s] [ 38%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/carla_ackermann_msgs/msg/ego_vehicle_control_info__type_support.cpp.o[0m
+[2.812s] [ 39%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/carla_ackermann_msgs/msg/ego_vehicle_control_current__type_support.cpp.o[0m
+[2.821s] [ 41%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__type_support.cpp.o[0m
+[2.835s] [ 42%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__type_support.cpp.o[0m
+[2.846s] [ 46%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/carla_ackermann_msgs/msg/ego_vehicle_control_maxima__type_support.cpp.o[0m
+[2.846s] [ 46%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/carla_ackermann_msgs/msg/ego_vehicle_control_status__type_support.cpp.o[0m
+[2.872s] [ 47%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/carla_ackermann_msgs/msg/ego_vehicle_control_target__type_support.cpp.o[0m
+[2.882s] [ 49%] [32m[1mLinking CXX shared library libcarla_ackermann_msgs__rosidl_typesupport_cpp.so[0m
+[2.885s] [ 50%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/carla_ackermann_msgs/msg/detail/dds_fastrtps/ego_vehicle_control_current__type_support.cpp.o[0m
+[2.900s] [ 52%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/carla_ackermann_msgs/msg/detail/dds_fastrtps/ego_vehicle_control_maxima__type_support.cpp.o[0m
+[2.930s] [ 53%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/carla_ackermann_msgs/msg/detail/dds_fastrtps/ego_vehicle_control_status__type_support.cpp.o[0m
+[2.937s] [ 55%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__type_support.c.o[0m
+[2.939s] [ 57%] [32m[1mLinking CXX shared library libcarla_ackermann_msgs__rosidl_typesupport_c.so[0m
+[2.974s] [ 58%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/carla_ackermann_msgs/msg/detail/dds_fastrtps/ego_vehicle_control_target__type_support.cpp.o[0m
+[2.991s] [ 58%] Built target carla_ackermann_msgs__rosidl_typesupport_cpp
+[2.999s] [ 60%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__type_support.c.o[0m
+[3.013s] [ 61%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__type_support.c.o[0m
+[3.021s] [ 63%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__type_support.c.o[0m
+[3.049s] [ 65%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__type_support_c.cpp.o[0m
+[3.087s] [ 66%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__type_support_c.cpp.o[0m
+[3.091s] [ 68%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__type_support.c.o[0m
+[3.092s] [ 69%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__type_support_c.cpp.o[0m
+[3.112s] [ 71%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__type_support_c.cpp.o[0m
+[3.114s] [ 71%] Built target carla_ackermann_msgs__rosidl_typesupport_c
+[3.131s] [ 73%] [32mBuilding CXX object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__type_support_c.cpp.o[0m
+[3.143s] [ 74%] [32m[1mLinking CXX shared library libcarla_ackermann_msgs__rosidl_typesupport_introspection_cpp.so[0m
+[3.153s] [ 76%] [32m[1mLinking C shared library libcarla_ackermann_msgs__rosidl_typesupport_introspection_c.so[0m
+[3.230s] [ 76%] Built target carla_ackermann_msgs__rosidl_typesupport_introspection_c
+[3.274s] [ 76%] Built target carla_ackermann_msgs__rosidl_typesupport_introspection_cpp
+[3.330s] [ 77%] [32m[1mLinking CXX shared library libcarla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.so[0m
+[3.388s] [ 77%] Built target carla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp
+[3.425s] [ 79%] [32m[1mLinking CXX shared library libcarla_ackermann_msgs__rosidl_typesupport_fastrtps_c.so[0m
+[3.484s] [ 79%] Built target carla_ackermann_msgs__rosidl_typesupport_fastrtps_c
+[3.502s] [ 79%] Built target carla_ackermann_msgs
+[3.516s] [ 80%] [34m[1mGenerating Python code for ROS interfaces[0m
+[4.056s] [ 80%] Built target carla_ackermann_msgs__py
+[4.072s] [ 84%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_py.dir/rosidl_generator_py/carla_ackermann_msgs/msg/_ego_vehicle_control_current_s.c.o[0m
+[4.072s] [ 84%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_py.dir/rosidl_generator_py/carla_ackermann_msgs/msg/_ego_vehicle_control_maxima_s.c.o[0m
+[4.073s] [ 85%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_py.dir/rosidl_generator_py/carla_ackermann_msgs/msg/_ego_vehicle_control_target_s.c.o[0m
+[4.073s] [ 87%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_py.dir/rosidl_generator_py/carla_ackermann_msgs/msg/_ego_vehicle_control_info_s.c.o[0m
+[4.073s] [ 88%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_generator_py.dir/rosidl_generator_py/carla_ackermann_msgs/msg/_ego_vehicle_control_status_s.c.o[0m
+[4.168s] [ 90%] [32m[1mLinking C shared library rosidl_generator_py/carla_ackermann_msgs/libcarla_ackermann_msgs__rosidl_generator_py.so[0m
+[4.206s] [ 90%] Built target carla_ackermann_msgs__rosidl_generator_py
+[4.221s] [ 93%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/carla_ackermann_msgs/_carla_ackermann_msgs_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[4.221s] [ 93%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/carla_ackermann_msgs/_carla_ackermann_msgs_s.ep.rosidl_typesupport_c.c.o[0m
+[4.221s] [ 95%] [32mBuilding C object CMakeFiles/carla_ackermann_msgs__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/carla_ackermann_msgs/_carla_ackermann_msgs_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[4.283s] [ 96%] [32m[1mLinking C shared library rosidl_generator_py/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so[0m
+[4.284s] [ 98%] [32m[1mLinking C shared library rosidl_generator_py/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so[0m
+[4.287s] [100%] [32m[1mLinking C shared library rosidl_generator_py/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so[0m
+[4.330s] [100%] Built target carla_ackermann_msgs__rosidl_typesupport_c__pyext
+[4.330s] [100%] Built target carla_ackermann_msgs__rosidl_typesupport_introspection_c__pyext
+[4.330s] [100%] Built target carla_ackermann_msgs__rosidl_typesupport_fastrtps_c__pyext
+[4.339s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs -- -j12 -l12
+[4.340s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs
+[4.344s] -- Install configuration: ""
+[4.345s] -- Execute custom install script
+[4.345s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/ament_index/resource_index/rosidl_interfaces/carla_ackermann_msgs
+[4.352s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__functions.h
+[4.359s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__struct.h
+[4.365s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__type_support.h
+[4.370s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__functions.h
+[4.377s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__struct.h
+[4.383s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__type_support.h
+[4.389s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__functions.h
+[4.395s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__struct.h
+[4.402s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__type_support.h
+[4.407s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__functions.h
+[4.413s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__struct.h
+[4.420s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__type_support.h
+[4.426s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__functions.h
+[4.432s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__struct.h
+[4.438s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__type_support.h
+[4.444s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_current.h
+[4.450s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_info.h
+[4.456s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_maxima.h
+[4.462s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_status.h
+[4.467s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_target.h
+[4.473s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/rosidl_generator_c__visibility_control.h
+[4.479s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/library_path.sh
+[4.484s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/library_path.dsv
+[4.490s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__rosidl_typesupport_fastrtps_c.h
+[4.496s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__rosidl_typesupport_fastrtps_c.h
+[4.501s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__rosidl_typesupport_fastrtps_c.h
+[4.506s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__rosidl_typesupport_fastrtps_c.h
+[4.511s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__rosidl_typesupport_fastrtps_c.h
+[4.516s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[4.522s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__builder.hpp
+[4.528s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__struct.hpp
+[4.533s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__traits.hpp
+[4.538s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__type_support.hpp
+[4.544s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__builder.hpp
+[4.551s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__struct.hpp
+[4.557s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__traits.hpp
+[4.563s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__type_support.hpp
+[4.569s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__builder.hpp
+[4.575s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__struct.hpp
+[4.580s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__traits.hpp
+[4.586s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__type_support.hpp
+[4.592s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__builder.hpp
+[4.598s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__struct.hpp
+[4.604s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__traits.hpp
+[4.609s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__type_support.hpp
+[4.615s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__builder.hpp
+[4.620s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__struct.hpp
+[4.627s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__traits.hpp
+[4.633s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__type_support.hpp
+[4.639s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_current.hpp
+[4.645s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_info.hpp
+[4.652s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_maxima.hpp
+[4.658s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_status.hpp
+[4.663s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/ego_vehicle_control_target.hpp
+[4.669s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/rosidl_generator_cpp__visibility_control.hpp
+[4.674s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__rosidl_typesupport_fastrtps_cpp.hpp
+[4.679s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__rosidl_typesupport_fastrtps_cpp.hpp
+[4.684s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__rosidl_typesupport_fastrtps_cpp.hpp
+[4.689s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__rosidl_typesupport_fastrtps_cpp.hpp
+[4.694s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__rosidl_typesupport_fastrtps_cpp.hpp
+[4.699s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[4.705s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__rosidl_typesupport_introspection_c.h
+[4.710s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__rosidl_typesupport_introspection_c.h
+[4.715s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__rosidl_typesupport_introspection_c.h
+[4.720s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__rosidl_typesupport_introspection_c.h
+[4.725s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__rosidl_typesupport_introspection_c.h
+[4.730s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[4.736s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_current__rosidl_typesupport_introspection_cpp.hpp
+[4.741s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_info__rosidl_typesupport_introspection_cpp.hpp
+[4.746s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_maxima__rosidl_typesupport_introspection_cpp.hpp
+[4.751s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_status__rosidl_typesupport_introspection_cpp.hpp
+[4.757s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/include/carla_ackermann_msgs/carla_ackermann_msgs/msg/detail/ego_vehicle_control_target__rosidl_typesupport_introspection_cpp.hpp
+[4.762s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/pythonpath.sh
+[4.767s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/pythonpath.dsv
+[4.772s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs-1.0.0-py3.10.egg-info/PKG-INFO
+[4.778s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs-1.0.0-py3.10.egg-info/SOURCES.txt
+[4.783s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs-1.0.0-py3.10.egg-info/dependency_links.txt
+[4.789s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs-1.0.0-py3.10.egg-info/top_level.txt
+[4.794s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/__init__.py
+[4.799s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/_carla_ackermann_msgs_s.ep.rosidl_typesupport_c.c
+[4.805s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/_carla_ackermann_msgs_s.ep.rosidl_typesupport_fastrtps_c.c
+[4.810s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/_carla_ackermann_msgs_s.ep.rosidl_typesupport_introspection_c.c
+[4.815s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[4.822s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[4.828s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[4.834s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/libcarla_ackermann_msgs__rosidl_generator_py.so
+[4.839s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/__init__.py
+[4.845s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_current.py
+[4.851s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_current_s.c
+[4.857s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_info.py
+[4.863s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_info_s.c
+[4.869s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_maxima.py
+[4.875s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_maxima_s.c
+[4.882s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_status.py
+[4.888s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_status_s.c
+[4.894s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_target.py
+[4.900s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_target_s.c
+[4.906s] -- Up-to-date symlink: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[4.906s] -- Up-to-date symlink: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[4.906s] -- Up-to-date symlink: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/carla_ackermann_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[4.906s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlInfo.idl
+[4.915s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlCurrent.idl
+[4.922s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlMaxima.idl
+[4.928s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlStatus.idl
+[4.934s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlTarget.idl
+[4.939s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlInfo.msg
+[4.945s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlCurrent.msg
+[4.950s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlMaxima.msg
+[4.957s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlStatus.msg
+[4.963s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/msg/EgoVehicleControlTarget.msg
+[4.969s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/ament_index/resource_index/package_run_dependencies/carla_ackermann_msgs
+[4.975s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/ament_index/resource_index/parent_prefix_path/carla_ackermann_msgs
+[4.981s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/ament_prefix_path.sh
+[4.987s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/ament_prefix_path.dsv
+[4.993s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/path.sh
+[4.999s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/environment/path.dsv
+[5.004s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/local_setup.bash
+[5.010s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/local_setup.sh
+[5.017s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/local_setup.zsh
+[5.023s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/local_setup.dsv
+[5.028s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/package.dsv
+[5.034s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/ament_index/resource_index/packages/carla_ackermann_msgs
+[5.039s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/rosidl_cmake-extras.cmake
+[5.044s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/ament_cmake_export_dependencies-extras.cmake
+[5.049s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/ament_cmake_export_include_directories-extras.cmake
+[5.055s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/ament_cmake_export_libraries-extras.cmake
+[5.060s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/ament_cmake_export_targets-extras.cmake
+[5.066s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[5.072s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[5.077s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgsConfig.cmake
+[5.083s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgsConfig-version.cmake
+[5.089s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/package.xml
+[5.095s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_generator_c.so
+[5.095s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_generator_c.so" to ""
+[5.095s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_fastrtps_c.so
+[5.095s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_fastrtps_c.so" to ""
+[5.096s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.so
+[5.096s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_fastrtps_cpp.so" to ""
+[5.096s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_introspection_c.so
+[5.096s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_introspection_c.so" to ""
+[5.096s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_c.so
+[5.096s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_c.so" to ""
+[5.096s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_introspection_cpp.so
+[5.097s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_introspection_cpp.so" to ""
+[5.097s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_cpp.so
+[5.097s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_typesupport_cpp.so" to ""
+[5.118s] Listing '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs'...
+[5.119s] Compiling '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/__init__.py'...
+[5.119s] Listing '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg'...
+[5.119s] Compiling '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/__init__.py'...
+[5.119s] Compiling '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_current.py'...
+[5.119s] Compiling '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_info.py'...
+[5.119s] Compiling '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_maxima.py'...
+[5.119s] Compiling '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_status.py'...
+[5.119s] Compiling '/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/local/lib/python3.10/dist-packages/carla_ackermann_msgs/msg/_ego_vehicle_control_target.py'...
+[5.121s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_generator_py.so
+[5.121s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/lib/libcarla_ackermann_msgs__rosidl_generator_py.so" to ""
+[5.121s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_generator_cExport.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_generator_cExport-noconfig.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_typesupport_fastrtps_cExport.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_generator_cppExport.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_typesupport_fastrtps_cppExport.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_introspection_cExport.cmake
+[5.122s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_cExport.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_cExport-noconfig.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_introspection_cppExport.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_cppExport.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/carla_ackermann_msgs__rosidl_typesupport_cppExport-noconfig.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_generator_pyExport.cmake
+[5.123s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ackermann_msgs/share/carla_ackermann_msgs/cmake/export_carla_ackermann_msgs__rosidl_generator_pyExport-noconfig.cmake
+[5.125s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ackermann_msgs

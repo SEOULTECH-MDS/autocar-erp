@@ -1,0 +1,21 @@
+running develop
+running egg_info
+creating src/carla_ros_scenario_runner.egg-info
+writing src/carla_ros_scenario_runner.egg-info/PKG-INFO
+writing dependency_links to src/carla_ros_scenario_runner.egg-info/dependency_links.txt
+writing entry points to src/carla_ros_scenario_runner.egg-info/entry_points.txt
+writing requirements to src/carla_ros_scenario_runner.egg-info/requires.txt
+writing top-level names to src/carla_ros_scenario_runner.egg-info/top_level.txt
+writing manifest file 'src/carla_ros_scenario_runner.egg-info/SOURCES.txt'
+reading manifest file 'src/carla_ros_scenario_runner.egg-info/SOURCES.txt'
+writing manifest file 'src/carla_ros_scenario_runner.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner/lib/python3.10/site-packages/carla-ros-scenario-runner.egg-link (link to src)
+Installing carla_ros_scenario_runner script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner/lib/carla_ros_scenario_runner
+
+Installed /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_scenario_runner/src
+running symlink_data
+creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_scenario_runner/resource/carla_ros_scenario_runner -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_scenario_runner/package.xml -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner/share/carla_ros_scenario_runner
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_scenario_runner/launch/carla_ros_scenario_runner.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner/share/carla_ros_scenario_runner

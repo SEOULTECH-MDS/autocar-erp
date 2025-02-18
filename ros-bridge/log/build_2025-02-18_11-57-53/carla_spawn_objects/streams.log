@@ -1,0 +1,30 @@
+[1.058s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/build --no-deps symlink_data
+[1.147s] /home/hmmdyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+[1.147s]   warnings.warn(msg)
+[1.255s] running develop
+[1.351s] running egg_info
+[1.359s] creating carla_spawn_objects.egg-info
+[1.359s] writing carla_spawn_objects.egg-info/PKG-INFO
+[1.359s] writing dependency_links to carla_spawn_objects.egg-info/dependency_links.txt
+[1.360s] writing entry points to carla_spawn_objects.egg-info/entry_points.txt
+[1.360s] writing requirements to carla_spawn_objects.egg-info/requires.txt
+[1.360s] writing top-level names to carla_spawn_objects.egg-info/top_level.txt
+[1.360s] writing manifest file 'carla_spawn_objects.egg-info/SOURCES.txt'
+[1.394s] reading manifest file 'carla_spawn_objects.egg-info/SOURCES.txt'
+[1.395s] writing manifest file 'carla_spawn_objects.egg-info/SOURCES.txt'
+[1.404s] running build_ext
+[1.404s] Creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages/carla-spawn-objects.egg-link (link to .)
+[1.405s] Installing carla_spawn_objects script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/carla_spawn_objects
+[1.405s] Installing set_initial_pose script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/carla_spawn_objects
+[1.405s] 
+[1.405s] Installed /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects
+[1.405s] running symlink_data
+[1.405s] creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/ament_index/resource_index/packages
+[1.405s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/resource/carla_spawn_objects -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/ament_index/resource_index/packages
+[1.405s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/package.xml -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/carla_spawn_objects
+[1.405s] creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/carla_spawn_objects/config
+[1.406s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/config/objects.json -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/carla_spawn_objects/config
+[1.406s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/launch/set_initial_pose.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/carla_spawn_objects
+[1.406s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/launch/carla_example_ego_vehicle.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/carla_spawn_objects
+[1.406s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/launch/carla_spawn_objects.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/share/carla_spawn_objects
+[1.446s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/build --no-deps symlink_data

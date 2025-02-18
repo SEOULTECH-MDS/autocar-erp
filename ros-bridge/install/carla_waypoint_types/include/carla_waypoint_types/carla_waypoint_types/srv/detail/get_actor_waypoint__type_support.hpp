@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/build/carla_waypoint_types/rosidl_generator_cpp/carla_waypoint_types/srv/detail/get_actor_waypoint__type_support.hpp

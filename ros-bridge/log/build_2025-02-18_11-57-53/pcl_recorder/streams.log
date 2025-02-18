@@ -1,0 +1,130 @@
+[0.010s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_manual_control/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake /home/hmmdyn/autocar-erp/ros-bridge/src/pcl_recorder -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder
+[0.072s] -- The C compiler identification is Clang 10.0.0
+[0.161s] -- The CXX compiler identification is Clang 10.0.0
+[0.167s] -- Detecting C compiler ABI info
+[0.279s] -- Detecting C compiler ABI info - done
+[0.290s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.290s] -- Detecting C compile features
+[0.291s] -- Detecting C compile features - done
+[0.295s] -- Detecting CXX compiler ABI info
+[0.551s] -- Detecting CXX compiler ABI info - done
+[0.560s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.560s] -- Detecting CXX compile features
+[0.560s] -- Detecting CXX compile features - done
+[0.563s] -- Found ros_environment: 3.2.2 (/opt/ros/humble/share/ros_environment/cmake)
+[0.565s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.969s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[1.026s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.046s] -- Found rclcpp: 16.0.11 (/opt/ros/humble/share/rclcpp/cmake)
+[1.070s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[1.072s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[1.077s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[1.083s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.091s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.113s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[1.114s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[1.166s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[1.186s] -- Found FastRTPS: /opt/ros/humble/include  
+[1.214s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.219s] -- Looking for pthread.h
+[1.286s] -- Looking for pthread.h - found
+[1.286s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.351s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[1.351s] -- Found Threads: TRUE  
+[1.379s] -- Found rclcpp_components: 16.0.11 (/opt/ros/humble/share/rclcpp_components/cmake)
+[1.394s] -- Found sensor_msgs: 4.2.4 (/opt/ros/humble/share/sensor_msgs/cmake)
+[1.411s] -- Found tf2: 0.25.12 (/opt/ros/humble/share/tf2/cmake)
+[1.414s] -- Found tf2_eigen: 0.25.12 (/opt/ros/humble/share/tf2_eigen/cmake)
+[1.460s] -- Found tf2_geometry_msgs: 0.25.12 (/opt/ros/humble/share/tf2_geometry_msgs/cmake)
+[1.466s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[1.467s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[1.467s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[1.469s] -- Found pcl_conversions: 2.4.5 (/opt/ros/humble/share/pcl_conversions/cmake)
+[1.497s] -- Checking for module 'eigen3'
+[1.506s] --   Found eigen3, version 3.4.0
+[1.529s] -- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1") 
+[1.529s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[1.563s] -- Checking for module 'flann'
+[1.573s] --   Found flann, version 1.9.1
+[1.600s] -- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so  
+[1.600s] -- FLANN found (include: /usr/include, lib: /usr/lib/x86_64-linux-gnu/libflann_cpp.so)
+[2.458s] -- Checking for module 'libusb-1.0'
+[2.467s] --   Found libusb-1.0, version 1.0.25
+[2.491s] -- Found libusb: /usr/lib/x86_64-linux-gnu/libusb-1.0.so  
+[2.493s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.539s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.638s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[2.642s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.647s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.736s] -- Found Qhull version 8.0.2
+[2.826s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.916s] -- Found PCL_COMMON: /usr/lib/x86_64-linux-gnu/libpcl_common.so  
+[2.916s] -- Found PCL_KDTREE: /usr/lib/x86_64-linux-gnu/libpcl_kdtree.so  
+[2.917s] -- Found PCL_OCTREE: /usr/lib/x86_64-linux-gnu/libpcl_octree.so  
+[2.918s] -- Found PCL_SEARCH: /usr/lib/x86_64-linux-gnu/libpcl_search.so  
+[2.918s] -- Found PCL_SAMPLE_CONSENSUS: /usr/lib/x86_64-linux-gnu/libpcl_sample_consensus.so  
+[2.919s] -- Found PCL_FILTERS: /usr/lib/x86_64-linux-gnu/libpcl_filters.so  
+[2.919s] -- Found PCL_2D: /usr/include/pcl-1.12  
+[2.919s] -- Found PCL_GEOMETRY: /usr/include/pcl-1.12  
+[2.919s] -- Found PCL_IO: /usr/lib/x86_64-linux-gnu/libpcl_io.so  
+[2.920s] -- Found PCL_FEATURES: /usr/lib/x86_64-linux-gnu/libpcl_features.so  
+[2.920s] -- Found PCL_ML: /usr/lib/x86_64-linux-gnu/libpcl_ml.so  
+[2.921s] -- Found PCL_SEGMENTATION: /usr/lib/x86_64-linux-gnu/libpcl_segmentation.so  
+[2.921s] -- Found PCL_VISUALIZATION: /usr/lib/x86_64-linux-gnu/libpcl_visualization.so  
+[2.922s] -- Found PCL_SURFACE: /usr/lib/x86_64-linux-gnu/libpcl_surface.so  
+[2.922s] -- Found PCL_REGISTRATION: /usr/lib/x86_64-linux-gnu/libpcl_registration.so  
+[2.923s] -- Found PCL_KEYPOINTS: /usr/lib/x86_64-linux-gnu/libpcl_keypoints.so  
+[2.923s] -- Found PCL_TRACKING: /usr/lib/x86_64-linux-gnu/libpcl_tracking.so  
+[2.924s] -- Found PCL_RECOGNITION: /usr/lib/x86_64-linux-gnu/libpcl_recognition.so  
+[2.924s] -- Found PCL_STEREO: /usr/lib/x86_64-linux-gnu/libpcl_stereo.so  
+[2.925s] -- Found PCL_APPS: /usr/lib/x86_64-linux-gnu/libpcl_apps.so  
+[2.925s] -- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.12  
+[2.925s] -- Found PCL_MODELER: /usr/include/pcl-1.12  
+[2.926s] -- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.12  
+[2.926s] -- Found PCL_OUTOFCORE: /usr/lib/x86_64-linux-gnu/libpcl_outofcore.so  
+[2.927s] -- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so  
+[2.931s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: system 
+[2.931s] [33mCMake Warning (dev) at CMakeLists.txt:62 (find_package):
+[2.931s]   Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
+[2.931s]   Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
+[2.931s]   command to set the policy and suppress this warning.
+[2.931s] 
+[2.932s]   CMake variable PCL_ROOT is set to:
+[2.932s] 
+[2.932s]     /usr
+[2.932s] 
+[2.932s]   For compatibility, CMake is ignoring the variable.
+[2.932s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[2.932s] [0m
+[2.983s] -- Configuring done
+[3.038s] -- Generating done
+[3.046s] -- Build files have been written to: /home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder
+[3.058s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_manual_control/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake /home/hmmdyn/autocar-erp/ros-bridge/src/pcl_recorder -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder
+[3.059s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_manual_control/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder -- -j12 -l12
+[3.099s] [ 66%] [32mBuilding CXX object CMakeFiles/pcl_recorder_node.dir/src/PclRecorderROS2.cpp.o[0m
+[3.099s] [ 66%] [32mBuilding CXX object CMakeFiles/pcl_recorder_node.dir/src/mainROS2.cpp.o[0m
+[8.636s] [100%] [32m[1mLinking CXX executable pcl_recorder_node[0m
+[9.837s] [100%] Built target pcl_recorder_node
+[9.845s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_manual_control/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder -- -j12 -l12
+[9.846s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_manual_control/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder
+[9.852s] -- Install configuration: ""
+[9.852s] -- Execute custom install script
+[9.853s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/lib/pcl_recorder/pcl_recorder_node
+[9.860s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder//pcl_recorder.launch
+[9.866s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder//pcl_recorder.launch.py
+[9.872s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/ament_index/resource_index/package_run_dependencies/pcl_recorder
+[9.878s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/ament_index/resource_index/parent_prefix_path/pcl_recorder
+[9.883s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/environment/ament_prefix_path.sh
+[9.888s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/environment/ament_prefix_path.dsv
+[9.894s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/environment/path.sh
+[9.900s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/environment/path.dsv
+[9.905s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/local_setup.bash
+[9.911s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/local_setup.sh
+[9.916s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/local_setup.zsh
+[9.921s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/local_setup.dsv
+[9.927s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/package.dsv
+[9.932s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/ament_index/resource_index/packages/pcl_recorder
+[9.938s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/cmake/pcl_recorderConfig.cmake
+[9.943s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/cmake/pcl_recorderConfig-version.cmake
+[9.949s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/pcl_recorder/share/pcl_recorder/package.xml
+[9.956s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_spawn_objects/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_manual_control/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_manual_control/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src:/home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/src:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder

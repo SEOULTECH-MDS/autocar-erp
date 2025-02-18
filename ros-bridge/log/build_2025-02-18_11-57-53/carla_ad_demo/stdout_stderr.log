@@ -1,0 +1,46 @@
+-- The C compiler identification is Clang 10.0.0
+-- The CXX compiler identification is Clang 10.0.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ros_environment: 3.2.2 (/opt/ros/humble/share/ros_environment/cmake)
+-- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found rclpy: 3.3.15 (/opt/ros/humble/share/rclpy/cmake)
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_demo
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/config/FollowLeadingVehicle.xosc
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/config/RevealScenario.xosc
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/config/carla_ad_demo.rviz
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/config/carla_ad_demo_ros2.rviz
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo.launch
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo.launch.py
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo_with_scenario.launch
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo_with_scenario.launch.py
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/ament_index/resource_index/package_run_dependencies/carla_ad_demo
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/ament_index/resource_index/parent_prefix_path/carla_ad_demo
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/ament_index/resource_index/packages/carla_ad_demo
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/cmake/carla_ad_demoConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/cmake/carla_ad_demoConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ad_demo/share/carla_ad_demo/package.xml

@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/build/carla_spawn_objects/launch/set_initial_pose.launch.py

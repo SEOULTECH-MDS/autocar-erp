@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs/rosidl_typesupport_fastrtps_cpp/carla_msgs/msg/detail/carla_collision_event__rosidl_typesupport_fastrtps_cpp.hpp

@@ -1,0 +1,22 @@
+[1.917s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common': PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/build --no-deps symlink_data
+[2.191s] /home/hmmdyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+[2.191s]   warnings.warn(msg)
+[2.528s] running develop
+[2.715s] running egg_info
+[2.727s] creating src/carla_common.egg-info
+[2.728s] writing src/carla_common.egg-info/PKG-INFO
+[2.728s] writing dependency_links to src/carla_common.egg-info/dependency_links.txt
+[2.728s] writing requirements to src/carla_common.egg-info/requires.txt
+[2.728s] writing top-level names to src/carla_common.egg-info/top_level.txt
+[2.728s] writing manifest file 'src/carla_common.egg-info/SOURCES.txt'
+[2.782s] reading manifest file 'src/carla_common.egg-info/SOURCES.txt'
+[2.783s] writing manifest file 'src/carla_common.egg-info/SOURCES.txt'
+[2.796s] running build_ext
+[2.796s] Creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages/carla-common.egg-link (link to src)
+[2.796s] 
+[2.796s] Installed /home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/src
+[2.796s] running symlink_data
+[2.797s] creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/share/ament_index/resource_index/packages
+[2.797s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/resource/carla_common -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/share/ament_index/resource_index/packages
+[2.797s] symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/package.xml -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/share/carla_common
+[2.832s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common' returned '0': PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/ros-bridge/build/carla_common/build --no-deps symlink_data

@@ -1,0 +1,21 @@
+running develop
+running egg_info
+creating src/carla_twist_to_control.egg-info
+writing src/carla_twist_to_control.egg-info/PKG-INFO
+writing dependency_links to src/carla_twist_to_control.egg-info/dependency_links.txt
+writing entry points to src/carla_twist_to_control.egg-info/entry_points.txt
+writing requirements to src/carla_twist_to_control.egg-info/requires.txt
+writing top-level names to src/carla_twist_to_control.egg-info/top_level.txt
+writing manifest file 'src/carla_twist_to_control.egg-info/SOURCES.txt'
+reading manifest file 'src/carla_twist_to_control.egg-info/SOURCES.txt'
+writing manifest file 'src/carla_twist_to_control.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_twist_to_control/lib/python3.10/site-packages/carla-twist-to-control.egg-link (link to src)
+Installing carla_twist_to_control script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_twist_to_control/lib/carla_twist_to_control
+
+Installed /home/hmmdyn/autocar-erp/ros-bridge/build/carla_twist_to_control/src
+running symlink_data
+creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_twist_to_control/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_twist_to_control/resource/carla_twist_to_control -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_twist_to_control/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_twist_to_control/package.xml -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_twist_to_control/share/carla_twist_to_control
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_twist_to_control/launch/carla_twist_to_control.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_twist_to_control/share/carla_twist_to_control

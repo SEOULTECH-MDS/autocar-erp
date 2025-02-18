@@ -1,0 +1,18 @@
+running develop
+running egg_info
+creating src/ros_compatibility.egg-info
+writing src/ros_compatibility.egg-info/PKG-INFO
+writing dependency_links to src/ros_compatibility.egg-info/dependency_links.txt
+writing requirements to src/ros_compatibility.egg-info/requires.txt
+writing top-level names to src/ros_compatibility.egg-info/top_level.txt
+writing manifest file 'src/ros_compatibility.egg-info/SOURCES.txt'
+reading manifest file 'src/ros_compatibility.egg-info/SOURCES.txt'
+writing manifest file 'src/ros_compatibility.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/lib/python3.10/site-packages/ros-compatibility.egg-link (link to src)
+
+Installed /home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/src
+running symlink_data
+creating /home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/resource/ros_compatibility -> /home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/ros_compatibility/package.xml -> /home/hmmdyn/autocar-erp/ros-bridge/install/ros_compatibility/share/ros_compatibility

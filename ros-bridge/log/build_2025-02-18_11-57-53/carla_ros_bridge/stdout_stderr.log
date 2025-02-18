@@ -1,0 +1,26 @@
+/home/hmmdyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+  warnings.warn(msg)
+running develop
+running egg_info
+creating src/carla_ros_bridge.egg-info
+writing src/carla_ros_bridge.egg-info/PKG-INFO
+writing dependency_links to src/carla_ros_bridge.egg-info/dependency_links.txt
+writing entry points to src/carla_ros_bridge.egg-info/entry_points.txt
+writing requirements to src/carla_ros_bridge.egg-info/requires.txt
+writing top-level names to src/carla_ros_bridge.egg-info/top_level.txt
+writing manifest file 'src/carla_ros_bridge.egg-info/SOURCES.txt'
+reading manifest file 'src/carla_ros_bridge.egg-info/SOURCES.txt'
+writing manifest file 'src/carla_ros_bridge.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/python3.10/site-packages/carla-ros-bridge.egg-link (link to src)
+Installing bridge script to /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/lib/carla_ros_bridge
+
+Installed /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/src
+running symlink_data
+creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/resource/carla_ros_bridge -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/package.xml -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/share/carla_ros_bridge
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/launch/carla_ros_bridge.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/share/carla_ros_bridge
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/launch/carla_ros_bridge_with_example_ego_vehicle.launch.py -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/share/carla_ros_bridge
+creating /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/share/carla_ros_bridge/test
+symbolically linking /home/hmmdyn/autocar-erp/ros-bridge/build/carla_ros_bridge/test/test_objects.json -> /home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_bridge/share/carla_ros_bridge/test

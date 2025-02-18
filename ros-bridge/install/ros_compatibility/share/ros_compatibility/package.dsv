@@ -1,0 +1,9 @@
+source;share/ros_compatibility/hook/pythonpath.ps1
+source;share/ros_compatibility/hook/pythonpath.dsv
+source;share/ros_compatibility/hook/pythonpath.sh
+source;share/ros_compatibility/hook/ament_prefix_path.ps1
+source;share/ros_compatibility/hook/ament_prefix_path.dsv
+source;share/ros_compatibility/hook/ament_prefix_path.sh
+source;../../build/ros_compatibility/src/share/ros_compatibility/hook/pythonpath_develop.ps1
+source;../../build/ros_compatibility/src/share/ros_compatibility/hook/pythonpath_develop.dsv
+source;../../build/ros_compatibility/src/share/ros_compatibility/hook/pythonpath_develop.sh

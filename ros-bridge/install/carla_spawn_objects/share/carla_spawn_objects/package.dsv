@@ -1,0 +1,9 @@
+source;share/carla_spawn_objects/hook/pythonpath.ps1
+source;share/carla_spawn_objects/hook/pythonpath.dsv
+source;share/carla_spawn_objects/hook/pythonpath.sh
+source;share/carla_spawn_objects/hook/ament_prefix_path.ps1
+source;share/carla_spawn_objects/hook/ament_prefix_path.dsv
+source;share/carla_spawn_objects/hook/ament_prefix_path.sh
+source;../../build/carla_spawn_objects/share/carla_spawn_objects/hook/pythonpath_develop.ps1
+source;../../build/carla_spawn_objects/share/carla_spawn_objects/hook/pythonpath_develop.dsv
+source;../../build/carla_spawn_objects/share/carla_spawn_objects/hook/pythonpath_develop.sh

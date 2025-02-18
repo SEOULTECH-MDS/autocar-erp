@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/src/carla_waypoint_types/msg/CarlaWaypoint.msg

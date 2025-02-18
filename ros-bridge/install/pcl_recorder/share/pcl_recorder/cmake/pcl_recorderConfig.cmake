@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/build/pcl_recorder/ament_cmake_core/pcl_recorderConfig.cmake

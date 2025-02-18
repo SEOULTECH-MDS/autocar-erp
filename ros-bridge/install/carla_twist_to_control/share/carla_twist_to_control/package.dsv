@@ -1,0 +1,9 @@
+source;share/carla_twist_to_control/hook/pythonpath.ps1
+source;share/carla_twist_to_control/hook/pythonpath.dsv
+source;share/carla_twist_to_control/hook/pythonpath.sh
+source;share/carla_twist_to_control/hook/ament_prefix_path.ps1
+source;share/carla_twist_to_control/hook/ament_prefix_path.dsv
+source;share/carla_twist_to_control/hook/ament_prefix_path.sh
+source;../../build/carla_twist_to_control/src/share/carla_twist_to_control/hook/pythonpath_develop.ps1
+source;../../build/carla_twist_to_control/src/share/carla_twist_to_control/hook/pythonpath_develop.dsv
+source;../../build/carla_twist_to_control/src/share/carla_twist_to_control/hook/pythonpath_develop.sh

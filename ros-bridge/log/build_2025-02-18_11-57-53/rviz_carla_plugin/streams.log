@@ -1,0 +1,121 @@
+[0.546s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/hmmdyn/autocar-erp/ros-bridge/src/rviz_carla_plugin -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin
+[0.599s] -- The C compiler identification is Clang 10.0.0
+[0.661s] -- The CXX compiler identification is Clang 10.0.0
+[0.665s] -- Detecting C compiler ABI info
+[0.740s] -- Detecting C compiler ABI info - done
+[0.746s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.746s] -- Detecting C compile features
+[0.746s] -- Detecting C compile features - done
+[0.749s] -- Detecting CXX compiler ABI info
+[0.862s] -- Detecting CXX compiler ABI info - done
+[0.867s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.867s] -- Detecting CXX compile features
+[0.868s] -- Detecting CXX compile features - done
+[0.869s] -- Found ros_environment: 3.2.2 (/opt/ros/humble/share/ros_environment/cmake)
+[0.870s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[1.110s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[1.149s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.167s] -- Found rviz_common: 11.2.16 (/opt/ros/humble/share/rviz_common/cmake)
+[1.210s] -- Setting assimp_DIR to: '/opt/ros/humble/share/rviz_assimp_vendor/cmake/../../../opt/rviz_assimp_vendor/lib/cmake/assimp-4.1'
+[1.218s] -- Setting OGRE_DIR to: '/opt/ros/humble/share/rviz_ogre_vendor/cmake/../../../opt/rviz_ogre_vendor/lib/OGRE/cmake'
+[1.221s] -- Found OGRE
+[1.221s] --   static     : OFF
+[1.221s] --   components : HLMS;MeshLodGenerator;Overlay;Paging;Property;RTShaderSystem;Terrain;Volume
+[1.221s] --   plugins    : Plugin_BSPSceneManager;Plugin_OctreeSceneManager;Plugin_PCZSceneManager;Plugin_ParticleFX;RenderSystem_GL;RenderSystem_GL3Plus;Codec_STBI
+[1.221s] --   media      : /opt/ros/humble/opt/rviz_ogre_vendor/share/OGRE/Media
+[1.221s] -- OGRE_LIBRARIES: OgreHLMS;OgreMeshLodGenerator;OgreOverlay;OgrePaging;OgreProperty;OgreRTShaderSystem;OgreTerrain;OgreVolume;OgreMain
+[1.221s] -- OGRE_LIBRARY_DIRS: /opt/ros/humble/opt/rviz_ogre_vendor/lib
+[1.221s] -- OGRE_PLUGINS: Plugin_BSPSceneManager;Plugin_OctreeSceneManager;Plugin_PCZSceneManager;Plugin_ParticleFX;RenderSystem_GL;RenderSystem_GL3Plus;Codec_STBI
+[1.221s] -- OGRE_PLUGIN_DIR: /opt/ros/humble/opt/rviz_ogre_vendor/lib/OGRE
+[1.221s] -- rviz_ogre_vendor::OgreOverlay for IMPORTED_LOCATION_RELEASE: /opt/ros/humble/opt/rviz_ogre_vendor/lib/libOgreOverlay.so
+[1.221s] -- rviz_ogre_vendor::OgreOverlay for IMPORTED_LOCATION_DEBUG: /opt/ros/humble/opt/rviz_ogre_vendor/lib/libOgreOverlay.so
+[1.221s] -- rviz_ogre_vendor::OgreMain for IMPORTED_LOCATION_RELEASE: /opt/ros/humble/opt/rviz_ogre_vendor/lib/libOgreMain.so
+[1.221s] -- rviz_ogre_vendor::OgreMain for IMPORTED_LOCATION_DEBUG: /opt/ros/humble/opt/rviz_ogre_vendor/lib/libOgreMain.so
+[1.225s] -- Could not find freeimage library
+[1.238s] -- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.2.11") 
+[1.243s] -- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so   
+[1.321s] -- Found X11: /usr/include   
+[1.321s] -- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so
+[1.408s] -- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so - found
+[1.408s] -- Looking for gethostbyname
+[1.477s] -- Looking for gethostbyname - found
+[1.477s] -- Looking for connect
+[1.543s] -- Looking for connect - found
+[1.543s] -- Looking for remove
+[1.606s] -- Looking for remove - found
+[1.606s] -- Looking for shmat
+[1.675s] -- Looking for shmat - found
+[1.675s] -- Looking for IceConnectionNumber in ICE
+[1.740s] -- Looking for IceConnectionNumber in ICE - found
+[1.804s] -- library: /usr/lib/x86_64-linux-gnu/libcurl.so
+[1.823s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[1.826s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[1.830s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[1.837s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.846s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.931s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[1.934s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[1.960s] -- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+[2.002s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[2.006s] -- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+[2.014s] -- Found FastRTPS: /opt/ros/humble/include  
+[2.016s] -- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+[2.022s] -- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+[2.033s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[2.051s] -- Looking for pthread.h
+[2.142s] -- Looking for pthread.h - found
+[2.143s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[2.232s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[2.236s] -- Found Threads: TRUE  
+[2.324s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[2.325s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[2.458s] -- Found carla_msgs: 1.3.0 (/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/share/carla_msgs/cmake)
+[2.485s] -- Found nav_msgs: 4.2.4 (/opt/ros/humble/share/nav_msgs/cmake)
+[2.500s] -- Found carla_ros_scenario_runner_types: 0.1.0 (/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/share/carla_ros_scenario_runner_types/cmake)
+[2.591s] -- Configuring done
+[2.666s] -- Generating done
+[2.672s] -- Build files have been written to: /home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin
+[2.699s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/hmmdyn/autocar-erp/ros-bridge/src/rviz_carla_plugin -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin
+[2.702s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin -- -j12 -l12
+[2.806s] [ 12%] [34m[1mAutomatic MOC for target rviz_carla_plugin[0m
+[3.450s] [ 12%] Built target rviz_carla_plugin_autogen
+[3.456s] [ 25%] [34m[1mGenerating qrc_rviz_carla_plugin.cpp[0m
+[3.473s] [ 62%] [32mBuilding CXX object CMakeFiles/rviz_carla_plugin.dir/rviz_carla_plugin_autogen/mocs_compilation.cpp.o[0m
+[3.473s] [ 62%] [32mBuilding CXX object CMakeFiles/rviz_carla_plugin.dir/src/carla_control_panel_ROS2.cpp.o[0m
+[3.473s] [ 62%] [32mBuilding CXX object CMakeFiles/rviz_carla_plugin.dir/qrc_rviz_carla_plugin.cpp.o[0m
+[3.473s] [ 75%] [32mBuilding CXX object CMakeFiles/rviz_carla_plugin.dir/src/indicator_widget.cpp.o[0m
+[3.473s] [ 87%] [32mBuilding CXX object CMakeFiles/rviz_carla_plugin.dir/src/drive_widget.cpp.o[0m
+[11.048s] [100%] [32m[1mLinking CXX shared library librviz_carla_plugin.so[0m
+[11.842s] [100%] Built target rviz_carla_plugin
+[11.850s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin -- -j12 -l12
+[11.851s] Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin
+[11.856s] -- Install configuration: ""
+[11.856s] -- Execute custom install script
+[11.856s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin//plugin_description_ros2.xml
+[11.863s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/library_path.sh
+[11.869s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/library_path.dsv
+[11.875s] -- Up-to-date symlink: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/plugin_description_ros2.xml
+[11.875s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/classes/CarlaControl.png
+[11.881s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/pause.png
+[11.887s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/play.png
+[11.894s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/step_once.png
+[11.900s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/ament_index/resource_index/package_run_dependencies/rviz_carla_plugin
+[11.907s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/ament_index/resource_index/parent_prefix_path/rviz_carla_plugin
+[11.913s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/ament_prefix_path.sh
+[11.918s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/ament_prefix_path.dsv
+[11.926s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/path.sh
+[11.932s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/path.dsv
+[11.938s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.bash
+[11.943s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.sh
+[11.949s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.zsh
+[11.955s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.dsv
+[11.961s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/package.dsv
+[11.967s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/ament_index/resource_index/packages/rviz_carla_plugin
+[11.974s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/ament_index/resource_index/rviz_common__pluginlib__plugin/rviz_carla_plugin
+[11.981s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/cmake/ament_cmake_export_libraries-extras.cmake
+[11.988s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/cmake/rviz_carla_pluginConfig.cmake
+[11.995s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/cmake/rviz_carla_pluginConfig-version.cmake
+[12.004s] -- Symlinking: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/share/rviz_carla_plugin/package.xml
+[12.010s] -- Installing: /home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/lib/librviz_carla_plugin.so
+[12.024s] -- Set runtime path of "/home/hmmdyn/autocar-erp/ros-bridge/install/rviz_carla_plugin/lib/librviz_carla_plugin.so" to ""
+[12.026s] Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin' returned '0': AMENT_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/lib:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/hmmdyn/autocar-erp/ros-bridge/install/carla_ros_scenario_runner_types/local/lib/python3.10/dist-packages:/home/hmmdyn/autocar-erp/ros-bridge/install/carla_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/rviz_carla_plugin

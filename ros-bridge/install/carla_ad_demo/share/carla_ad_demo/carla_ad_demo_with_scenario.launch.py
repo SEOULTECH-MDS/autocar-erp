@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/ros-bridge/src/carla_ad_demo/launch/carla_ad_demo_with_scenario.launch.py
