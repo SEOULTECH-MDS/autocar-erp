@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/build/launches/ament_cmake_environment_hooks/local_setup.sh

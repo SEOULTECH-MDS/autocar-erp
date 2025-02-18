@@ -1,1 +1,0 @@
-/home/hmmdyn/autocar-erp/ros-bridge/build/carla_waypoint_publisher/launch/carla_waypoint_publisher.launch.py

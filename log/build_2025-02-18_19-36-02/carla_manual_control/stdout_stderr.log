@@ -1,0 +1,21 @@
+/home/hmmdyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+  warnings.warn(msg)
+running develop
+running egg_info
+writing src/carla_manual_control.egg-info/PKG-INFO
+writing dependency_links to src/carla_manual_control.egg-info/dependency_links.txt
+writing entry points to src/carla_manual_control.egg-info/entry_points.txt
+writing requirements to src/carla_manual_control.egg-info/requires.txt
+writing top-level names to src/carla_manual_control.egg-info/top_level.txt
+reading manifest file 'src/carla_manual_control.egg-info/SOURCES.txt'
+writing manifest file 'src/carla_manual_control.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/hmmdyn/autocar-erp/install/carla_manual_control/lib/python3.10/site-packages/carla-manual-control.egg-link (link to src)
+Installing carla_manual_control script to /home/hmmdyn/autocar-erp/install/carla_manual_control/lib/carla_manual_control
+
+Installed /home/hmmdyn/autocar-erp/build/carla_manual_control/src
+running symlink_data
+creating /home/hmmdyn/autocar-erp/install/carla_manual_control/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/build/carla_manual_control/resource/carla_manual_control -> /home/hmmdyn/autocar-erp/install/carla_manual_control/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/build/carla_manual_control/package.xml -> /home/hmmdyn/autocar-erp/install/carla_manual_control/share/carla_manual_control
+symbolically linking /home/hmmdyn/autocar-erp/build/carla_manual_control/launch/carla_manual_control.launch.py -> /home/hmmdyn/autocar-erp/install/carla_manual_control/share/carla_manual_control

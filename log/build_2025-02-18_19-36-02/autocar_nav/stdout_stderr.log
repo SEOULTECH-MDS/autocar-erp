@@ -1,0 +1,55 @@
+Built target ament_cmake_python_symlink_autocar_nav
+running egg_info
+writing autocar_nav.egg-info/PKG-INFO
+writing dependency_links to autocar_nav.egg-info/dependency_links.txt
+writing top-level names to autocar_nav.egg-info/top_level.txt
+reading manifest file 'autocar_nav.egg-info/SOURCES.txt'
+writing manifest file 'autocar_nav.egg-info/SOURCES.txt'
+Built target ament_cmake_python_build_autocar_nav_egg
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/environment/pythonpath.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/environment/pythonpath.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/PKG-INFO
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/SOURCES.txt
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/dependency_links.txt
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/top_level.txt
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/__init__.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/cubic_spline_interpolator.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/normalise_angle.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/osm_handler.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/yaw_to_quaternion.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/config/navigation_params.yaml
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/data/hitech2_INTERSECTION_LINK.osm
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/data/hitech2_LINK.osm
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/data/hitech2_STOPLINE.osm
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/data/waypoints.csv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/globalplanner.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/localisation.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/localplanner.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/clickplanner.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/tracker.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/gps_sub.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/autocar_tf_ros2.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/lib/autocar_nav/hitech_test_pub.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/ament_index/resource_index/package_run_dependencies/autocar_nav
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/ament_index/resource_index/parent_prefix_path/autocar_nav
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/ament_index/resource_index/packages/autocar_nav
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/cmake/autocar_navConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/cmake/autocar_navConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_nav/share/autocar_nav/package.xml
+Listing '/home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav'...
+Compiling '/home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/__init__.py'...
+Compiling '/home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/cubic_spline_interpolator.py'...
+Compiling '/home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/normalise_angle.py'...
+Compiling '/home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/osm_handler.py'...
+Compiling '/home/hmmdyn/autocar-erp/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/yaw_to_quaternion.py'...

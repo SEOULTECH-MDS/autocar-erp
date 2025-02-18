@@ -1,0 +1,20 @@
+[2.044s] Invoking command in '/home/hmmdyn/autocar-erp/build/carla_common': PYTHONPATH=/home/hmmdyn/autocar-erp/build/carla_common/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/build/carla_common/build --no-deps symlink_data
+[2.227s] /home/hmmdyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+[2.227s]   warnings.warn(msg)
+[2.451s] running develop
+[2.646s] running egg_info
+[2.662s] writing src/carla_common.egg-info/PKG-INFO
+[2.664s] writing dependency_links to src/carla_common.egg-info/dependency_links.txt
+[2.664s] writing requirements to src/carla_common.egg-info/requires.txt
+[2.664s] writing top-level names to src/carla_common.egg-info/top_level.txt
+[2.725s] reading manifest file 'src/carla_common.egg-info/SOURCES.txt'
+[2.729s] writing manifest file 'src/carla_common.egg-info/SOURCES.txt'
+[2.743s] running build_ext
+[2.743s] Creating /home/hmmdyn/autocar-erp/install/carla_common/lib/python3.10/site-packages/carla-common.egg-link (link to src)
+[2.743s] 
+[2.743s] Installed /home/hmmdyn/autocar-erp/build/carla_common/src
+[2.744s] running symlink_data
+[2.744s] creating /home/hmmdyn/autocar-erp/install/carla_common/share/ament_index/resource_index/packages
+[2.744s] symbolically linking /home/hmmdyn/autocar-erp/build/carla_common/resource/carla_common -> /home/hmmdyn/autocar-erp/install/carla_common/share/ament_index/resource_index/packages
+[2.744s] symbolically linking /home/hmmdyn/autocar-erp/build/carla_common/package.xml -> /home/hmmdyn/autocar-erp/install/carla_common/share/carla_common
+[2.871s] Invoked command in '/home/hmmdyn/autocar-erp/build/carla_common' returned '0': PYTHONPATH=/home/hmmdyn/autocar-erp/build/carla_common/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/install/carla_common/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/build/carla_common/build --no-deps symlink_data

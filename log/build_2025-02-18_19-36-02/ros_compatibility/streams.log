@@ -1,0 +1,20 @@
+[1.986s] Invoking command in '/home/hmmdyn/autocar-erp/build/ros_compatibility': PYTHONPATH=/home/hmmdyn/autocar-erp/build/ros_compatibility/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/install/ros_compatibility/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/build/ros_compatibility/build --no-deps symlink_data
+[2.199s] /home/hmmdyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+[2.199s]   warnings.warn(msg)
+[2.428s] running develop
+[2.619s] running egg_info
+[2.636s] writing src/ros_compatibility.egg-info/PKG-INFO
+[2.637s] writing dependency_links to src/ros_compatibility.egg-info/dependency_links.txt
+[2.637s] writing requirements to src/ros_compatibility.egg-info/requires.txt
+[2.638s] writing top-level names to src/ros_compatibility.egg-info/top_level.txt
+[2.724s] reading manifest file 'src/ros_compatibility.egg-info/SOURCES.txt'
+[2.725s] writing manifest file 'src/ros_compatibility.egg-info/SOURCES.txt'
+[2.745s] running build_ext
+[2.745s] Creating /home/hmmdyn/autocar-erp/install/ros_compatibility/lib/python3.10/site-packages/ros-compatibility.egg-link (link to src)
+[2.746s] 
+[2.746s] Installed /home/hmmdyn/autocar-erp/build/ros_compatibility/src
+[2.746s] running symlink_data
+[2.746s] creating /home/hmmdyn/autocar-erp/install/ros_compatibility/share/ament_index/resource_index/packages
+[2.747s] symbolically linking /home/hmmdyn/autocar-erp/build/ros_compatibility/resource/ros_compatibility -> /home/hmmdyn/autocar-erp/install/ros_compatibility/share/ament_index/resource_index/packages
+[2.747s] symbolically linking /home/hmmdyn/autocar-erp/build/ros_compatibility/package.xml -> /home/hmmdyn/autocar-erp/install/ros_compatibility/share/ros_compatibility
+[2.880s] Invoked command in '/home/hmmdyn/autocar-erp/build/ros_compatibility' returned '0': PYTHONPATH=/home/hmmdyn/autocar-erp/build/ros_compatibility/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/install/ros_compatibility/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/build/ros_compatibility/build --no-deps symlink_data

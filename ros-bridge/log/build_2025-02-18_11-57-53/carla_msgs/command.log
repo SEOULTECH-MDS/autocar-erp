@@ -1,4 +1,0 @@
-Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs -- -j12 -l12
-Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs -- -j12 -l12
-Invoking command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs
-Invoked command in '/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs

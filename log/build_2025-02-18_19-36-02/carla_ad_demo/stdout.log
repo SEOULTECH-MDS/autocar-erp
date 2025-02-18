@@ -1,0 +1,26 @@
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/config/FollowLeadingVehicle.xosc
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/config/RevealScenario.xosc
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/config/carla_ad_demo.rviz
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/config/carla_ad_demo_ros2.rviz
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo.launch
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo.launch.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo_with_scenario.launch
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/carla_ad_demo_with_scenario.launch.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/ament_index/resource_index/package_run_dependencies/carla_ad_demo
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/ament_index/resource_index/parent_prefix_path/carla_ad_demo
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/ament_index/resource_index/packages/carla_ad_demo
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/cmake/carla_ad_demoConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/cmake/carla_ad_demoConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/carla_ad_demo/share/carla_ad_demo/package.xml

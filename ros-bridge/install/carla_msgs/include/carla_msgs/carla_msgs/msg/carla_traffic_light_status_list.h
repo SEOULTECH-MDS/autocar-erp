@@ -1,1 +1,0 @@
-/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs/rosidl_generator_c/carla_msgs/msg/carla_traffic_light_status_list.h

@@ -1,0 +1,20 @@
+[35m[1mConsolidate compiler generated dependencies of target bof[0m
+[100%] Built target bof
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/lib/autocar_map/bof
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/ament_index/resource_index/package_run_dependencies/autocar_map
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/ament_index/resource_index/parent_prefix_path/autocar_map
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/ament_index/resource_index/packages/autocar_map
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/cmake/autocar_mapConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/cmake/autocar_mapConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_map/share/autocar_map/package.xml

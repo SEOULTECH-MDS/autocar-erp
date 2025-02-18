@@ -1,0 +1,35 @@
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/worlds/autocar.world
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/worlds/autocar_city.world
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/worlds/autocar_spawn.world
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/worlds/empty.world
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/worlds/populated_road.world
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/worlds/road.world
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/bl_1.stl
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/br_1.stl
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/burger_base.dae
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/chassis_link.stl
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/fl_1.stl
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/fr_1.stl
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/hokuyo.dae
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/lds.dae
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/spoiler.stl
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/meshes/tire.dae
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/model.config
+-- Up-to-date symlink: /home/hmmdyn/.gazebo/models/autocar/model.sdf
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/ament_index/resource_index/package_run_dependencies/autocar_gazebo
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/ament_index/resource_index/parent_prefix_path/autocar_gazebo
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/ament_index/resource_index/packages/autocar_gazebo
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/cmake/autocar_gazeboConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/cmake/autocar_gazeboConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/autocar_gazebo/share/autocar_gazebo/package.xml

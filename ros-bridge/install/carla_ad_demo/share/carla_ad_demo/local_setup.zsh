@@ -1,1 +1,0 @@
-/home/hmmdyn/autocar-erp/ros-bridge/build/carla_ad_demo/ament_cmake_environment_hooks/local_setup.zsh

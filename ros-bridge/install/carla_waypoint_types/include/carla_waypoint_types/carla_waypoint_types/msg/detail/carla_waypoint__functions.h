@@ -1,1 +1,0 @@
-/home/hmmdyn/autocar-erp/ros-bridge/build/carla_waypoint_types/rosidl_generator_c/carla_waypoint_types/msg/detail/carla_waypoint__functions.h

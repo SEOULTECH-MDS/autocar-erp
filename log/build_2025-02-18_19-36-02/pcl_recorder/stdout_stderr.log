@@ -1,0 +1,22 @@
+[35m[1mConsolidate compiler generated dependencies of target pcl_recorder_node[0m
+[100%] Built target pcl_recorder_node
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/lib/pcl_recorder/pcl_recorder_node
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder//pcl_recorder.launch
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder//pcl_recorder.launch.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/ament_index/resource_index/package_run_dependencies/pcl_recorder
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/ament_index/resource_index/parent_prefix_path/pcl_recorder
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/ament_index/resource_index/packages/pcl_recorder
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/cmake/pcl_recorderConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/cmake/pcl_recorderConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/pcl_recorder/share/pcl_recorder/package.xml

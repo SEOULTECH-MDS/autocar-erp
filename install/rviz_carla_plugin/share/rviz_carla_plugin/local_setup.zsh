@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/build/rviz_carla_plugin/ament_cmake_environment_hooks/local_setup.zsh

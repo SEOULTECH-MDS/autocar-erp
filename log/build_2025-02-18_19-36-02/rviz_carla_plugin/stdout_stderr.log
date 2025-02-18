@@ -1,0 +1,33 @@
+[ 12%] [34m[1mAutomatic MOC for target rviz_carla_plugin[0m
+[ 12%] Built target rviz_carla_plugin_autogen
+[35m[1mConsolidate compiler generated dependencies of target rviz_carla_plugin[0m
+[100%] Built target rviz_carla_plugin
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin//plugin_description_ros2.xml
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/library_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/library_path.dsv
+-- Up-to-date symlink: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/plugin_description_ros2.xml
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/classes/CarlaControl.png
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/pause.png
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/play.png
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/step_once.png
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/ament_index/resource_index/package_run_dependencies/rviz_carla_plugin
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/ament_index/resource_index/parent_prefix_path/rviz_carla_plugin
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/ament_index/resource_index/packages/rviz_carla_plugin
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/ament_index/resource_index/rviz_common__pluginlib__plugin/rviz_carla_plugin
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/cmake/rviz_carla_pluginConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/cmake/rviz_carla_pluginConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/share/rviz_carla_plugin/package.xml
+-- Installing: /home/hmmdyn/autocar-erp/install/rviz_carla_plugin/lib/librviz_carla_plugin.so
+-- Set runtime path of "/home/hmmdyn/autocar-erp/install/rviz_carla_plugin/lib/librviz_carla_plugin.so" to ""

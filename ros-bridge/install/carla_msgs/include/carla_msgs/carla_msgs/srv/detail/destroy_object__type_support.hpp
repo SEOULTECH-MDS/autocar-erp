@@ -1,1 +1,0 @@
-/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs/rosidl_generator_cpp/carla_msgs/srv/detail/destroy_object__type_support.hpp

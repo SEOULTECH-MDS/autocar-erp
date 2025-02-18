@@ -1,0 +1,21 @@
+running develop
+running egg_info
+writing src/carla_ad_agent.egg-info/PKG-INFO
+writing dependency_links to src/carla_ad_agent.egg-info/dependency_links.txt
+writing entry points to src/carla_ad_agent.egg-info/entry_points.txt
+writing requirements to src/carla_ad_agent.egg-info/requires.txt
+writing top-level names to src/carla_ad_agent.egg-info/top_level.txt
+reading manifest file 'src/carla_ad_agent.egg-info/SOURCES.txt'
+writing manifest file 'src/carla_ad_agent.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/hmmdyn/autocar-erp/install/carla_ad_agent/lib/python3.10/site-packages/carla-ad-agent.egg-link (link to src)
+Installing ad_agent script to /home/hmmdyn/autocar-erp/install/carla_ad_agent/lib/carla_ad_agent
+Installing local_planner script to /home/hmmdyn/autocar-erp/install/carla_ad_agent/lib/carla_ad_agent
+Installing testing_waypoints script to /home/hmmdyn/autocar-erp/install/carla_ad_agent/lib/carla_ad_agent
+
+Installed /home/hmmdyn/autocar-erp/build/carla_ad_agent/src
+running symlink_data
+creating /home/hmmdyn/autocar-erp/install/carla_ad_agent/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/build/carla_ad_agent/resource/carla_ad_agent -> /home/hmmdyn/autocar-erp/install/carla_ad_agent/share/ament_index/resource_index/packages
+symbolically linking /home/hmmdyn/autocar-erp/build/carla_ad_agent/package.xml -> /home/hmmdyn/autocar-erp/install/carla_ad_agent/share/carla_ad_agent
+symbolically linking /home/hmmdyn/autocar-erp/build/carla_ad_agent/launch/carla_ad_agent.launch.py -> /home/hmmdyn/autocar-erp/install/carla_ad_agent/share/carla_ad_agent

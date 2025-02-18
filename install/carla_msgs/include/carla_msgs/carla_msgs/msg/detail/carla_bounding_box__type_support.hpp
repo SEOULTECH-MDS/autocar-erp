@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/build/carla_msgs/rosidl_generator_cpp/carla_msgs/msg/detail/carla_bounding_box__type_support.hpp

@@ -1,0 +1,19 @@
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/launch/click_launch.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/launch/default_launch.py
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/ament_index/resource_index/package_run_dependencies/launches
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/ament_index/resource_index/parent_prefix_path/launches
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/environment/ament_prefix_path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/environment/ament_prefix_path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/environment/path.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/environment/path.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/local_setup.bash
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/local_setup.sh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/local_setup.zsh
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/local_setup.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/package.dsv
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/ament_index/resource_index/packages/launches
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/cmake/launchesConfig.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/cmake/launchesConfig-version.cmake
+-- Symlinking: /home/hmmdyn/autocar-erp/install/launches/share/launches/package.xml

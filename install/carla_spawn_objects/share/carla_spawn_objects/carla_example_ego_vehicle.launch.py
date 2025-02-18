@@ -1,0 +1,1 @@
+/home/hmmdyn/autocar-erp/build/carla_spawn_objects/launch/carla_example_ego_vehicle.launch.py

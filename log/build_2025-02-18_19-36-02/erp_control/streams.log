@@ -1,0 +1,26 @@
+[2.027s] Invoking command in '/home/hmmdyn/autocar-erp/build/erp_control': PYTHONPATH=/home/hmmdyn/autocar-erp/build/erp_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/install/erp_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/build/erp_control/build --no-deps symlink_data
+[2.191s] /home/hmmdyn/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:270: UserWarning: Unknown distribution option: 'tests_require'
+[2.191s]   warnings.warn(msg)
+[2.404s] running develop
+[2.607s] running egg_info
+[2.626s] writing erp_control.egg-info/PKG-INFO
+[2.626s] writing dependency_links to erp_control.egg-info/dependency_links.txt
+[2.626s] writing entry points to erp_control.egg-info/entry_points.txt
+[2.626s] writing requirements to erp_control.egg-info/requires.txt
+[2.627s] writing top-level names to erp_control.egg-info/top_level.txt
+[2.712s] reading manifest file 'erp_control.egg-info/SOURCES.txt'
+[2.712s] writing manifest file 'erp_control.egg-info/SOURCES.txt'
+[2.729s] running build_ext
+[2.729s] Creating /home/hmmdyn/autocar-erp/install/erp_control/lib/python3.10/site-packages/erp-control.egg-link (link to .)
+[2.730s] Installing ERP42_ros2 script to /home/hmmdyn/autocar-erp/install/erp_control/lib/erp_control
+[2.731s] Installing delay script to /home/hmmdyn/autocar-erp/install/erp_control/lib/erp_control
+[2.731s] Installing erp_client script to /home/hmmdyn/autocar-erp/install/erp_control/lib/erp_control
+[2.732s] Installing erp_publish script to /home/hmmdyn/autocar-erp/install/erp_control/lib/erp_control
+[2.732s] Installing simul_plot script to /home/hmmdyn/autocar-erp/install/erp_control/lib/erp_control
+[2.734s] 
+[2.734s] Installed /home/hmmdyn/autocar-erp/build/erp_control
+[2.734s] running symlink_data
+[2.734s] creating /home/hmmdyn/autocar-erp/install/erp_control/share/ament_index/resource_index/packages
+[2.734s] symbolically linking /home/hmmdyn/autocar-erp/build/erp_control/resource/erp_control -> /home/hmmdyn/autocar-erp/install/erp_control/share/ament_index/resource_index/packages
+[2.734s] symbolically linking /home/hmmdyn/autocar-erp/build/erp_control/package.xml -> /home/hmmdyn/autocar-erp/install/erp_control/share/erp_control
+[2.843s] Invoked command in '/home/hmmdyn/autocar-erp/build/erp_control' returned '0': PYTHONPATH=/home/hmmdyn/autocar-erp/build/erp_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/hmmdyn/autocar-erp/install/erp_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/hmmdyn/autocar-erp/build/erp_control/build --no-deps symlink_data

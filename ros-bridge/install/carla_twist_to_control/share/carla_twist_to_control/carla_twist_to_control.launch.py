@@ -1,1 +1,0 @@
-/home/hmmdyn/autocar-erp/ros-bridge/build/carla_twist_to_control/launch/carla_twist_to_control.launch.py

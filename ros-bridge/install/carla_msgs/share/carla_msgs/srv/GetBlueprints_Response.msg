@@ -1,1 +1,0 @@
-/home/hmmdyn/autocar-erp/ros-bridge/build/carla_msgs/rosidl_cmake/srv/GetBlueprints_Response.msg
