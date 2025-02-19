@@ -18,7 +18,7 @@ class Localisation(Node):
         self.localisation_pub = self.create_publisher(State2D, '/autocar/state2D', 10)
 
         # Initialise subscribers
-        self.odom_sub = self.create_subscription(Odometry, '/carla/ego_vehicle/odometry', self.vehicle_state_cb, 10)
+        self.odom_sub = self.create_subscription(Odometry, '/autocar/odom', self.vehicle_state_cb, 10)
 
         # Load parameters with proper type definition
         try:
@@ -33,18 +33,27 @@ class Localisation(Node):
         self.state = None
 
     def vehicle_state_cb(self, msg):
-        # 차량의 위치 정보를 State2D 메시지로 변환
-        state2d = State2D()
-        state2d.pose.x = msg.pose.pose.position.x
-        state2d.pose.y = msg.pose.pose.position.y
-        state2d.pose.theta = 2.0 * np.arctan2(msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
-        
-        # 속도 정보 설정
-        state2d.twist.x = msg.twist.twist.linear.x
-        state2d.twist.y = msg.twist.twist.linear.y
-        state2d.twist.w = msg.twist.twist.angular.z
+        self.state = msg
+        self.update_state()
 
-        # 퍼블리시
+    # Gets vehicle position from Gazebo and publishes data
+    def update_state(self):
+
+        # Define vehicle pose x,y, theta
+        state2d = State2D()
+        state2d.pose.x = self.state.pose.pose.position.x
+        state2d.pose.y = self.state.pose.pose.position.y
+        state2d.pose.theta = 2.0 * np.arctan2(self.state.pose.pose.orientation.z, self.state.pose.pose.orientation.w)
+        
+        # Aligning heading to y-axis, accounts for double rotation error
+        if state2d.pose.theta < 0.0:
+            state2d.pose.theta += 2.0 * np.pi
+        
+        # Define linear velocity x,y and angular velocity w
+        state2d.twist.x = self.state.twist.twist.linear.x
+        state2d.twist.y = self.state.twist.twist.linear.y
+        state2d.twist.w = -self.state.twist.twist.angular.z
+
         self.localisation_pub.publish(state2d)
 
 def main(args=None):
