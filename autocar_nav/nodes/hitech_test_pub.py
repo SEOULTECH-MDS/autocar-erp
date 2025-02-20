@@ -17,8 +17,8 @@ class hitech_test_pub(Node):
     # hitech 뒤쪽 좌표 를 GPS 메시지로 퍼블리싱
     def publish_gps(self):
         msg = NavSatFix()
-        msg.latitude = 37.63187798
-        msg.longitude = 127.07597029
+        msg.latitude = 37.632010 #37.63187798
+        msg.longitude = 127.076008 #127.07597029
         self.publisher.publish(msg)
         self.get_logger().info(f"GPS published: lat={msg.latitude}, lon={msg.longitude}")
 
