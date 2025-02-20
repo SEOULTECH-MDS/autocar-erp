@@ -8,7 +8,7 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
 from std_msgs.msg import Float64
-#from ackermann_msgs.msg import AckermannDriveStamped
+from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import Marker
 
 from autocar_msgs.msg import Path2D, State2D
@@ -22,6 +22,7 @@ class PathTracker(Node):
         # 퍼블리셔 생성
         self.tracker_pub = self.create_publisher(Twist, '/autocar/cmd_vel', 10)
         self.steer_viz_pub = self.create_publisher(Marker, '/autocar/viz_steer', 10)
+        self.erp_pub = self.create_publisher(AckermannDriveStamped, '/erp/cmd_vel', 10)
 
         self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte_error', 10)
         self.h_error_pub = self.create_publisher(Float64, '/autocar/he_error', 10)
@@ -131,6 +132,12 @@ class PathTracker(Node):
         cmd_vel.linear.x = velocity  # 속도 설정
         cmd_vel.angular.z = steering_angle  # 조향 각도 설정
 
+
+        cmd = AckermannDriveStamped()
+        cmd.drive.speed = velocity
+        cmd.drive.steering_angle = steering_angle
+        
+        self.erp_pub.publish(cmd)
         self.tracker_pub.publish(cmd_vel)  # /autocar/cmd_vel 퍼블리시
         self.ct_error_pub.publish(Float64(data=self.crosstrack_error))
         self.h_error_pub.publish(Float64(data=self.heading_error))
