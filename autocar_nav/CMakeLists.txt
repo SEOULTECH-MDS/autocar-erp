@@ -43,6 +43,8 @@ install(PROGRAMS
   nodes/gps_sub.py
   nodes/autocar_tf_ros2.py
   nodes/hitech_test_pub.py
+  nodes/autocar_tf_ros2.py
+  nodes/mpc_tracker.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

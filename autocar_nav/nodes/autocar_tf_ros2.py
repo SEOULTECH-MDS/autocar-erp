@@ -43,6 +43,8 @@ class AutocarTF(Node):
         
         self.flag_world_to_map = False
 
+        self.get_logger().info("Autocar TF node has been started.")
+
     def callback_local_origin(self, local_origin):
         if not self.flag_world_to_map:
             lat = local_origin.latitude
@@ -73,6 +75,8 @@ class AutocarTF(Node):
         t.transform.rotation = quaternion_from_euler(0, 0, global_location_msg.pose.theta)
 
         self.tf_br_map_to_base_link.sendTransform(t)
+
+        self.get_logger().info(f"Global location: x={global_location_msg.pose.x}, y={global_location_msg.pose.y}, theta={global_location_msg.pose.theta}")
 
 def main(args=None):
     rclpy.init(args=args)

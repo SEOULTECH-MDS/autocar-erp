@@ -9,7 +9,6 @@ from std_msgs.msg import Float64
 
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav import generate_cubic_path, yaw_to_quaternion
-# from autocar_nav import utm_to_baselink
 
 
 class LocalPathPlanner(Node):
@@ -99,7 +98,7 @@ class LocalPathPlanner(Node):
         Default path draw across waypoints
         '''
 
-        cx, cy, cyaw, _ = generate_cubic_path(self.ax, self.ay, self.ds)
+        cx, cy, cyaw, ck = generate_cubic_path(self.ax, self.ay, self.ds)
 
         path_length = min(len(cx), len(cy), len(cyaw))
 

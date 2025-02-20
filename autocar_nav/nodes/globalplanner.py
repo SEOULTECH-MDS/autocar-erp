@@ -6,12 +6,13 @@ import numpy as np
 import pandas as pd
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import Pose, Pose2D, PoseArray, Point
+from geometry_msgs.msg import Pose, Pose2D, PoseArray, Point, Vector3
+from std_msgs.msg import ColorRGBA
 from rclpy.node import Node
 
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav.osm_handler import OSMHandler
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 
 
 
@@ -26,8 +27,7 @@ class GlobalPathPlanner(Node):
         # Initialise publisher(s)
         self.goals_pub = self.create_publisher(Path2D, '/autocar/goals', 10)
         self.goals_viz_pub = self.create_publisher(PoseArray, '/autocar/viz_goals', 10)
-
-        self.waypoints_viz_pub = self.create_publisher(Marker, '/autocar/viz_waypoints', 10)
+        self.waypoints_viz_pub = self.create_publisher(MarkerArray, '/autocar/viz_waypoints', 10)
 
         # Initialise suscriber(s)
         self.localisation_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_state_cb, 10)
@@ -37,8 +37,8 @@ class GlobalPathPlanner(Node):
             self.declare_parameters(
                 namespace='',
                 parameters=[
-                    ('waypoints_ahead', 3),
-                    ('waypoints_behind', 2),
+                    ('waypoints_ahead', 10),
+                    ('waypoints_behind', 5),
                     ('passed_threshold', 0.25),
                     ('waypoints', None),
                     ('centreofgravity_to_frontaxle', 1.483)
@@ -96,34 +96,35 @@ class GlobalPathPlanner(Node):
         self.theta = None
 
     def viz_waypoints(self):
-        marker = Marker()
-        marker.header.frame_id = "world"
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.ns = "osm_nodes"
-        marker.id = 0
-        marker.type = Marker.SPHERE_LIST
-        marker.action = Marker.ADD
+        markers = MarkerArray()
+        for i, (x, y) in enumerate(zip(self.ax, self.ay)):
+            marker = Marker()
+            marker.header.frame_id = "world"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "osm_nodes"
+            marker.id = i  # 각 마커마다 다른 ID 필요
+            marker.type = Marker.SPHERE  # 개별 구체
+            marker.action = Marker.ADD
 
-        marker.scale.x = 0.3  # x, y, z 크기를 동일하게 설정하면 구 형태가 됨
-        marker.scale.y = 0.3
-        marker.scale.z = 0.3
+            # 개별 크기 지정
+            marker.scale.x = 0.05
+            marker.scale.y = 0.05
+            marker.scale.z = 0.05
 
-        marker.color.a = 1.0
-        marker.color.r = 0.0
-        marker.color.g = 0.0
-        marker.color.b = 1.0
+            # 색상 지정
+            marker.color = ColorRGBA(r=1.0, g=1.0, b=0.0, a=1.0)  # 변경: 노란색
 
-        # marker.lifetime = Duration(sec=0, nanosec=0)
+            # 좌표 설정
+            marker.pose.position.x = x
+            marker.pose.position.y = y
+            marker.pose.position.z = 0.0  # 2D 평면 유지
 
-        for x, y in zip(self.ax, self.ay):
-            point = Point()
-            point.x = x
-            point.y = y
-            point.z = 0.0
-            marker.points.append(point)
+            markers.markers.append(marker)
 
-        self.waypoints_viz_pub.publish(marker)
-        self.get_logger().info("Published OSM Nodes to RViz")
+        self.waypoints_viz_pub.publish(markers)
+        self.get_logger().info("Published OSM Nodes to RViz as individual spheres")
+
+
     
     def vehicle_state_cb(self, msg):
         ''' 
