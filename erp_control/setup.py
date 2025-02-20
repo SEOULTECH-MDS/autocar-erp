@@ -24,7 +24,8 @@ setup(
         'erp_client = erp_control.erp_client:main',
         'ERP42_ros2 = erp_control.ERP42_ros2:main',
         'simul_plot = erp_control.simul_plot:main',
-        'delay = erp_control.delay_test:main'
+        'delay = erp_control.delay_test:main',
+        'erp_test = erp_control.erp42_ros2_test:main',
         ],
     },
 )
