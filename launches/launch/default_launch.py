@@ -93,6 +93,18 @@ def generate_launch_description():
             name = 'path_tracker',
             executable = 'tracker.py',
             parameters = [navconfig]
+        ),
+
+        Node( # 카메라 연결
+        package='perception',
+        executable='stopline_camera',
+        name='stopline_camera'
+        ),
+
+        Node( # 정지선 인식
+        package='perception',
+        executable='stopline_detection',
+        name='stopline_detection'
         )
     ])
 
