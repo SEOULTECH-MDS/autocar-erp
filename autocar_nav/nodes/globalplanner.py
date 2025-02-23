@@ -8,12 +8,13 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Pose, Pose2D, PoseArray, Point, Vector3
 from std_msgs.msg import ColorRGBA
+from builtin_interfaces.msg import Duration
 from rclpy.node import Node
 
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav.osm_handler import OSMHandler
 from visualization_msgs.msg import Marker, MarkerArray
-
+from autocar_nav.way_selector import WaySelector
 
 
 class GlobalPathPlanner(Node):
@@ -38,7 +39,7 @@ class GlobalPathPlanner(Node):
                 namespace='',
                 parameters=[
                     ('waypoints_ahead', 10),
-                    ('waypoints_behind', 5),
+                    ('waypoints_behind', 3),
                     ('passed_threshold', 0.25),
                     ('waypoints', None),
                     ('centreofgravity_to_frontaxle', 1.483)
@@ -97,6 +98,7 @@ class GlobalPathPlanner(Node):
 
     def viz_waypoints(self):
         markers = MarkerArray()
+
         for i, (x, y) in enumerate(zip(self.ax, self.ay)):
             marker = Marker()
             marker.header.frame_id = "world"
@@ -105,11 +107,11 @@ class GlobalPathPlanner(Node):
             marker.id = i  # 각 마커마다 다른 ID 필요
             marker.type = Marker.SPHERE  # 개별 구체
             marker.action = Marker.ADD
-
+            
             # 개별 크기 지정
-            marker.scale.x = 0.05
-            marker.scale.y = 0.05
-            marker.scale.z = 0.05
+            marker.scale.x = 0.1
+            marker.scale.y = 0.1
+            marker.scale.z = 0.1
 
             # 색상 지정
             marker.color = ColorRGBA(r=1.0, g=1.0, b=0.0, a=1.0)  # 변경: 노란색
@@ -125,7 +127,6 @@ class GlobalPathPlanner(Node):
         self.get_logger().info("Published OSM Nodes to RViz as individual spheres")
 
 
-    
     def vehicle_state_cb(self, msg):
         ''' 
             Callback function to update vehicle state 

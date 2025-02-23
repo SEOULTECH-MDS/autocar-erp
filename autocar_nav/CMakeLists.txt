@@ -36,15 +36,15 @@ install(DIRECTORY
 
 install(PROGRAMS
   nodes/globalplanner.py
-  nodes/localisation.py
+  nodes/localization.py
   nodes/localplanner.py
-  nodes/clickplanner.py
   nodes/tracker.py
   nodes/gps_sub.py
   nodes/autocar_tf_ros2.py
   nodes/hitech_test_pub.py
   nodes/autocar_tf_ros2.py
   nodes/mpc_tracker.py
+  nodes/global_click_planner.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

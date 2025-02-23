@@ -11,6 +11,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -23,6 +24,12 @@ include_directories(include)
 
 add_executable(bof src/bof.cpp)
 ament_target_dependencies(bof rclcpp std_msgs nav_msgs tf2 tf2_ros geometry_msgs sensor_msgs)
+
+
+install(
+  PROGRAMS
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(TARGETS
   bof
