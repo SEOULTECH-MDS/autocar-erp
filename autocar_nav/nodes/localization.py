@@ -8,14 +8,14 @@ from rclpy.node import Node
 from autocar_msgs.msg import State2D
 
 
-class Localisation(Node):
+class Localization(Node):
 
     def __init__(self):
 
-        super().__init__('localisation')
+        super().__init__('localization')
 
         # Initialise publishers
-        self.localisation_pub = self.create_publisher(State2D, '/autocar/state2D', 10)
+        self.localization_pub = self.create_publisher(State2D, '/autocar/state2D', 10)
 
         # Initialise subscribers
         self.odom_sub = self.create_subscription(Odometry, '/autocar/odom', self.vehicle_state_cb, 10)
@@ -54,7 +54,7 @@ class Localisation(Node):
         state2d.twist.y = self.state.twist.twist.linear.y
         state2d.twist.w = -self.state.twist.twist.angular.z
 
-        self.localisation_pub.publish(state2d)
+        self.localization_pub.publish(state2d)
 
 def main(args=None):
 
@@ -63,13 +63,13 @@ def main(args=None):
 
     try:
         # Initialise the class
-        localisation = Localisation()
+        localization = Localization()
 
         # Stop the node from exiting
-        rclpy.spin(localisation)
+        rclpy.spin(localization)
 
     finally:
-        localisation.destroy_node()
+        localization.destroy_node()
         rclpy.shutdown()
 
 if __name__=="__main__":

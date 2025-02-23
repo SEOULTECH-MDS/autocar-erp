@@ -7,6 +7,8 @@ from nav_msgs.msg import Path
 from rclpy.node import Node
 from std_msgs.msg import Float64
 
+from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Vector3
+
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav import generate_cubic_path, yaw_to_quaternion
 
@@ -26,7 +28,7 @@ class LocalPathPlanner(Node):
         self.target_vel_pub = self.create_publisher(Float64, '/autocar/target_velocity', 10)
 
         # Initialise subscribers
-        self.goals_sub = self.create_subscription(Path2D, '/autocar/goals', self.goals_cb, 10)
+        self.goals_sub = self.create_subscription(PoseArray, '/autocar/goals', self.goals_cb, 10)
         self.localisation_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_state_cb, 10)
 
         # Load parameters
@@ -72,19 +74,19 @@ class LocalPathPlanner(Node):
 
     def goals_cb(self, msg):
         '''
-        Callback function to recieve immediate goals from global planner in global frame
+        Callback function to receive immediate goals from global planner in global frame
         '''
         self.ax = []
         self.ay = []
         
         for i in range(0, len(msg.poses)):
-            px = msg.poses[i].x
-            py = msg.poses[i].y
+            px = msg.poses[i].position.x  # Pose 객체의 position.x
+            py = msg.poses[i].position.y  # Pose 객체의 position.y
             self.ax.append(px)
             self.ay.append(py)
 
         self.publish_path()
-
+        
     def vehicle_state_cb(self, msg):
         ''' 
         Callback function to recieve vehicle state information from localization in global frame
