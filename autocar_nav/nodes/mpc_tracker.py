@@ -10,9 +10,11 @@ from rclpy.node import Node
 from std_msgs.msg import Float64
 from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import Marker
+from nav_msgs.msg import Odometry, Path
 
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav import normalise_angle, yaw_to_quaternion
+from autocar_nav.euler_from_quaternion import euler_from_quaternion
 from autocar_nav.mpc import State, calc_ref_trajectory, iterative_linear_mpc_control, update_state, calc_nearest_index
 
 class PathTracker(Node):
@@ -30,7 +32,7 @@ class PathTracker(Node):
 
         # 서브스크라이버 생성
         self.localisation_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_state_cb, 10)
-        self.path_sub = self.create_subscription(Path2D, '/autocar/path', self.path_cb, 10)
+        self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
 
         # 변수 초기화
         self.x = None
@@ -73,9 +75,11 @@ class PathTracker(Node):
         self.cy = []
         self.cyaw = []
         for i in range(len(msg.poses)):
-            px = msg.poses[i].x
-            py = msg.poses[i].y
-            ptheta = msg.poses[i].theta
+            px = msg.poses[i].pose.position.x
+            py = msg.poses[i].pose.position.y
+            quaternion = msg.poses[i].pose.orientation
+            ptheta = euler_from_quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w)
+            
             self.cx.append(px)
             self.cy.append(py)
             self.cyaw.append(ptheta) 

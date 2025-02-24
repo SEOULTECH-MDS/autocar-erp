@@ -2,25 +2,25 @@
 # -*- coding: utf-8 -*-
 import os
 from ament_index_python.packages import get_package_share_directory
+import rclpy
 from rclpy.node import Node
-
-from autocar_nav.stopwatch import StopWatch
 import numpy as np
 from scipy.spatial import KDTree
 
+from autocar_nav.stopwatch import StopWatch
 from autocar_nav.osm_handler import OSMHandler
 from autocar_nav.keyboard_input import KeyboardInput
 from autocar_nav.way_selector import WaySelector
-from autocar_msgs.msg import State2D
-from tf2_ros import TransformListener, Buffer
-import tf2_geometry_msgs
+from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 
-import rclpy
+from autocar_msgs.msg import State2D
 from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Vector3
 from visualization_msgs.msg import MarkerArray, Marker
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String, Float32, Bool, Int8
-from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
+
+from tf2_ros import TransformListener, Buffer
+import tf2_geometry_msgs
 
 TRAFFIC_DETECT_DIST = 20 # [m], 정지선으로부터 몇 m 이내에 들어와야 신호등 인식을 시작할지
 TRAFFIC_STOP_DIST = 8 # [m], 정지선으로부터 몇 m 이내에 들어와야 신호등을 통해 정지를 할지
