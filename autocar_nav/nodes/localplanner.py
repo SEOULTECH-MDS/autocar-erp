@@ -76,6 +76,11 @@ class LocalPathPlanner(Node):
         '''
         Callback function to receive immediate goals from global planner in global frame
         '''
+        # msg.poses가 비어 있는지 확인
+        if not msg.poses:  # 또는 len(msg.poses) == 0
+            self.get_logger().info("global path가 없습니다. local path를 생성할 수 없습니다.")
+            return
+
         self.ax = []
         self.ay = []
         
