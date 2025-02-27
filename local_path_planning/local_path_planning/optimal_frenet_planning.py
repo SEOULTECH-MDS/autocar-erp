@@ -51,7 +51,7 @@ class OptimalFrenetPlanning(Node):
 
         # Subscribers
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/global_waypoints',  self.callback_near_ways, 10)
-        self.location_sub = self.create_subscription(State2D, '/autocar/state2D', self.callback_local_path_planning, 10)
+        self.location_sub = self.create_subscription(Odometry, '/autocar/location', self.callback_local_path_planning, 10)
 
         # self.location_sub = self.create_subscription(Odometry, '/location_corrected',  self.callback_local_path_planning, 10)
         # self.obstacle_sub = self.create_subscription(PoseArray, '/obstacles_utm', self.callback_obstacles, 10)
@@ -69,8 +69,9 @@ class OptimalFrenetPlanning(Node):
     
     def callback_local_path_planning(self, location_msg):
         # 현재 차량 위치
-        car_x, car_y = location_msg.pose.x, location_msg.pose.y
-        car_yaw = location_msg.pose.theta
+        car_x, car_y = location_msg.pose.pose.position.x, location_msg.pose.pose.position.y
+        car_yaw = euler_from_quaternion(location_msg.pose.pose.orientation.x, location_msg.pose.pose.orientation.y,\
+                                         location_msg.pose.pose.orientation.z, location_msg.pose.pose.orientation.w)
         # car_x, car_y = location_msg.pose.pose.position.x, location_msg.pose.pose.position.y
         # car_yaw = euler_from_quaternion([location_msg.pose.pose.orientation.x, location_msg.pose.pose.orientation.y,\
         #                                  location_msg.pose.pose.orientation.z, location_msg.pose.pose.orientation.w])[2] 기존코드
