@@ -137,7 +137,7 @@ class Localization(Node):
         self.stoplines_sub = self.create_subscription(MarkerArray, '/stoplines', self.callback_stopline, 10)
         
         #global local 횡방향 종방향 에러 sub
-        self.local_cte_sub = self.create_subscription(Float64, '/autocar/cte_', self.callback_cte, 10)
+        self.local_cte_sub = self.create_subscription(Float64, '/autocar/cte', self.callback_cte, 10)
         self.local_ate_sub = self.create_subscription(Float64, '/autocar/he', self.callback_ate, 10)
         
         # CARLA
@@ -265,6 +265,11 @@ class Localization(Node):
         # self.location_corrected_pub.publish(self.location_corrected)
         # self.location_dr_pub.publish(self.location_dr)
         self.location_pub.publish(self.location) 
+        q = self.location.pose.pose.orientation
+        self.corrected_yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+        self.get_logger().info(f"Corrected Global location: x={self.location.pose.pose.position.x}, \
+                               y={self.location.pose.pose.position.y}, \
+                                yaw={self.corrected_yaw}")
         
         lateral_error_msg = Float64()
         lateral_error_msg.data = self.lateral_error

@@ -63,9 +63,10 @@ class PathTracker(Node):
         self.lock.acquire()
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
-        self.yaw = euler_from_quaternion(msg.pose.pose.orientation)
-        self.vel = np.sqrt((msg.twist.x**2.0) + (msg.twist.y**2.0))  # 속도 계산
-        self.yawrate = msg.twist.w
+        q = msg.pose.pose.orientation
+        self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+        self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
+        self.yawrate = msg.twist.twist.angular.z
         if self.cyaw:
             self.target_index_calculator()
         self.lock.release()

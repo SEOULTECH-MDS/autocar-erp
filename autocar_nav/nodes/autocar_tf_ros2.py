@@ -7,7 +7,9 @@ from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped, TransformStamped, Quaternion, Vector3
 from sensor_msgs.msg import NavSatFix
 from autocar_msgs.msg import State2D
+from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster, TransformListener, Buffer
+from autocar_nav.euler_from_quaternion import euler_from_quaternion
 
 # 위도, 경도를 UTM 좌표로 변환하는 함수
 def latlon_to_utm(lat, lon):
@@ -16,20 +18,20 @@ def latlon_to_utm(lat, lon):
     return latlon_to_utm(lon, lat)
 
 # 오일러 각을 쿼터니언으로 변환하는 함수
-def quaternion_from_euler(roll, pitch, yaw):
-    cy = np.cos(yaw * 0.5)
-    sy = np.sin(yaw * 0.5)
-    cp = np.cos(pitch * 0.5)
-    sp = np.sin(pitch * 0.5)
-    cr = np.cos(roll * 0.5)
-    sr = np.sin(roll * 0.5)
+# def quaternion_from_euler(roll, pitch, yaw):
+#     cy = np.cos(yaw * 0.5)
+#     sy = np.sin(yaw * 0.5)
+#     cp = np.cos(pitch * 0.5)
+#     sp = np.sin(pitch * 0.5)
+#     cr = np.cos(roll * 0.5)
+#     sr = np.sin(roll * 0.5)
     
-    q = Quaternion()
-    q.w = cr * cp * cy + sr * sp * sy
-    q.x = sr * cp * cy - cr * sp * sy
-    q.y = cr * sp * cy + sr * cp * sy
-    q.z = cr * cp * sy - sr * sp * cy
-    return q
+#     q = Quaternion()
+#     q.w = cr * cp * cy + sr * sp * sy
+#     q.x = sr * cp * cy - cr * sp * sy
+#     q.y = cr * sp * cy + sr * cp * sy
+#     q.z = cr * cp * sy - sr * sp * cy
+#     return q
 
 class AutocarTF(Node):
     def __init__(self):
@@ -39,7 +41,7 @@ class AutocarTF(Node):
         self.tf_br_map_to_base_link = TransformBroadcaster(self)
 
         self.local_origin_sub = self.create_subscription(NavSatFix, '/ublox_gps', self.callback_local_origin, 10)
-        self.global_location_sub = self.create_subscription(State2D, '/autocar/state2D', self.callback_global_location, 10)
+        self.global_location_sub = self.create_subscription(Odometry, '/autocar/location', self.callback_global_location, 10)
         
         self.flag_world_to_map = False
 
@@ -68,15 +70,19 @@ class AutocarTF(Node):
         t.child_frame_id = "base_link"
 
         t.transform.translation = Vector3(
-            x=global_location_msg.pose.x,
-            y=global_location_msg.pose.y,
+            x=global_location_msg.pose.pose.position.x,
+            y=global_location_msg.pose.pose.position.y,
             z=0.0  
         )
-        t.transform.rotation = quaternion_from_euler(0, 0, global_location_msg.pose.theta)
+        t.transform.rotation = global_location_msg.pose.pose.orientation
 
         self.tf_br_map_to_base_link.sendTransform(t)
 
-        self.get_logger().info(f"Global location: x={global_location_msg.pose.x}, y={global_location_msg.pose.y}, theta={global_location_msg.pose.theta}")
+        q = global_location_msg.pose.pose.orientation
+        global_yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+        self.get_logger().info(f"Global location: x={global_location_msg.pose.pose.position.x}, \
+                               y={global_location_msg.pose.pose.position.y}, \
+                                yaw={global_yaw}")
 
 def main(args=None):
     rclpy.init(args=args)
