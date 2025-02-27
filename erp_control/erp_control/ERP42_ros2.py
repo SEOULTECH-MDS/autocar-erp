@@ -39,7 +39,7 @@ cur_ENC_backup=0
 class erp42(Node):
   def __init__(self):
     super().__init__('erp42')
-    self.ackermann_subscriber = self.create_subscription(AckermannDriveStamped, '/autocar/autocar_cmd', self.acker_callback, 10)
+    self.ackermann_subscriber = self.create_subscription(AckermannDriveStamped, '/erp/cmd_vel', self.acker_callback, 10)
     self.state_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_callback, 10)
     # self.state_sub = self.create_subscription(Odometry, '/data/encoder_vel_two', self.vehicle_callback, 10)
     #self.ser = serial.serial_for_url("/dev/ttyERP", baudrate=115200, timeout=1)
@@ -148,8 +148,8 @@ class erp42(Node):
     # print(vals[8], vals[9])
     # print(hex(vals[8]), hex(vals[9]))
     # print(vals[8].to_bytes(1, byteorder='big'),vals[9].to_bytes(1, byteorder='big'))
-    #for i in range(len(vals)):
-      #self.ser.write(vals[i].to_bytes(1, byteorder='big')) # send!
+    for i in range(len(vals)):
+      self.ser.write(vals[i].to_bytes(1, byteorder='big')) # send!
 
     # for i in range(8, 10):
     # 	self.ser.write(vals[i].to_bytes(1, byteorder='big')) # send!

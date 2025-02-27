@@ -26,14 +26,14 @@ class PathTracker(Node):
         self.steer_viz_pub = self.create_publisher(Marker, '/autocar/viz_steer', 10)
         self.erp_pub = self.create_publisher(AckermannDriveStamped, '/erp/cmd_vel', 10)
 
-        self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte_error', 10)
-        self.h_error_pub = self.create_publisher(Float64, '/autocar/he_error', 10)
+        self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte', 10)
+        self.h_error_pub = self.create_publisher(Float64, '/autocar/he', 10)
         self.lateral_ref_pub = self.create_publisher(PoseStamped, '/autocar/lateral_ref', 10)
 
         self.state_prediction_pub = self.create_publisher(MarkerArray, '/autocar/state_prediction', 10)
 
         # 서브스크라이버 생성
-        self.localisation_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_state_cb, 10)
+        self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
 
         # 변수 초기화
@@ -61,9 +61,9 @@ class PathTracker(Node):
     # 차량 상태 콜백 함수 (현재 차량 위치 및 속도 업데이트)
     def vehicle_state_cb(self, msg):
         self.lock.acquire()
-        self.x = msg.pose.x
-        self.y = msg.pose.y
-        self.yaw = msg.pose.theta
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        self.yaw = euler_from_quaternion(msg.pose.pose.orientation)
         self.vel = np.sqrt((msg.twist.x**2.0) + (msg.twist.y**2.0))  # 속도 계산
         self.yawrate = msg.twist.w
         if self.cyaw:
