@@ -266,7 +266,8 @@ class Localization(Node):
         # self.location_dr_pub.publish(self.location_dr)
         self.location_pub.publish(self.location) 
         q = self.location.pose.pose.orientation
-        self.corrected_yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+        self.corrected_yaw = euler_from_quaternion(self.gps_pose.pose.pose.orientation.x, self.gps_pose.pose.pose.orientation.y, \
+                                           self.gps_pose.pose.pose.orientation.z, self.gps_pose.pose.pose.orientation.w)
         self.get_logger().info(f"Corrected Global location: x={self.location.pose.pose.position.x}, \
                                y={self.location.pose.pose.position.y}, \
                                 yaw={self.corrected_yaw}")
@@ -316,8 +317,8 @@ class Localization(Node):
         
         
     def callback_imu(self,imu_msg):
-        local_yaw = euler_from_quaternion([imu_msg.orientation.x, imu_msg.orientation.y,\
-                                          imu_msg.orientation.z, imu_msg.orientation.w])[2]
+        local_yaw = euler_from_quaternion(imu_msg.orientation.x, imu_msg.orientation.y,\
+                                          imu_msg.orientation.z, imu_msg.orientation.w)
         global_yaw = local_yaw + self.yaw_offset
         self.global_yaw = normalize_angle(global_yaw)
         self.car_pose_dr[2, 0] = self.global_yaw
@@ -343,11 +344,11 @@ class Localization(Node):
         
         
     def callback_init_orientation(self, init_pose_msg):
-        global_yaw = euler_from_quaternion([init_pose_msg.pose.pose.orientation.x, init_pose_msg.pose.pose.orientation.y, \
-                                           init_pose_msg.pose.pose.orientation.z, init_pose_msg.pose.pose.orientation.w])[2]
+        global_yaw = euler_from_quaternion(init_pose_msg.pose.pose.orientation.x, init_pose_msg.pose.pose.orientation.y, \
+                                           init_pose_msg.pose.pose.orientation.z, init_pose_msg.pose.pose.orientation.w)
        
-        local_yaw = euler_from_quaternion([self.gps_pose.pose.pose.orientation.x, self.gps_pose.pose.pose.orientation.y,\
-                                          self.gps_pose.pose.pose.orientation.z, self.gps_pose.pose.pose.orientation.w])[2]
+        local_yaw = euler_from_quaternion(self.gps_pose.pose.pose.orientation.x, self.gps_pose.pose.pose.orientation.y,\
+                                          self.gps_pose.pose.pose.orientation.z, self.gps_pose.pose.pose.orientation.w)
 
         self.yaw_offset += global_yaw - local_yaw
     
