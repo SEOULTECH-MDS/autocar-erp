@@ -15,7 +15,7 @@ from autocar_nav import normalise_angle
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # u = [v, steer]
-T = 5  # horizon length
+T = 5  # horizon length 5s: default
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
@@ -44,7 +44,7 @@ DT = 0.2  # [s] time tick
 # TREAD = 0.7  # [m]
 WB = 1.566  # [m] default : 2.5, ERP42 : 1.566
 
-MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
+MAX_STEER = np.deg2rad(30.0)  # maximum steering angle [rad]  default: 45
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
 MAX_SPEED = 55.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = -20.0 / 3.6  # minimum speed [m/s]
