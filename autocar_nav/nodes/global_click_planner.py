@@ -81,7 +81,9 @@ class GlobalPathPlanning(Node):
         
         # =================== 주행 중 =======================
         # Subscribers
-        self.location_sub = self.create_subscription(State2D, '/autocar/state2D', self.callback_location, 10) # 종방향 에러 계산할 때
+        #self.location_sub = self.create_subscription(State2D, '/autocar/state2D', self.callback_location, 10) # 종방향 에러 계산할 때
+        self.location_sub = self.create_subscription(Odometry, '/autocar/location', self.callback_location, 10) # 종방향 에러 계산할 때
+
         # self.is_avoiding_sub = self.create_subscription(Bool,'/is_avoiding', self.callback_is_avoiding, 10)
         # self.traffic_sub = self.create_subscription(String, '/traffic_sign',  self.callback_traffic, 10)
 
@@ -234,7 +236,8 @@ class GlobalPathPlanning(Node):
         return
     
     def callback_location(self, location_msg):
-        self.location = (location_msg.pose.x, location_msg.pose.y)
+        self.location = (location_msg.pose.pose.position.x, location_msg.pose.pose.position.x)
+        #self.location = (location_msg.pose.x, location_msg.pose.y)
         return
     
     # def callback_is_avoiding(self, is_avoiding_msg):

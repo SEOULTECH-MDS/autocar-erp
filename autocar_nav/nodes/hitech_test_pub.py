@@ -9,7 +9,7 @@ from sensor_msgs.msg import NavSatFix
 class hitech_test_pub(Node):
     def __init__(self):
         super().__init__('hitech_test_pub')
-        self.publisher = self.create_publisher(NavSatFix, '/ublox_gps', 10)
+        self.publisher = self.create_publisher(NavSatFix, '/ublox_gps/fix', 10)
         self.get_logger().info("hitech_test_pub START")
 
         self.create_timer(1/20, self.publish_gps)   # 20Hz 주기로 publish_gps 콜백 함수 호출

@@ -14,7 +14,7 @@ from sensor_msgs.msg import NavSatFix, Imu
 from geometry_msgs.msg import PoseWithCovarianceStamped, QuaternionStamped, PoseArray,TwistWithCovarianceStamped
 from visualization_msgs.msg import MarkerArray
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float32, Int16, Int32, Float32MultiArray, String, Bool
+from std_msgs.msg import Float64, Int16, Int32, Float64MultiArray, String, Bool
 from ackermann_msgs.msg import AckermannDrive
 # from carla_msgs.msg import CarlaEgoVehicleControl
 
@@ -108,7 +108,7 @@ class Localization(Node):
         
         self.is_go = True
 
-        
+        # ====================== subscription ======================
         # way change signal sub
         self.way_change_signal_sub = self.create_subscription(Bool, '/way_change_signal', self.callback_way_change_signal, 10)
 
@@ -117,17 +117,11 @@ class Localization(Node):
         self.imu_sub = self.create_subscription(Imu, '/imu/data', self.callback_imu, 10)
         
         # 엔코더, gps 속도
-        self.speed_sub = self.create_subscription(Float32,  "/cur_speed", self.callback_speed, 10)
+        self.speed_sub = self.create_subscription(Float64,  "/cur_speed", self.callback_speed, 10)
         # self.speed_sub = self.create_subscription(TwistWithCovarianceStamped, "/ublox_gps/fix_velocity", self.callback_speed, 10)
         
         #erp cmd
-        self.cmd_sub = self.create_subscription(AckermannDrive, '/erp_command', self.callback_cmd, 10)
-
-        # CARLA
-        # self.gps_sub = self.create_subscription(NavSatFix, '/carla/ego_vehicle/gnss', self.callback_gps, 10)
-        # self.imu_sub = self.create_subscription(Imu, '/carla/ego_vehicle/imu', self.callback_imu, 10)
-        # self.speed_sub = self.create_subscription(Float32, '/carla/ego_vehicle/speedometer', self.callback_speed), 10
-        # self.cmd_sub = self.cmd_sub = self.create_subscription(CarlaEgoVehicleControl, '/carla/ego_vehicle/vehicle_control_cmd', self.callback_cmd, 10)
+        self.cmd_sub = self.create_subscription(AckermannDrive, '/erp/cmd_vel', self.callback_cmd, 10)
 
         # 현재 주행 모드 가져오기
         self.driving_mode_sub = self.create_subscription(String, '/driving_mode',  self.callback_driving_mode, 10)
@@ -143,19 +137,26 @@ class Localization(Node):
         self.stoplines_sub = self.create_subscription(MarkerArray, '/stoplines', self.callback_stopline, 10)
         
         #global local 횡방향 종방향 에러 sub
-        self.local_cte_sub = self.create_subscription(Float32, '/ct_error_local', self.callback_cte, 10)
-        self.local_ate_sub = self.create_subscription(Float32, '/at_error_local', self.callback_ate, 10)
+        self.local_cte_sub = self.create_subscription(Float64, '/autocar/cte_', self.callback_cte, 10)
+        self.local_ate_sub = self.create_subscription(Float64, '/autocar/he', self.callback_ate, 10)
         
+        # CARLA
+        # self.gps_sub = self.create_subscription(NavSatFix, '/carla/ego_vehicle/gnss', self.callback_gps, 10)
+        # self.imu_sub = self.create_subscription(Imu, '/carla/ego_vehicle/imu', self.callback_imu, 10)
+        # self.speed_sub = self.create_subscription(Float64, '/carla/ego_vehicle/speedometer', self.callback_speed), 10
+        # self.cmd_sub = self.cmd_sub = self.create_subscription(CarlaEgoVehicleControl, '/carla/ego_vehicle/vehicle_control_cmd', self.callback_cmd, 10)
+
+        # ====================== publisher ======================
         # 보정안된 위치와 보정된 위치 pub
-        self.location_no_correction_pub = self.create_publisher(Odometry, '/location_not_corrected', 10)
+        self.location_no_correction_pub = self.create_publisher(Odometry, '/autocar/location_not_corrected', 10) # 보정되지 않은 위치
         # self.location_long_corrected_pub = self.create_publisher(Odometry, '/location_long_corrected', 10)
         # self.location_corrected_pub = self.create_publisher(Odometry, '/location_corrected', 10)
         # self.location_dr_pub = self.create_publisher(Odometry, '/location_dr', 10)
-        self.location_pub = self.create_publisher(Odometry, '/location', 10)
+        self.location_pub = self.create_publisher(Odometry, '/autocar/location', 10) # 보정된 위치
         
         # 최종 보정된 종방향 횡방향 에러 pub
-        self.lateral_error_pub = self.create_publisher(Float32, '/lateral_error', 10)
-        self.longitudinal_error_pub = self.create_publisher(Float32, '/longitudinal_error', 10)
+        self.lateral_error_pub = self.create_publisher(Float64, '/lateral_error', 10)
+        self.longitudinal_error_pub = self.create_publisher(Float64, '/longitudinal_error', 10)
 
         # 0.1초마다 callback함수 계산해주기
         self.timer_location_publish = self.create_timer(0.1, self.callback_timer_location_pub)
@@ -265,11 +266,11 @@ class Localization(Node):
         # self.location_dr_pub.publish(self.location_dr)
         self.location_pub.publish(self.location) 
         
-        lateral_error_msg = Float32()
+        lateral_error_msg = Float64()
         lateral_error_msg.data = self.lateral_error
         self.lateral_error_pub.publish(lateral_error_msg)
         
-        longitudinal_error_msg = Float32()
+        longitudinal_error_msg = Float64()
         longitudinal_error_msg.data = self.longitudinal_error
         self.longitudinal_error_pub.publish(longitudinal_error_msg)
         
