@@ -5,6 +5,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix
 from autocar_msgs.msg import State2D 
+from geometry_msgs.msg import PoseWithCovarianceStamped
 import pyproj
 
 
@@ -23,6 +24,8 @@ class GPS2UTM(Node):
 
         # /ublox_gps 토픽을 구독 (NavSatFix 타입의 메시지)
         self.subscription = self.create_subscription(NavSatFix, '/ublox_gps', self.gps_callback, 10)
+
+        # self.subscription = self.create_subscription(PoseWithCovarianceStamped, '/initialpose', self.initialpose_callback, 10)
 
         # 변환된 UTM 좌표를 /autocar/state2D 토픽으로 퍼블리싱
         self.publisher = self.create_publisher(State2D, '/autocar/state2D', 10)
@@ -49,7 +52,6 @@ class GPS2UTM(Node):
         self.publisher.publish(state_msg)
 
         self.get_logger().info(f"차량의 UTM 좌표: x={utm_x:.3f}, y={utm_y:.3f}")
-
 
 def main(args=None):
     rclpy.init(args=args)

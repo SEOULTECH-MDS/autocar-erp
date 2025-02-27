@@ -25,6 +25,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Path2D.msg"
   "msg/State2D.msg"
   "msg/Twist2D.msg"
+  "msg/PolygonArray.msg"
 DEPENDENCIES geometry_msgs std_msgs
  )
 
