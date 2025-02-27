@@ -16,6 +16,8 @@ from visualization_msgs.msg import MarkerArray
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64, Int16, Int32, Float64MultiArray, String, Bool
 from ackermann_msgs.msg import AckermannDrive
+from geometry_msgs.msg import PolygonStamped, Point32
+
 # from carla_msgs.msg import CarlaEgoVehicleControl
 
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
@@ -108,6 +110,9 @@ class Localization(Node):
         
         self.is_go = True
 
+        self.vehicle_length = 2.0
+        self.vehicle_width = 1.0
+
         # ====================== subscription ======================
         # way change signal sub
         self.way_change_signal_sub = self.create_subscription(Bool, '/way_change_signal', self.callback_way_change_signal, 10)
@@ -127,7 +132,8 @@ class Localization(Node):
         self.driving_mode_sub = self.create_subscription(String, '/driving_mode',  self.callback_driving_mode, 10)
         
         #초기 yaw 설정
-        self.init_orientation_sub = self.create_subscription(PoseWithCovarianceStamped, '/initial_global_pose', self.callback_init_orientation, 10)
+        #self.init_orientation_sub = self.create_subscription(PoseWithCovarianceStamped, '/initial_global_pose', self.callback_init_orientation, 10)
+        self.init_orientation_sub = self.create_subscription(PoseWithCovarianceStamped, '/initialpose', self.callback_init_orientation, 10)
         
         # global path planning waypoint 정보
         self.closest_waypoints_sub = self.create_subscription(PoseArray, '/global_closest_waypoints', self.callback_closest_waypoints, 10)
@@ -137,7 +143,7 @@ class Localization(Node):
         self.stoplines_sub = self.create_subscription(MarkerArray, '/stoplines', self.callback_stopline, 10)
         
         #global local 횡방향 종방향 에러 sub
-        self.local_cte_sub = self.create_subscription(Float64, '/autocar/cte_', self.callback_cte, 10)
+        self.local_cte_sub = self.create_subscription(Float64, '/autocar/cte', self.callback_cte, 10)
         self.local_ate_sub = self.create_subscription(Float64, '/autocar/he', self.callback_ate, 10)
         
         # CARLA
@@ -153,6 +159,9 @@ class Localization(Node):
         # self.location_corrected_pub = self.create_publisher(Odometry, '/location_corrected', 10)
         # self.location_dr_pub = self.create_publisher(Odometry, '/location_dr', 10)
         self.location_pub = self.create_publisher(Odometry, '/autocar/location', 10) # 보정된 위치
+
+        # rviz 시각화
+        self.location_viz_pub = self.create_publisher(PolygonStamped, '/autocar/viz_location', 10)
         
         # 최종 보정된 종방향 횡방향 에러 pub
         self.lateral_error_pub = self.create_publisher(Float64, '/lateral_error', 10)
@@ -265,7 +274,26 @@ class Localization(Node):
         # self.location_corrected_pub.publish(self.location_corrected)
         # self.location_dr_pub.publish(self.location_dr)
         self.location_pub.publish(self.location) 
+        self.corrected_yaw = euler_from_quaternion(self.location.pose.pose.orientation.x, self.location.pose.pose.orientation.y, \
+                                           self.location.pose.pose.orientation.z, self.location.pose.pose.orientation.w)
         
+        self.get_logger().info(f"Corrected Global location: x={self.location.pose.pose.position.x}, \
+                               y={self.location.pose.pose.position.y}, \
+                                yaw={self.corrected_yaw}")
+        
+        # rviz 차량 위치 시각화
+        corners = self.get_vehicle_corners(self.corrected_yaw)
+
+        # Polygon 메시지 생성 및 퍼블리시
+        polygon_msg = PolygonStamped()
+        polygon_msg.header.stamp = self.get_clock().now().to_msg()
+        polygon_msg.header.frame_id = "base_link"   # 차량의 base_link 좌표 중심으로 시각화
+        for corner in corners:
+            point = Point32()
+            point.x, point.y = corner
+            polygon_msg.polygon.points.append(point)
+        self.location_viz_pub.publish(polygon_msg)
+
         lateral_error_msg = Float64()
         lateral_error_msg.data = self.lateral_error
         self.lateral_error_pub.publish(lateral_error_msg)
@@ -273,8 +301,33 @@ class Localization(Node):
         longitudinal_error_msg = Float64()
         longitudinal_error_msg.data = self.longitudinal_error
         self.longitudinal_error_pub.publish(longitudinal_error_msg)
-        
-    
+
+    def get_vehicle_corners(self, yaw):
+        """ 차량 중심과 yaw를 기준으로 사각형 네 꼭짓점 좌표 계산 """
+        half_length = self.vehicle_length / 2
+        half_width = self.vehicle_width / 2
+
+        # 차량 좌표 기준 네 개 꼭짓점 (로컬 좌표)
+        corners_local = np.array([
+            [ half_length,  half_width],  # front-right
+            [ half_length, -half_width],  # front-left
+            [-half_length, -half_width],  # rear-left
+            [-half_length,  half_width]   # rear-right
+        ])
+
+        # 회전 변환 (yaw 적용)
+        rotation_matrix = np.array([
+            [np.cos(yaw), -np.sin(yaw)],
+            [np.sin(yaw),  np.cos(yaw)]
+        ])
+        rotated_corners = (rotation_matrix @ corners_local.T).T
+
+        # 전역 좌표 변환 (차량 중심 좌표를 더함)
+        # global_corners = rotated_corners + np.array([x, y])
+
+        return rotated_corners
+
+
     def motion_model(self, x, u):
         # x = [x,y,yaw,v].T
         # u = [yaw+beta, v]
@@ -311,8 +364,8 @@ class Localization(Node):
         
         
     def callback_imu(self,imu_msg):
-        local_yaw = euler_from_quaternion([imu_msg.orientation.x, imu_msg.orientation.y,\
-                                          imu_msg.orientation.z, imu_msg.orientation.w])[2]
+        local_yaw = euler_from_quaternion(imu_msg.orientation.x, imu_msg.orientation.y,\
+                                          imu_msg.orientation.z, imu_msg.orientation.w)
         global_yaw = local_yaw + self.yaw_offset
         self.global_yaw = normalize_angle(global_yaw)
         self.car_pose_dr[2, 0] = self.global_yaw
@@ -338,11 +391,11 @@ class Localization(Node):
         
         
     def callback_init_orientation(self, init_pose_msg):
-        global_yaw = euler_from_quaternion([init_pose_msg.pose.pose.orientation.x, init_pose_msg.pose.pose.orientation.y, \
-                                           init_pose_msg.pose.pose.orientation.z, init_pose_msg.pose.pose.orientation.w])[2]
+        global_yaw = euler_from_quaternion(init_pose_msg.pose.pose.orientation.x, init_pose_msg.pose.pose.orientation.y, \
+                                           init_pose_msg.pose.pose.orientation.z, init_pose_msg.pose.pose.orientation.w)
        
-        local_yaw = euler_from_quaternion([self.gps_pose.pose.pose.orientation.x, self.gps_pose.pose.pose.orientation.y,\
-                                          self.gps_pose.pose.pose.orientation.z, self.gps_pose.pose.pose.orientation.w])[2]
+        local_yaw = euler_from_quaternion(self.gps_pose.pose.pose.orientation.x, self.gps_pose.pose.pose.orientation.y,\
+                                          self.gps_pose.pose.pose.orientation.z, self.gps_pose.pose.pose.orientation.w)
 
         self.yaw_offset += global_yaw - local_yaw
     
