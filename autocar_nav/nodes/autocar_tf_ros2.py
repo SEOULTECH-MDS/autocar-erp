@@ -40,7 +40,7 @@ class AutocarTF(Node):
         self.tf_br_world_to_map = StaticTransformBroadcaster(self)
         self.tf_br_map_to_base_link = TransformBroadcaster(self)
 
-        self.local_origin_sub = self.create_subscription(NavSatFix, '/ublox_gps', self.callback_local_origin, 10)
+        self.local_origin_sub = self.create_subscription(NavSatFix, '/ublox_gps/fix', self.callback_local_origin, 10)
         self.global_location_sub = self.create_subscription(Odometry, '/autocar/location', self.callback_global_location, 10)
         
         self.flag_world_to_map = False
