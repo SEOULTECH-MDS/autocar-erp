@@ -1,0 +1,4 @@
+https://drive.google.com/file/d/1E1_jJGx-ANoBIA6AyHFHbxZPJ1rJscop/view?usp=sharing
+https://drive.google.com/file/d/1NS7J3YI8u9lMRdbuekr3AqzIya8rMx7N/view?usp=sharing
+
+위의 링크에서 culane_18.pth, tusimple_18.pth 다운로드 후 models 폴더에 저장
