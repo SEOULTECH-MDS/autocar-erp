@@ -3,7 +3,7 @@
 import numpy as np
 import rclpy
 from geometry_msgs.msg import Pose2D, PoseStamped
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path, Odometry
 from rclpy.node import Node
 from std_msgs.msg import Float64
 
@@ -11,6 +11,8 @@ from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Vector3
 
 from autocar_msgs.msg import Path2D, State2D
 from autocar_nav import generate_cubic_path, yaw_to_quaternion
+from autocar_nav.euler_from_quaternion import euler_from_quaternion
+
 
 
 class LocalPathPlanner(Node):
@@ -29,7 +31,7 @@ class LocalPathPlanner(Node):
 
         # Initialise subscribers
         self.goals_sub = self.create_subscription(PoseArray, '/autocar/goals', self.goals_cb, 10)
-        self.localisation_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_state_cb, 10)
+        self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
 
         # Load parameters
         try:
@@ -96,9 +98,10 @@ class LocalPathPlanner(Node):
         ''' 
         Callback function to recieve vehicle state information from localization in global frame
         '''
-        self.x = msg.pose.x
-        self.y = msg.pose.y
-        self.yaw = msg.pose.theta
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        self.yaw = euler_from_quaternion(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, \
+                                         msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
 
     def publish_path(self):
         '''

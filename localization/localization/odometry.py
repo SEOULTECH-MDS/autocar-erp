@@ -20,13 +20,13 @@ class OdometryNode(Node):
         self.speed = 0.0
 
         # 서브스크라이버 초기화
-        self.gps_sub = self.create_subscription(NavSatFix, '/ublox_gps/fix', self.callback_gps, 10)
+        self.gps_sub = self.create_subscription(NavSatFix, '/ublox_gps_node/fix', self.callback_gps, 10)
         self.imu_sub = self.create_subscription(Imu, '/imu/data', self.callback_imu, 10)
         #self.speed_sub = self.create_subscription(TwistWithCovarianceStamped, "/ublox_gps/fix_velocity", self.callback_speed, 10)
         #self.speed_sub = self.create_subscription(Float64, "/cur_speed", self.callback_speed, 10)
 
         # 퍼블리셔 초기화
-        self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
+        self.odom_pub = self.create_publisher(Odometry, '/autocar/location', 10)
 
         # 타이머 초기화
         self.timer = self.create_timer(0.1, self.publish_odometry)
@@ -37,7 +37,7 @@ class OdometryNode(Node):
 
     def callback_imu(self, imu_msg):
         # IMU 데이터를 이용하여 자동차의 yaw 각도 계산
-        local_yaw = euler_from_quaternion([imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w])[2]
+        local_yaw = euler_from_quaternion(imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w)
         self.global_yaw = normalize_angle(local_yaw)
         self.gps_pose.pose.pose.orientation = yaw_to_quaternion(self.global_yaw)
 
@@ -50,6 +50,12 @@ class OdometryNode(Node):
         # GPS 좌표와 IMU 데이터를 이용하여 오도메트리 데이터 생성
         #self.gps_pose.twist.twist.linear.x = self.speed
         self.odom_pub.publish(self.gps_pose)
+        self.get_logger().info(
+            f"\nx: {self.gps_pose.pose.pose.position.x},\n"
+            f"y: {self.gps_pose.pose.pose.position.y},\n"
+            f"yaw: {self.global_yaw}"
+        )
+
 
 def latlon_to_utm(lat, lon):
     # WGS84 좌표계를 UTM 좌표계로 변환

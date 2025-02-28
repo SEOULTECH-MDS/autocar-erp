@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'localization = localization.localization:main'
+            'localization = localization.localization:main',
+            'odometry = localization.odometry:main'
         ],
     },
 )
