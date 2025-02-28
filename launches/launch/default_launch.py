@@ -95,7 +95,7 @@ def generate_launch_description():
             parameters = [navconfig]
         ),
 
-        Node( # 카메라 연결
+        Node( # 정지선 카메라 연결
         package='perception',
         executable='stopline_camera',
         name='stopline_camera'
@@ -105,6 +105,18 @@ def generate_launch_description():
         package='perception',
         executable='stopline_detection',
         name='stopline_detection'
+        ),
+
+        Node( # 차선 카메라 연결
+        package='perception',
+        executable='camera_pub',
+        name='camera_pub'
+        ),
+
+        Node( # 차선 인식
+        package='perception',
+        executable='lanenet',
+        name='lanenet'
         )
     ])
 
