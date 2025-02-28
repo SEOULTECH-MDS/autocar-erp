@@ -22,6 +22,9 @@ setup(
         'console_scripts': [
         	'stopline_camera = perception.stopline_camera:main',
         	'stopline_detection = perception.stopline_detection:main',
+
+            'camera_pub = perception.lanenet.camera_pub:main',
+            'lanenet = perception.lanenet.lanenet:main',
         ],
     },
 )
