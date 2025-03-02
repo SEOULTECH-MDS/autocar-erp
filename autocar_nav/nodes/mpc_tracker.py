@@ -11,8 +11,9 @@ from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import Marker, MarkerArray
 from nav_msgs.msg import Odometry, Path
 from geometry_msgs.msg import Point
+from rviz_2d_overlay_msgs.msg import OverlayText
+from std_msgs.msg import ColorRGBA
 
-from autocar_msgs.msg import Path2D, State2D, PolygonArray
 from autocar_nav import normalise_angle, yaw_to_quaternion
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
 from autocar_nav.mpc import State, calc_ref_trajectory, iterative_linear_mpc_control, update_state, calc_nearest_index
@@ -23,7 +24,7 @@ class PathTracker(Node):
 
         # 퍼블리셔 생성
         self.tracker_pub = self.create_publisher(Twist, '/autocar/cmd_vel', 10)
-        self.steer_viz_pub = self.create_publisher(Marker, '/autocar/viz_steer', 10)
+        self.overlay_pub = self.create_publisher(OverlayText, '/autocar/steering_angle', 10)
         self.erp_pub = self.create_publisher(AckermannDriveStamped, '/erp/cmd_vel', 10)
 
         self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte', 10)
@@ -154,39 +155,28 @@ class PathTracker(Node):
         self.h_error_pub.publish(Float64(data=self.heading_error))
 
         self.publish_steering_marker(steering_angle)
+        self.publish_steering_text(steering_angle)
 
         self.get_logger().info(f'속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg')
         self.get_logger().info(f'CTE: {self.crosstrack_error:.2f} m | HE: {self.heading_error * 180.0 / np.pi:.2f} deg')
+    
+    def publish_steering_text(self, steering_angle):
+        text_msg = OverlayText()
+        text_msg.width = 300
+        text_msg.height = 100
+        text_msg.text_size = 20.0
+        text_msg.line_width = 2
 
-    def publish_steering_marker(self, steering_angle):
-        marker = Marker()
-        marker.header.frame_id = "base_link"  # 차량 기준 프레임
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.ns = "steering_arrow"
-        marker.id = 0
-        marker.type = Marker.ARROW
-        marker.action = Marker.ADD
+        # 배경색 (반투명 검정)
+        text_msg.bg_color = ColorRGBA(r=0.0, g=0.0, b=0.0, a=0.5)
 
-        # 시작점 (차량 중심)
-        marker.pose.position.x = 0.0
-        marker.pose.position.y = 0.0
-        marker.pose.position.z = 0.0
+        # 글자색 (파란색)
+        text_msg.fg_color = ColorRGBA(r=0.0, g=0.0, b=1.0, a=1.0)
 
-        # 조향각을 반영한 방향 설정
-        marker.pose.orientation = yaw_to_quaternion(steering_angle + self.yaw) 
+        # 표시할 텍스트 설정
+        text_msg.text = f"Steering Angle: {steering_angle * 180.0 / np.pi:.2f} deg"
 
-        # 화살표 크기 설정
-        marker.scale.x = 1.0  # 길이
-        marker.scale.y = 0.05  # 화살표 두께
-        marker.scale.z = 0.05
-
-        # 색상 설정 (파란색)
-        marker.color.r = 0.0
-        marker.color.g = 0.0
-        marker.color.b = 1.0
-        marker.color.a = 1.0  # 투명도
-
-        self.steer_viz_pub.publish(marker)
+        self.overlay_pub.publish(text_msg)
     
 
     # ======= 예측 상태 시각화 부분 (추가 필요) =======
