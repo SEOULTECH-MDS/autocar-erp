@@ -155,8 +155,8 @@ class PathTracker(Node):
 
         self.publish_steering_marker(steering_angle)
 
-        self.get_logger().info(f'속도: {velocity:.2f} m/s | 조향각: {steering_angle:.2f} rad')
-        self.get_logger().info(f'CTE: {self.crosstrack_error:.2f} m | HE: {self.heading_error:.2f} rad')
+        self.get_logger().info(f'속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg')
+        self.get_logger().info(f'CTE: {self.crosstrack_error:.2f} m | HE: {self.heading_error * 180.0 / np.pi:.2f} deg')
 
     def publish_steering_marker(self, steering_angle):
         marker = Marker()
@@ -173,7 +173,7 @@ class PathTracker(Node):
         marker.pose.position.z = 0.0
 
         # 조향각을 반영한 방향 설정
-        marker.pose.orientation = yaw_to_quaternion(steering_angle)
+        marker.pose.orientation = yaw_to_quaternion(steering_angle + self.yaw) 
 
         # 화살표 크기 설정
         marker.scale.x = 1.0  # 길이

@@ -17,28 +17,12 @@ def latlon_to_utm(lat, lon):
     latlon_to_utm = pyproj.Proj(proj, preserve_units=True)
     return latlon_to_utm(lon, lat)
 
-# 오일러 각을 쿼터니언으로 변환하는 함수
-# def quaternion_from_euler(roll, pitch, yaw):
-#     cy = np.cos(yaw * 0.5)
-#     sy = np.sin(yaw * 0.5)
-#     cp = np.cos(pitch * 0.5)
-#     sp = np.sin(pitch * 0.5)
-#     cr = np.cos(roll * 0.5)
-#     sr = np.sin(roll * 0.5)
-    
-#     q = Quaternion()
-#     q.w = cr * cp * cy + sr * sp * sy
-#     q.x = sr * cp * cy - cr * sp * sy
-#     q.y = cr * sp * cy + sr * cp * sy
-#     q.z = cr * cp * sy - sr * sp * cy
-#     return q
-
 class AutocarTF(Node):
     def __init__(self):
         super().__init__('autocar_tf')
         
-        self.tf_br_world_to_map = StaticTransformBroadcaster(self)
-        self.tf_br_map_to_base_link = TransformBroadcaster(self)
+        self.tf_br_w2m = StaticTransformBroadcaster(self)
+        self.tf_br_w2bl = TransformBroadcaster(self)
 
         self.local_origin_sub = self.create_subscription(NavSatFix, '/ublox_gps_node/fix', self.callback_local_origin, 10)
         self.global_location_sub = self.create_subscription(Odometry, '/autocar/location', self.callback_global_location, 10)
@@ -60,7 +44,7 @@ class AutocarTF(Node):
             t.transform.translation = Vector3(x=float(world_x), y=float(world_y), z=0.0)
             t.transform.rotation = Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)  # 기본 회전 설정
             
-            self.tf_br_world_to_map.sendTransform(t)
+            self.tf_br_w2m.sendTransform(t)
             self.flag_world_to_map = True
 
     def callback_global_location(self, global_location_msg):
@@ -76,13 +60,14 @@ class AutocarTF(Node):
         )
         t.transform.rotation = global_location_msg.pose.pose.orientation
 
-        self.tf_br_map_to_base_link.sendTransform(t)
+        self.tf_br_w2bl.sendTransform(t)
 
         q = global_location_msg.pose.pose.orientation
         global_yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
-        self.get_logger().info(f"Global location: x={global_location_msg.pose.pose.position.x}, \
-                               y={global_location_msg.pose.pose.position.y}, \
-                                yaw={global_yaw}")
+        self.get_logger().info(f"Global location: \
+                               x={global_location_msg.pose.pose.position.x}, \
+                                y={global_location_msg.pose.pose.position.y}, \
+                                    yaw={global_yaw:2f}")
 
 def main(args=None):
     rclpy.init(args=args)
