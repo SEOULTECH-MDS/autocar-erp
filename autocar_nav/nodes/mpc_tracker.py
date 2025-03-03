@@ -36,13 +36,13 @@ class PathTracker(Node):
         # 서브스크라이버 생성
         self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
-        self.speed_sub = self.create_subscription(Float64, "/cur_speed", self.encoder_speed_cb, 10)
+        #self.speed_sub = self.create_subscription(Float64, "/cur_speed", self.encoder_speed_cb, 10)
 
         # 변수 초기화
         self.x = None
         self.y = None
         self.yaw = None
-        self.vel = None
+        # self.vel = None
         self.target_vel = 10.0 / 3.6
         self.cx = []
         self.cy = []
@@ -68,14 +68,14 @@ class PathTracker(Node):
         self.y = msg.pose.pose.position.y
         q = msg.pose.pose.orientation
         self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
-        #self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
+        self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
         self.yawrate = msg.twist.twist.angular.z
         if self.cyaw:
             self.target_index_calculator()
         self.lock.release()
 
-    def encoder_speed_cb(self, encoder_msg):
-        self.vel = encoder_msg.data
+    # def encoder_speed_cb(self, encoder_msg):
+    #     self.vel = encoder_msg.data
     
     # 경로 데이터 수신 콜백 함수
     def path_cb(self, msg):
