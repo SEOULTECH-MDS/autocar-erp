@@ -13,9 +13,6 @@ from nav_msgs.msg import Odometry, Path
 from std_msgs.msg import Header, ColorRGBA, Bool, String, Int8
 from visualization_msgs.msg import Marker
 from builtin_interfaces.msg import Duration
-from autocar_msgs.msg import Path2D
-from autocar_msgs.msg import State2D 
-
 
 from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 from autocar_nav.euler_from_quaternion import euler_from_quaternion

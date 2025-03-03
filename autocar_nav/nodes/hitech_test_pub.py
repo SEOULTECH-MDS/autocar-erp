@@ -20,7 +20,7 @@ class HitechTestPub(Node):
         self.publisher_imu = self.create_publisher(Imu, '/imu/data', 10)
         self.get_logger().info("hitech_test_pub START")
 
-        self.yaw = 0.0  # 초기 yaw 값 (라디안 단위)
+        self.yaw = 1.5  # 초기 yaw 값 (라디안 단위)
         self.yaw_rate = np.deg2rad(5.0)  # 1초에 1도 회전 (라디안 변환)
         
         self.latitude = 37.632010
@@ -34,8 +34,9 @@ class HitechTestPub(Node):
     def publish_gps(self):
         msg = NavSatFix()
 
-        # self.latitude += self.velocity * 0.1
-        # self.longitude += self.velocity * 0.1
+        # x, y 위도, 경도 값 증가
+        self.latitude += self.velocity * 0.1
+        self.longitude += self.velocity * 0.1
         
         msg.latitude = self.latitude
         msg.longitude = self.longitude
@@ -48,8 +49,8 @@ class HitechTestPub(Node):
         msg = Imu()
         
         # 시계 반대 방향으로 yaw 증가
-        self.yaw += self.yaw_rate * (0.1)  # 20Hz 주기로 업데이트
-        self.yaw = self.yaw % (2 * np.pi)  # 0 ~ 2pi 범위 유지
+        # self.yaw += self.yaw_rate * (0.1)  # 20Hz 주기로 업데이트
+        # self.yaw = self.yaw % (2 * np.pi)  # 0 ~ 2pi 범위 유지
 
         # Quaternion 변환
         q = yaw_to_quaternion(self.yaw)

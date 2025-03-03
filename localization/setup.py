@@ -21,7 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'localization = localization.localization:main',
-            'odometry = localization.odometry:main'
+            'odometry = localization.odometry:main',
+            'encoder = localization.encoder_to_vel:main'
         ],
     },
 )
