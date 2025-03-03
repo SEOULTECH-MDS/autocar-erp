@@ -144,8 +144,11 @@ class erp42(Node):
 
     ALIVE = count_alive
     vals = [S, T, X, AorM, ESTOP, GEAR, SPEED0, SPEED1, STEER0, STEER1, BRAKE, ALIVE, ETX0, ETX1]
-    self.ser.write(bytearray(vals))  # 바이트 배열 전송
-
+    #self.ser.write(bytearray(vals))  # 바이트 배열 전송
+    print(vals[8].to_bytes(1, byteorder='big'),vals[9].to_bytes(1, byteorder='big'))
+    for i in range(len(vals)):
+      self.ser.write(vals[i].to_bytes(1, byteorder='big')) # send!
+      
     self.get_logger().info(f"Sent to ERP42: {vals}")
     self.get_logger().info(f"Gear: {gear}, Speed: {speed}, Brake: {brake}, Steer: {steer}")
 
@@ -156,9 +159,7 @@ class erp42(Node):
     # # print(vals[8].to_bytes(1, byteorder='big'),vals[9].to_bytes(1, byteorder='big'))
     # print(vals[8], vals[9])
     # print(hex(vals[8]), hex(vals[9]))
-    # print(vals[8].to_bytes(1, byteorder='big'),vals[9].to_bytes(1, byteorder='big'))
-    # for i in range(len(vals)):
-    #   self.ser.write(vals[i].to_bytes(1, byteorder='big')) # send!
+
 
     # for i in range(8, 10):
     # 	self.ser.write(vals[i].to_bytes(1, byteorder='big')) # send!
