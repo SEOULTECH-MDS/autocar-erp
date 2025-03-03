@@ -36,11 +36,13 @@ class PathTracker(Node):
         # 서브스크라이버 생성
         self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
+        self.speed_sub = self.create_subscription(Float64, "/cur_speed", self.encoder_speed_cb, 10)
 
         # 변수 초기화
         self.x = None
         self.y = None
         self.yaw = None
+        self.vel = None
         self.target_vel = 10.0 / 3.6
         self.cx = []
         self.cy = []
@@ -66,12 +68,15 @@ class PathTracker(Node):
         self.y = msg.pose.pose.position.y
         q = msg.pose.pose.orientation
         self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
-        self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
+        #self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
         self.yawrate = msg.twist.twist.angular.z
         if self.cyaw:
             self.target_index_calculator()
         self.lock.release()
 
+    def encoder_speed_cb(self, encoder_msg):
+        self.vel = encoder_msg.data
+    
     # 경로 데이터 수신 콜백 함수
     def path_cb(self, msg):
         self.lock.acquire()
@@ -154,27 +159,27 @@ class PathTracker(Node):
         self.ct_error_pub.publish(Float64(data=self.crosstrack_error))
         self.h_error_pub.publish(Float64(data=self.heading_error))
 
-        self.publish_steering_marker(steering_angle)
-        self.publish_steering_text(steering_angle)
+        # self.publish_steering_marker(steering_angle)
+        self.publish_overlay_text(velocity, steering_angle)
 
         self.get_logger().info(f'속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg')
         self.get_logger().info(f'CTE: {self.crosstrack_error:.2f} m | HE: {self.heading_error * 180.0 / np.pi:.2f} deg')
     
-    def publish_steering_text(self, steering_angle):
+    def publish_overlay_text(self, velocity, steering_angle):
         text_msg = OverlayText()
         text_msg.width = 300
         text_msg.height = 100
-        text_msg.text_size = 20.0
+        text_msg.text_size = 15.0
         text_msg.line_width = 2
 
         # 배경색 (반투명 검정)
         text_msg.bg_color = ColorRGBA(r=0.0, g=0.0, b=0.0, a=0.5)
 
         # 글자색 (파란색)
-        text_msg.fg_color = ColorRGBA(r=0.0, g=0.0, b=1.0, a=1.0)
+        text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
 
         # 표시할 텍스트 설정
-        text_msg.text = f"Steering Angle: {steering_angle * 180.0 / np.pi:.2f} deg"
+        text_msg.text = f"Velocity: {velocity:.2f}m/s \n Steering Angle: {steering_angle * 180.0 / np.pi:.2f}deg"
 
         self.overlay_pub.publish(text_msg)
     
