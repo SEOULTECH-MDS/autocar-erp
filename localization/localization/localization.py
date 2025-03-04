@@ -101,6 +101,7 @@ class Localization(Node):
         self.car_pose_dr_offset = np.zeros((4, 1))
         self.steer = 0.0
         self.lpf = LowPassFilter(alpha=0.3)
+        self.encoder_speed = 0.0
         self.speed = 0.0
         self.yaw_gps_offset =0.0
         # DeadReckoning 파라미터 
@@ -122,8 +123,8 @@ class Localization(Node):
         self.imu_sub = self.create_subscription(Imu, '/imu/data', self.callback_imu, 10)
         
         # 엔코더, gps 속도
-        self.speed_sub = self.create_subscription(Float64,  "/cur_speed", self.callback_speed, 10)
-        # self.speed_sub = self.create_subscription(TwistWithCovarianceStamped, "/ublox_gps/fix_velocity", self.callback_speed, 10)
+        self.encoder_speed_sub = self.create_subscription(Float64,  "/encoder_speed", self.callback_encoder_speed, 10)
+        self.speed_sub = self.create_subscription(TwistWithCovarianceStamped, "/ublox_gps/fix_velocity", self.callback_speed, 10)
         
         #erp cmd
         self.cmd_sub = self.create_subscription(AckermannDrive, '/erp/cmd_vel', self.callback_cmd, 10)
@@ -385,9 +386,12 @@ class Localization(Node):
         # self.steer = self.lpf.update(-cmd_msg.steer)
     
     def callback_speed(self, speed_msg):
-        # speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
-        self.speed = speed_msg.data
+        self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
         self.car_pose_dr[3, 0] = self.speed
+
+    def callback_encoder_speed(self, encoder_msg):
+        self.encoder_speed = encoder_msg.data
+        #self.car_pose_dr[3, 0] = self.encoder_speed
         
         
     def callback_init_orientation(self, init_pose_msg):
