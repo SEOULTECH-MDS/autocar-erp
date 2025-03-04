@@ -35,8 +35,8 @@ class OdometryNode(Node):
         # 서브스크라이버 초기화
         self.gps_sub = self.create_subscription(NavSatFix, '/ublox_gps_node/fix', self.callback_gps, 10)
         self.imu_sub = self.create_subscription(Imu, '/imu/data', self.callback_imu, 10)
-        #self.speed_sub = self.create_subscription(TwistWithCovarianceStamped, "/ublox_gps/fix_velocity", self.callback_speed, 10)
-        self.speed_sub = self.create_subscription(Float64, "/cur_speed", self.encoder_speed_cb, 10)
+        self.speed_sub = self.create_subscription(TwistWithCovarianceStamped, "/ublox_gps_node/fix_velocity", self.callback_speed, 10)
+        #self.speed_sub = self.create_subscription(Float64, "/cur_speed", self.encoder_speed_cb, 10)
         #초기 yaw 설정
         self.init_orientation_sub = self.create_subscription(PoseWithCovarianceStamped, '/initialpose', self.callback_init_orientation, 10)
 
@@ -61,8 +61,11 @@ class OdometryNode(Node):
         self.gps_pose.pose.pose.orientation = yaw_to_quaternion(self.global_yaw)
 
     def encoder_speed_cb(self, encoder_msg):
-        # self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
         self.speed = encoder_msg.data
+        # 테스트 해보고 윗줄 삭제
+
+    def speed_cb(self, speed_msg):
+        self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
         # 테스트 해보고 윗줄 삭제
 
     def callback_init_orientation(self, init_pose_msg):
