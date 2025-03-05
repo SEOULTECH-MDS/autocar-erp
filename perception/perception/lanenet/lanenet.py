@@ -75,6 +75,7 @@ class LaneNet(Node):
         cap = np.concatenate((l_padding_image, cap), axis=1)
         cap = np.concatenate((cap, r_padding_image), axis=1)
 
+        # UltrafastLaneDetector로 차선 검출
         final_detected, line_img, lateral_error, list_for_rviz = self.lane_detector.detect_lanes(cap)
 
         if final_detected:
@@ -96,12 +97,19 @@ class LaneNet(Node):
 
         # pub lane maker
         self.pub_lane_maker(list_for_rviz)
-
-        # ✓ 원본 카메라 피드에 lateral error 오버레이하여 실시간으로 표시
-        display_img = cap.copy()  # 원본 화면 사용
-        cv2.putText(display_img, f"Lateral Error: {lateral_error:.2f}", (10, 30),
+        
+        # ✓✓✓ 새로 추가: 실시간 화면에 결과 이미지 표시 (lateral error 오버레이)
+        display_img1 = line_img.copy()
+        cv2.putText(display_img1, f"Lateral Error: {lateral_error:.2f}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.imshow("Raw Camera Feed", display_img)
+        cv2.imshow("Lane Detection", display_img1)
+        cv2.waitKey(1)
+
+        # ✓✓✓ 새로 추가: 원본 카메라 피드에 lateral error 오버레이하여 실시간으로 표시
+        display_img2 = cap.copy()  # 원본 화면 사용
+        cv2.putText(display_img2, f"Lateral Error: {lateral_error:.2f}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.imshow("Raw Camera Feed", display_img2)
         cv2.waitKey(1)
 
     def pub_lane_maker(self, list_for_rviz):
