@@ -60,12 +60,16 @@ class OdometryNode(Node):
         global_yaw = local_yaw + self.yaw_offset
         self.global_yaw = normalise_angle(global_yaw)
         self.gps_pose.pose.pose.orientation = yaw_to_quaternion(self.global_yaw)
+        
+        self.gps_pose.twist.twist.angular.z = imu_msg.angular_velocity.z
 
     def callback_encoder_speed(self, encoder_msg):
         self.encoder_speed = encoder_msg.data
 
     def callback_speed(self, speed_msg):
-        self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
+        #self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
+        self.gps_pose.twist.twist.linear.x = speed_msg.twist.twist.linear.x
+        self.gps_pose.twist.twist.linear.y = speed_msg.twist.twist.linear.y
         # 테스트 해보고 윗줄 삭제
 
     def callback_init_orientation(self, init_pose_msg):

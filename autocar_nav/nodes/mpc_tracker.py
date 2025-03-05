@@ -36,7 +36,7 @@ class PathTracker(Node):
         # 서브스크라이버 생성
         self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
-        #self.speed_sub = self.create_subscription(Float64, "/cur_speed", self.encoder_speed_cb, 10)
+
 
         # 변수 초기화
         self.x = None
