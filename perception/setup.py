@@ -7,9 +7,9 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml']),
+    ('share/ament_index/resource_index/packages', ['resource/perception']),
+    ('share/perception', ['package.xml']),
+    ('share/perception/models', ['perception/lanenet/models/culane_18.pth']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -25,6 +25,9 @@ setup(
 
             'camera_pub = perception.lanenet.camera_pub:main',
             'lanenet = perception.lanenet.lanenet:main',
+
+            'camera_traffic = perception.yolov8.camera_traffic:main',
+            'trafficlight = perception.yolov8.trafficlight:main',
         ],
     },
 )
