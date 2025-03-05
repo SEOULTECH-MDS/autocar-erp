@@ -1,5 +1,5 @@
 import torch
-from ultrafastLaneDetector.backbone import resnet
+from perception.lanenet.ultrafastLaneDetector.backbone import resnet
 import numpy as np
 
 class conv_bn_relu(torch.nn.Module):

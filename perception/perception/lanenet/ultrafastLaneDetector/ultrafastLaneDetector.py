@@ -10,8 +10,8 @@ from scipy.spatial.distance import cdist
 from sklearn.linear_model import RANSACRegressor
 from scipy.interpolate import CubicSpline, interp1d
 
-from ultrafastLaneDetector.model import parsingNet
-from ultrafastLaneDetector.perspective_transformation import *
+from perception.lanenet.ultrafastLaneDetector.model import parsingNet
+from perception.lanenet.ultrafastLaneDetector.perspective_transformation import *
 
 lane_colors = [(0,0,255),(0,255,0),(255,0,0),(0,255,255)]# 파란색, 녹색, 빨간색, 청록색
 

@@ -21,7 +21,7 @@ class EncoderVelPub(Node):
         self.enc_speed_data = deque(maxlen=5)       
         self.ser = serial.serial_for_url('/dev/ttyACM0', baudrate=9600, timeout=0.01)
         
-        self.speed_pub = self.create_publisher(Float32, '/cur_speed', 10)
+        self.speed_pub = self.create_publisher(Float32, '/encoder_speed', 10)
 
     
     def get_value(self):
