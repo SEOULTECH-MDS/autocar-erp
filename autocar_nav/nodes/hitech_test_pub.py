@@ -23,8 +23,11 @@ class HitechTestPub(Node):
         self.yaw = 1.5  # 초기 yaw 값 (라디안 단위)
         self.yaw_rate = np.deg2rad(5.0)  # 1초에 1도 회전 (라디안 변환)
         
-        self.latitude = 37.632010
-        self.longitude = 127.076008
+        # self.latitude = 37.632010
+        # self.longitude = 127.076008  # 하이테크 텐트 앞
+
+        self.latitude = 37.63283317
+        self.longitude = 127.07819321 # 붕어방 도로
         self.velocity = 0.000001
 
         self.create_timer(0.1, self.publish_gps)  # GPS 데이터 퍼블리시
