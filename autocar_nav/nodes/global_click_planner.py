@@ -55,7 +55,7 @@ Backspace: 모든 선택한 경로 취소
 """
 osmhandler = OSMHandler()
 OSM_FILE_PATH = os.path.join(get_package_share_directory('autocar_nav'), 'data')
-OSM_FILE_LIST = ["hitech2_LINK.osm", "hitech2_INTERSECTION_LINK.osm", "hitech2_STOPLINE.osm"]
+OSM_FILE_LIST = ["hitech2_LINK.osm", "hitech2_INTERSECTION_LINK.osm", "hitech2_STOPLINE.osm", "boong_LINK.osm"]
 # import the osm files
 for osm_file in OSM_FILE_LIST:
     osmhandler.import_file(OSM_FILE_PATH + '/' + osm_file)
