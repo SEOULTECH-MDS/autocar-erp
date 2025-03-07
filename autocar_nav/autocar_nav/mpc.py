@@ -136,7 +136,6 @@ def get_nparray_from_matrix(x):
     """
     return np.array(x).flatten()
 
-
 def calc_nearest_index(state, cx, cy, cyaw, pind):
     """
     가장 가까운 인덱스 계산
