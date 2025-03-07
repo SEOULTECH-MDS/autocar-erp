@@ -8,7 +8,9 @@ import rclpy
 from rclpy.node import Node
 import message_filters
 
-from geometry_msgs.msg import PoseArray, Point, Vector3, PoseStamped
+import tf2_ros
+import tf2_geometry_msgs
+from geometry_msgs.msg import PoseArray, Point, Vector3, PoseStamped, PointStamped
 from nav_msgs.msg import Odometry, Path
 from std_msgs.msg import Header, ColorRGBA, Bool, String, Int8
 from visualization_msgs.msg import Marker
@@ -44,7 +46,10 @@ class OptimalFrenetPlanning(Node):
         
         self.path_finder = None
         self.delivery_pose = None
-    
+
+        # TF 변환을 위한 버퍼 및 리스너 설정
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Subscribers
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/global_waypoints',  self.callback_near_ways, 10)
@@ -271,6 +276,7 @@ class OptimalFrenetPlanning(Node):
             ways.poses.append(pose)
         return ways
     
+    # tf 변환하지 않고 world frame에 path 생성하는 함수
     # def make_all_paths_msg(self, paths):
     #     paths_msg = Marker(
     #         header=Header(frame_id='world', stamp=self.get_clock().now().to_msg()),
@@ -279,7 +285,7 @@ class OptimalFrenetPlanning(Node):
     #         type=Marker.SPHERE_LIST,
     #         action=Marker.ADD,
     #         scale=Vector3(x=0.05, y=0.05, z=0.05),  # 구체 크기
-    #         color=ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0),  
+    #         color=ColorRGBA(r=1.0, g=1.0, b=0.0, a=1.0),  
     #         lifetime=Duration(sec=0, nanosec=0)
     #     )
 
@@ -289,36 +295,92 @@ class OptimalFrenetPlanning(Node):
 
     #     return paths_msg
 
+    # def make_all_paths_msg(self, paths):
+    #     paths_msg = Marker(
+    #         header=Header(frame_id='world', stamp=self.get_clock().now().to_msg()),
+    #         ns="candidate_paths",
+    #         id=0,
+    #         type=Marker.LINE_LIST,  # 구체 대신 연속적인 선으로 변경
+    #         action=Marker.ADD,
+    #         scale=Vector3(x=0.03, y=0.0, z=0.0),  # 선 두께 (x만 사용, y와 z는 무시됨)
+    #         color=ColorRGBA(r=1.0, g=1.0, b=0.0, a=1.0), 
+    #         lifetime=Duration(sec=0, nanosec=0)  # 영구 지속
+    #     )
+
+    #     for pth in paths:
+    #         candidate_path = self.make_points(pth.x, pth.y)
+    #         paths_msg.points.extend(candidate_path)
+
+    #     return paths_msg
+    
+    # def make_points(self, path_x, path_y):
+    #     points = []
+
+    #     for i in range(len(path_x)):
+    #         point = Point()
+    #         point.x = path_x[i]
+    #         point.y = path_y[i]
+    #         point.z = 0.0
+    #         points.append(point)
+
+    #     return points
+
     def make_all_paths_msg(self, paths):
+        """ 경로 데이터를 변환하여 Marker 메시지 생성 """
         paths_msg = Marker(
-            header=Header(frame_id='world', stamp=self.get_clock().now().to_msg()),
+            header=Header(frame_id='map', stamp=self.get_clock().now().to_msg()),
             ns="candidate_paths",
             id=0,
-            type=Marker.LINE_LIST,  # 구체 대신 연속적인 선으로 변경
+            type=Marker.LINE_LIST,
             action=Marker.ADD,
-            scale=Vector3(x=0.03, y=0.0, z=0.0),  # 선 두께 (x만 사용, y와 z는 무시됨)
-            color=ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0),  # 초록색
-            lifetime=Duration(sec=0, nanosec=0)  # 영구 지속
+            scale=Vector3(x=0.005, y=0.0, z=0.0),
+            color=ColorRGBA(r=1.0, g=1.0, b=0.0, a=1.0),
+            lifetime=Duration(sec=0, nanosec=0)
         )
 
         for pth in paths:
-            candidate_path = self.make_points(pth.x, pth.y)
-            paths_msg.points.extend(candidate_path)
+            transformed_points = self.make_transformed_points(pth.x, pth.y, from_frame="world", to_frame="map")
+            paths_msg.points.extend(transformed_points)
 
         return paths_msg
-    
-    def make_points(self, path_x, path_y):
-        points = []
 
-        for i in range(len(path_x)):
-            point = Point()
-            point.x = path_x[i]
-            point.y = path_y[i]
-            point.z = 0.0
-            points.append(point)
+    def make_transformed_points(self, path_x, path_y, from_frame="world", to_frame="map"):
+        """ TF 변환을 수행하여 변환된 Point 리스트 생성 """
+        transformed_points = []
+        try:
+            # 변환 행렬 가져오기
+            transform = self.tf_buffer.lookup_transform(to_frame, from_frame, rclpy.time.Time())
 
-        return points
-    
+            for x, y in zip(path_x, path_y):
+                # 변환할 점 생성
+                point_stamped = PointStamped()
+                point_stamped.header.stamp = rclpy.time.Time().to_msg()
+                point_stamped.header.frame_id = from_frame
+                point_stamped.point.x = x
+                point_stamped.point.y = y
+                point_stamped.point.z = 0.0
+
+                # TF 변환 실행
+                transformed_point = tf2_geometry_msgs.do_transform_point(point_stamped, transform)
+
+                # 변환된 좌표 추가
+                point = Point()
+                point.x = transformed_point.point.x
+                point.y = transformed_point.point.y
+                point.z = 0.0
+                transformed_points.append(point)
+
+        except Exception as e:
+            self.get_logger().warn(f"TF 변환 실패: {e}")
+            for x, y in zip(path_x, path_y):  # 변환 실패 시 원래 좌표 사용
+                point = Point()
+                point.x = x
+                point.y = y
+                point.z = 0.0
+                transformed_points.append(point)
+
+        return transformed_points
+        
 def main(args=None):
     # Initialise the node
     rclpy.init(args=args)

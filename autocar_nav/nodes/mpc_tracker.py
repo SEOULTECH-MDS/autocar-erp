@@ -31,8 +31,6 @@ class PathTracker(Node):
         self.h_error_pub = self.create_publisher(Float64, '/autocar/he', 10)
         self.lateral_ref_pub = self.create_publisher(PoseStamped, '/autocar/lateral_ref', 10)
 
-        self.state_prediction_pub = self.create_publisher(MarkerArray, '/autocar/state_prediction', 10)
-
         # 서브스크라이버 생성
         self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
@@ -139,8 +137,6 @@ class PathTracker(Node):
             state = update_state(state, ov[0], od[0])
             self.set_vehicle_command(state.v, od[0])
 
-            self.publish_vehicle_footprints(xref)
-
         self.lock.release()
 
     # 차량 명령을 퍼블리시하는 함수
@@ -182,72 +178,6 @@ class PathTracker(Node):
         text_msg.text = f"Velocity: {velocity:.2f}m/s \n Steering Angle: {steering_angle * 180.0 / np.pi:.2f}deg"
 
         self.overlay_pub.publish(text_msg)
-    
-
-    # ======= 예측 상태 시각화 부분 (추가 필요) =======
-    def publish_vehicle_footprints(self, xref, frame_id="world"):
-
-        marker_array = MarkerArray()
-
-        for i, state in enumerate(xref.T):
-            x, y, v, yaw = map(float, state)
-
-            marker = Marker()
-            marker.header.frame_id = frame_id
-            marker.header.stamp = self.get_clock().now().to_msg()
-            marker.ns = "vehicle_footprint"
-            marker.id = i
-            marker.type = Marker.CUBE  # CUBE 사용하여 직사각형 면으로 표현
-            marker.action = Marker.ADD
-            marker.scale.x = 1.5  # 차량 길이
-            marker.scale.y = 1.0  # 차량 너비
-            marker.scale.z = 0.05  # 두께 (0.1 정도로 설정)
-            marker.color.r = 1.0
-            marker.color.g = 0.0
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # 반투명
-
-            # 위치 및 회전 설정
-            marker.pose.position.x = x
-            marker.pose.position.y = y
-            marker.pose.position.z = 0.0
-
-            q = yaw_to_quaternion(yaw)  # Yaw를 쿼터니언으로 변환
-            marker.pose.orientation.x = q.x
-            marker.pose.orientation.y = q.y
-            marker.pose.orientation.z = q.z
-            marker.pose.orientation.w = q.w
-
-            marker_array.markers.append(marker)
-
-        self.state_prediction_pub.publish(marker_array)
-
-    def get_rectangle_corners(self, x, y, yaw):
-        # 차량 중심에서 직사각형의 네 꼭짓점 계산
-        cos_yaw = np.cos(yaw)
-        sin_yaw = np.sin(yaw)
-        
-        # 로컬 좌표계에서의 꼭짓점 (차량 중심이 원점)
-        length = 1.5
-        width = 1.0
-        half_length = length / 2
-        half_width = width / 2
-        corners_local = np.array([
-            [half_length, half_width],   # 오른쪽 앞
-            [half_length, -half_width],  # 오른쪽 뒤
-            [-half_length, -half_width], # 왼쪽 뒤
-            [-half_length, half_width]   # 왼쪽 앞
-        ])
-        
-        # 회전 변환 및 중심 이동
-        rotation_matrix = np.array([[cos_yaw, -sin_yaw], [sin_yaw, cos_yaw]])
-        corners = corners_local @ rotation_matrix.T + np.array([x, y])
-        
-        # 닫힌 다각형을 위해 첫 점을 마지막에 추가
-        corners = np.vstack([corners, corners[0]])
-
-        return corners
-    # ===========================================
 
 
 # 메인 함수
