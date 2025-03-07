@@ -34,7 +34,7 @@ class PathTracker(Node):
         # 서브스크라이버 생성
         self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
-
+    
 
         # 변수 초기화
         self.x = None
@@ -168,17 +168,13 @@ class PathTracker(Node):
         text_msg.text_size = 15.0
         text_msg.line_width = 2
 
-        # 배경색 (반투명 검정)
-        text_msg.bg_color = ColorRGBA(r=0.0, g=0.0, b=0.0, a=0.5)
-
-        # 글자색 (파란색)
-        text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
+        text_msg.bg_color = ColorRGBA(r=0.0, g=0.0, b=0.0, a=0.5) # 배경색 (반투명 검정)
+        text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0) # 글자색 (파란색)
 
         # 표시할 텍스트 설정
         text_msg.text = f"Velocity: {velocity:.2f}m/s \n Steering Angle: {steering_angle * 180.0 / np.pi:.2f}deg"
 
         self.overlay_pub.publish(text_msg)
-
 
 # 메인 함수
 def main(args=None):
