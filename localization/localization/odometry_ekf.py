@@ -28,7 +28,8 @@ class OdometryNode(Node):
         self.imu_angular_velocity_z = 0.0
         self.global_yaw = 0.0
         self.encoder_speed = 0.0
-        self.speed = 0.0
+        self.gps_speed = 0.0
+        self.ekf_speed = 0.0
         self.yaw_offset = 0.0
         self.vehicle_length = 2.0
         self.vehicle_width = 1.0
@@ -72,10 +73,7 @@ class OdometryNode(Node):
         self.encoder_speed = encoder_msg.data
 
     def callback_speed(self, speed_msg):
-        #self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
-        self.gps_pose.twist.twist.linear.x = speed_msg.twist.twist.linear.x
-        self.gps_pose.twist.twist.linear.y = speed_msg.twist.twist.linear.y
-        # 테스트 해보고 윗줄 삭제
+        self.gps_speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
 
     def callback_init_orientation(self, init_pose_msg):
         transform = self.tf_buffer.lookup_transform('world', init_pose_msg.header.frame_id, rclpy.time.Time())
@@ -111,6 +109,8 @@ class OdometryNode(Node):
         odom_msg.twist.twist.linear.x = self.ekf.vn_ins
         odom_msg.twist.twist.linear.y = self.ekf.ve_ins
         odom_msg.twist.twist.linear.z = self.ekf.vd_ins
+
+        self.ekf_speed = np.sqrt(self.ekf.vn_ins ** 2 + self.ekf.ve_ins ** 2)
         
         self.odom_pub.publish(odom_msg)
         
