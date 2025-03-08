@@ -7,7 +7,7 @@ import numpy as np
 from sensor_msgs.msg import NavSatFix, Imu
 from geometry_msgs.msg import PoseWithCovarianceStamped, QuaternionStamped, PoseArray,TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Float64MultiArray
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
 from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 from autocar_nav.normalise_angle import normalise_angle
@@ -48,11 +48,12 @@ class OdometryNode(Node):
 
         # 퍼블리셔 초기화
         self.odom_pub = self.create_publisher(Odometry, '/autocar/location', 10)
-        
+        self.speed_set_pub = self.create_publisher(Float64MultiArray, '/speed_set', 10)
         # self.location_viz_pub = self.create_publisher(PolygonStamped, '/autocar/viz_location', 10)
 
         # 타이머 초기화
-        self.timer = self.create_timer(0.1, self.publish_odometry)
+        self.timer1 = self.create_timer(0.1, self.publish_odometry)
+        self.timer2 = self.create_timer(0.1, self.publish_speed_set)
 
     def callback_gps(self, gps_msg):
         gps_coor = GPSCoordinate(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude)
@@ -87,8 +88,8 @@ class OdometryNode(Node):
 
         self.yaw_offset += global_yaw - local_yaw
 
+    # EKF 보정된 위치, 속도를 odometry 메시지로 publish
     def publish_odometry(self):
-
         odom_msg = Odometry()
         odom_msg.header.stamp = self.get_clock().now().to_msg()
         odom_msg.header.frame_id = 'world'
@@ -119,6 +120,14 @@ class OdometryNode(Node):
             f"y: {odom_msg.pose.pose.position.y},\n"
             f"yaw: {self.global_yaw / np.pi * 180.0} degree"
         )
+
+    # GPS, Encoder, EKF 속도 비교를 위해 publish
+    def publish_speed_set(self):
+        speed_set = Float64MultiArray()
+        speed_set.data = [self.gps_speed, self.encoder_speed, self.ekf_speed]  # GPS, Encoder, EKF 속도
+        self.speed_set_pub.publish(speed_set)
+        self.get_logger().info(f'Published: {speed_set.data}')
+
         # # rviz 차량 위치 시각화
         # corners = self.get_vehicle_corners(self.global_yaw)
 
