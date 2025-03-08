@@ -22,7 +22,8 @@ setup(
         'console_scripts': [
             'localization = localization.localization:main',
             'odometry = localization.odometry:main',
-            'encoder = localization.encoder_to_vel:main'
+            'encoder = localization.encoder_to_vel:main',
+            'odometry_ekf = localization.odometry_ekf:main',
         ],
     },
 )

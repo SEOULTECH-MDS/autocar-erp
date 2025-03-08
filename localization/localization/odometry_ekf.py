@@ -13,7 +13,7 @@ from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 from autocar_nav.normalise_angle import normalise_angle
 from geometry_msgs.msg import PolygonStamped, Point32
 
-from ekf import EKFNavINS, GPSCoordinate, GPSVelocity, IMUData
+from localization.ekf import EKFNavINS, GPSCoordinate, GPSVelocity, IMUData
 
 from tf2_ros import TransformListener, Buffer
 import tf2_geometry_msgs
@@ -71,6 +71,12 @@ class OdometryNode(Node):
     def callback_encoder_speed(self, encoder_msg):
         self.encoder_speed = encoder_msg.data
 
+    def callback_speed(self, speed_msg):
+        #self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
+        self.gps_pose.twist.twist.linear.x = speed_msg.twist.twist.linear.x
+        self.gps_pose.twist.twist.linear.y = speed_msg.twist.twist.linear.y
+        # 테스트 해보고 윗줄 삭제
+
     def callback_init_orientation(self, init_pose_msg):
         transform = self.tf_buffer.lookup_transform('world', init_pose_msg.header.frame_id, rclpy.time.Time())
         # 좌표 변환
@@ -96,7 +102,7 @@ class OdometryNode(Node):
                                           self.ekf.quat[3, 0], self.ekf.quat[0, 0])
         global_yaw = local_yaw + self.yaw_offset
         self.global_yaw = normalise_angle(global_yaw)
-        self.odom_msg.pose.pose.orientation = yaw_to_quaternion(self.global_yaw)
+        odom_msg.pose.pose.orientation = yaw_to_quaternion(self.global_yaw)
         
         odom_msg.twist.twist.angular.x = self.imu_angular_velocity_x
         odom_msg.twist.twist.angular.y = self.imu_angular_velocity_y

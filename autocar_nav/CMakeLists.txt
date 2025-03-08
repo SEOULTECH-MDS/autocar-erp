@@ -39,7 +39,6 @@ install(PROGRAMS
   nodes/localization.py
   nodes/localplanner.py
   nodes/tracker.py
-  nodes/gps_sub.py
   nodes/autocar_tf_ros2.py
   nodes/hitech_test_pub.py
   nodes/autocar_tf_ros2.py
