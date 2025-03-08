@@ -26,6 +26,7 @@ class OdometryNode(Node):
         self.imu_angular_velocity_x = 0.0
         self.imu_angular_velocity_y = 0.0
         self.imu_angular_velocity_z = 0.0
+        self.gps_coor = None
         self.global_yaw = 0.0
         self.encoder_speed = 0.0
         self.gps_speed = 0.0
@@ -49,15 +50,15 @@ class OdometryNode(Node):
         # 퍼블리셔 초기화
         self.odom_pub = self.create_publisher(Odometry, '/autocar/location', 10)
         self.speed_set_pub = self.create_publisher(Float64MultiArray, '/speed_set', 10)
+        self.position_set_pub = self.create_publisher(Float64MultiArray, '/position_set', 10)
         # self.location_viz_pub = self.create_publisher(PolygonStamped, '/autocar/viz_location', 10)
 
         # 타이머 초기화
-        self.timer1 = self.create_timer(0.1, self.publish_odometry)
-        self.timer2 = self.create_timer(0.1, self.publish_speed_set)
+        self.timer = self.create_timer(0.1, self.publish_odometry)
 
     def callback_gps(self, gps_msg):
-        gps_coor = GPSCoordinate(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude)
-        self.ekf.gps_coordinate_update_ekf(gps_coor)
+        self.gps_coor = GPSCoordinate(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude)
+        self.ekf.gps_coordinate_update_ekf(self.gps_coor)
         
     def callback_imu(self, imu_msg):
         imu_data = IMUData(
@@ -121,12 +122,22 @@ class OdometryNode(Node):
             f"yaw: {self.global_yaw / np.pi * 180.0} degree"
         )
 
+        self.publish_speed_set()
+        self.publish_position_set()
+
     # GPS, Encoder, EKF 속도 비교를 위해 publish
     def publish_speed_set(self):
         speed_set = Float64MultiArray()
         speed_set.data = [self.gps_speed, self.encoder_speed, self.ekf_speed]  # GPS, Encoder, EKF 속도
         self.speed_set_pub.publish(speed_set)
         self.get_logger().info(f'Published: {speed_set.data}')
+    
+    def publish_position_set(self):
+        position_set = Float64MultiArray()
+        position_set.data = [self.gps_coor.lat, self.gps_coor.lon, self.ekf.lat_ins, self.ekf.lon_ins]  # GPS, EKF 위도, 경도
+        self.position_set_pub.publish(position_set)
+        self.get_logger().info(f'Published: {position_set.data}')
+
 
         # # rviz 차량 위치 시각화
         # corners = self.get_vehicle_corners(self.global_yaw)
