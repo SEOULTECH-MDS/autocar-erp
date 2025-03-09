@@ -67,9 +67,10 @@ class OdometryNode(Node):
         self.encoder_speed = encoder_msg.data
 
     def callback_speed(self, speed_msg):
-        #self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
+        self.speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
         self.gps_pose.twist.twist.linear.x = speed_msg.twist.twist.linear.x
         self.gps_pose.twist.twist.linear.y = speed_msg.twist.twist.linear.y
+
         # 테스트 해보고 윗줄 삭제
 
     def callback_init_orientation(self, init_pose_msg):
@@ -93,6 +94,7 @@ class OdometryNode(Node):
             f"y: {self.gps_pose.pose.pose.position.y},\n"
             f"yaw: {self.global_yaw / np.pi * 180.0} degree"
         )
+        self.get_logger().info(f'속도: {self.speed}')
         # # rviz 차량 위치 시각화
         # corners = self.get_vehicle_corners(self.global_yaw)
 
