@@ -26,9 +26,10 @@ class OdometryNode(Node):
         self.imu_angular_velocity_x = 0.0
         self.imu_angular_velocity_y = 0.0
         self.imu_angular_velocity_z = 0.0
-        self.gps_coor = None
         self.global_yaw = 0.0
         self.encoder_speed = 0.0
+        self.gps_lat = 0.0
+        self.gps_lon = 0.0
         self.gps_speed = 0.0
         self.ekf_speed = 0.0
         self.yaw_offset = 0.0
@@ -58,6 +59,7 @@ class OdometryNode(Node):
 
     def callback_gps(self, gps_msg):
         self.gps_coor = GPSCoordinate(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude)
+        self.gps_lat, self.gps_lon = gps_msg.latitude, gps_msg.longitude
         self.ekf.gps_coordinate_update_ekf(self.gps_coor)
         
     def callback_imu(self, imu_msg):
@@ -134,7 +136,7 @@ class OdometryNode(Node):
     
     def publish_position_set(self):
         position_set = Float64MultiArray()
-        position_set.data = [self.gps_coor.lat, self.gps_coor.lon, self.ekf.lat_ins, self.ekf.lon_ins]  # GPS, EKF 위도, 경도
+        position_set.data = [self.gps_lat, self.gps_lon, self.ekf.lat_ins, self.ekf.lon_ins]  # GPS, EKF 위도, 경도
         self.position_set_pub.publish(position_set)
         self.get_logger().info(f'Published: {position_set.data}')
 

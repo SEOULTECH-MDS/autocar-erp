@@ -129,7 +129,7 @@ class EKFNavINS:
         self.f_b[2, 0] = az  # 가속도계 측정 값 (z축)
         self._tprev = time  # 이전 시간
 
-    def ekf_update(self, time, vn=None, ve=None, vd=None, lat=None, lon=None, alt=None, p=None, q=None, r=None, ax=None, ay=None, az=None, hx=None, hy=None, hz=None):
+    def ekf_update(self, time, vn=0.0, ve=0.0, vd=0.0, lat=0.0, lon=0.0, alt=0.0, p=0.0, q=0.0, r=0.0, ax=0.0, ay=0.0, az=0.0, hx=0.0, hy=0.0, hz=0.0):
         if not self.initialized_:
             # EKF 초기화
             self.ekf_init(time, vn, ve, vd, lat, lon, alt, p, q, r, ax, ay, az, hx, hy, hz)
@@ -168,7 +168,8 @@ class EKFNavINS:
             self.vd_ins += _dt * self.dx[2, 0]
             
             # 위치 변화 벡터 업데이트
-            self.dxd = self.llarate(self.V_ins, self.lla_ins)
+            # self.dxd = self.llarate(self.V_ins, self.lla_ins)
+            self.dxd = self.llarate_with_matrix(self.V_ins, self.lla_ins)
             self.lat_ins += _dt * self.dxd[0, 0]
             self.lon_ins += _dt * self.dxd[1, 0]
             self.alt_ins += _dt * self.dxd[2, 0]
@@ -253,7 +254,8 @@ class EKFNavINS:
         self.y[5, 0] = self.V_gps[2, 0] - self.V_ins[2, 0]
 
     def update_15states_after_KF(self):
-        self.estmimated_ins = self.llarate(self.x[:3].astype(float), self.lat_ins, self.alt_ins)
+        # self.estmimated_ins = self.llarate(self.x[:3].astype(float), self.lat_ins, self.alt_ins)
+        self.estmimated_ins = self.llarate_with_values(self.x[:3].astype(float), self.lat_ins, self.alt_ins)
         self.lat_ins += self.estmimated_ins[0, 0]
         self.lon_ins += self.estmimated_ins[1, 0]
         self.alt_ins += self.estmimated_ins[2, 0]
@@ -288,7 +290,12 @@ class EKFNavINS:
         self.Gs[3:6, :3] = -self.C_B2N
         self.Gs[6:9, 3:6] = -0.5 * np.identity(3)
         self.Gs[9:15, 6:12] = np.identity(6)
-        self.Q = self.PHI * _dt * self.Gs @ self.Rw @ self.Gs.T
+
+        temp2 = self.Gs @ self.Rw # 15x12
+        temp3 = temp2 @ self.Gs.T # 15x15
+
+        # self.Q = self.PHI * _dt * self.Gs @ self.Rw @ self.Gs.T
+        self.Q = self.PHI * _dt * temp3
         self.Q = 0.5 * (self.Q + self.Q.T)
         self.P = self.PHI @ self.P @ self.PHI.T + self.Q
         self.P = 0.5 * (self.P + self.P.T)
