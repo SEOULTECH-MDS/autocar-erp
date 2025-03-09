@@ -46,8 +46,8 @@ WB = 1.566  # [m] default : 2.5, ERP42 : 1.566
 
 MAX_STEER = np.deg2rad(30.0)  # maximum steering angle [rad]  default: 45
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-MAX_SPEED = 1.0  # maximum speed [m/s]
-MIN_SPEED = -1.0  # minimum speed [m/s]
+MAX_SPEED = 1.5  # maximum speed [m/s]
+MIN_SPEED = -1.5  # minimum speed [m/s]
 MAX_ACCEL = 0.614  # maximum accel [m/ss] defualt: 1.0
 
 # show_animation = True
