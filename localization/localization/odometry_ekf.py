@@ -123,6 +123,10 @@ class OdometryNode(Node):
     def callback_gps(self, gps_msg):
         # GPS 좌표를 UTM 좌표로 변환
         x, y = latlon_to_utm(gps_msg.latitude, gps_msg.longitude)
+        self.get_logger().info(
+            f"\nx(gps raw): {x},\n"
+            f"y(gps raw): {y},\n"
+        )
         self.ekf.update_gps(np.array([x, y]))
         
     def callback_imu(self, imu_msg):
