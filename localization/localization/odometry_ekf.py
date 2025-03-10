@@ -7,31 +7,95 @@ import numpy as np
 from sensor_msgs.msg import NavSatFix, Imu
 from geometry_msgs.msg import PoseWithCovarianceStamped, QuaternionStamped, PoseArray,TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float64, Float64MultiArray
+from std_msgs.msg import Float64
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
 from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 from autocar_nav.normalise_angle import normalise_angle
 from geometry_msgs.msg import PolygonStamped, Point32
 
-from localization.ekf import EKFNavINS, GPSCoordinate, GPSVelocity, IMUData
-
 from tf2_ros import TransformListener, Buffer
 import tf2_geometry_msgs
+
+class ExtendedKalmanFilter:
+    def __init__(self):
+        self.state = np.zeros(5)  # [x, y, yaw, v, yaw_rate]
+        self.P = np.eye(5) * 1000  # 초기 불확실성
+        self.Q = np.eye(5) * 0.1  # 프로세스 노이즈
+        self.R_gps = np.eye(2) * 0.1  # GPS 측정 노이즈
+        self.R_imu = np.eye(2) * 0.01  # IMU 측정 노이즈
+        self.R_speed = np.array([[0.1]])  # 속도 노이즈
+
+    def predict(self, dt):
+        # 상태 예측
+        self.state[0] += self.state[3] * np.cos(self.state[2]) * dt
+        self.state[1] += self.state[3] * np.sin(self.state[2]) * dt
+        self.state[2] += self.state[4] * dt
+
+        # 자코비안 계산
+        F = np.eye(5)
+        F[0, 2] = -self.state[3] * np.sin(self.state[2]) * dt
+        F[0, 3] = np.cos(self.state[2]) * dt
+        F[1, 2] = self.state[3] * np.cos(self.state[2]) * dt
+        F[1, 3] = np.sin(self.state[2]) * dt
+        F[2, 4] = dt
+
+        # 공분산 예측
+        self.P = F @ self.P @ F.T + self.Q
+
+    def update_gps(self, measurement):
+        H = np.zeros((2, 5))
+        H[0, 0] = H[1, 1] = 1
+
+        y = measurement - self.state[:2]
+        S = H @ self.P @ H.T + self.R_gps
+        K = self.P @ H.T @ np.linalg.inv(S)
+        self.state += K @ y
+        self.P = (np.eye(5) - K @ H) @ self.P
+
+    def update_imu(self, yaw, yaw_rate):
+        H = np.zeros((2, 5))
+        H[0, 2] = H[1, 4] = 1
+
+        y = np.array([yaw, yaw_rate]) - self.state[[2, 4]]
+        S = H @ self.P @ H.T + self.R_imu
+        K = self.P @ H.T @ np.linalg.inv(S)
+        self.state += K @ y
+        self.P = (np.eye(5) - K @ H) @ self.P
+    
+    def update_speed(self, measured_speed):
+        try:
+            H = np.zeros((1, 5))
+            H[0, 3] = 1  # 속도 상태(v)에 대한 관측 행렬
+
+            y = np.array([measured_speed - self.state[3]]).reshape(-1, 1)
+            S = H @ self.P @ H.T + self.R_speed
+            K = (self.P @ H.T @ np.linalg.inv(S)).reshape(-1, 1)
+
+            # 상태 업데이트
+            self.state += (K @ y).flatten()
+
+            # 공분산 업데이트
+            self.P = (np.eye(5) - K @ H) @ self.P
+
+        except ValueError as e:
+            print(f"ValueError in update_speed: {e}")
+            print(f"K shape: {K.shape if 'K' in locals() else 'undefined'}")
+            print(f"y shape: {y.shape if 'y' in locals() else 'undefined'}")
+            print(f"self.state shape: {self.state.shape}")
+            print(f"H shape: {H.shape}")
+            print(f"S shape: {S.shape if 'S' in locals() else 'undefined'}")
 
 
 class OdometryNode(Node):
     def __init__(self):
         super().__init__('odometry')
-        self.ekf = EKFNavINS()
-        self.imu_angular_velocity_x = 0.0
-        self.imu_angular_velocity_y = 0.0
-        self.imu_angular_velocity_z = 0.0
+        self.ekf = ExtendedKalmanFilter()
+        self.last_time = self.get_clock().now()
+        self.gps_pose = Odometry()
+        self.gps_pose.header.frame_id = 'world'
         self.global_yaw = 0.0
         self.encoder_speed = 0.0
-        self.gps_lat = 0.0
-        self.gps_lon = 0.0
-        self.gps_speed = 0.0
-        self.ekf_speed = 0.0
+        self.speed = 0.0
         self.yaw_offset = 0.0
         self.vehicle_length = 2.0
         self.vehicle_width = 1.0
@@ -50,35 +114,35 @@ class OdometryNode(Node):
 
         # 퍼블리셔 초기화
         self.odom_pub = self.create_publisher(Odometry, '/autocar/location', 10)
-        self.speed_set_pub = self.create_publisher(Float64MultiArray, '/speed_set', 10)
-        self.position_set_pub = self.create_publisher(Float64MultiArray, '/position_set', 10)
+        
         # self.location_viz_pub = self.create_publisher(PolygonStamped, '/autocar/viz_location', 10)
 
         # 타이머 초기화
         self.timer = self.create_timer(0.1, self.publish_odometry)
 
     def callback_gps(self, gps_msg):
-        self.gps_coor = GPSCoordinate(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude)
-        self.gps_lat, self.gps_lon = gps_msg.latitude, gps_msg.longitude
-        self.ekf.gps_coordinate_update_ekf(self.gps_coor)
+        # GPS 좌표를 UTM 좌표로 변환
+        x, y = latlon_to_utm(gps_msg.latitude, gps_msg.longitude)
+        self.ekf.update_gps(np.array([x, y]))
         
     def callback_imu(self, imu_msg):
-        imu_data = IMUData(
-            imu_msg.angular_velocity.x, imu_msg.angular_velocity.y, imu_msg.angular_velocity.z,
-            imu_msg.linear_acceleration.x, imu_msg.linear_acceleration.y, imu_msg.linear_acceleration.z,
-            0, 0, 0  # 자기장 데이터가 없는 경우 0으로 설정
-        )
-        self.imu_angular_velocity_x = imu_msg.angular_velocity.x
-        self.imu_angular_velocity_y = imu_msg.angular_velocity.y
-        self.imu_angular_velocity_z = imu_msg.angular_velocity.z
-        self.ekf.imu_update_ekf(self.get_clock().now().nanoseconds / 1e6, imu_data)
+        # IMU 데이터를 이용하여 자동차의 yaw 각도 계산
+        local_yaw = euler_from_quaternion(imu_msg.orientation.x, imu_msg.orientation.y,
+                                    imu_msg.orientation.z, imu_msg.orientation.w)
+        yaw_rate = imu_msg.angular_velocity.z
+
+        global_yaw = normalise_angle(local_yaw + self.yaw_offset)
+        self.ekf.update_imu(global_yaw, yaw_rate)
 
     def callback_encoder_speed(self, encoder_msg):
+        
         self.encoder_speed = encoder_msg.data
 
     def callback_speed(self, speed_msg):
-        self.gps_speed = np.sqrt(speed_msg.twist.twist.linear.x **2 + speed_msg.twist.twist.linear.y**2)
-
+        
+        measured_speed = speed_msg.twist.twist.linear.x
+        self.ekf.update_speed(measured_speed)
+    
     def callback_init_orientation(self, init_pose_msg):
         transform = self.tf_buffer.lookup_transform('world', init_pose_msg.header.frame_id, rclpy.time.Time())
         # 좌표 변환
@@ -86,96 +150,39 @@ class OdometryNode(Node):
         global_yaw = euler_from_quaternion(global_init_pose_msg.pose.pose.orientation.x, global_init_pose_msg.pose.pose.orientation.y, \
                                            global_init_pose_msg.pose.pose.orientation.z, global_init_pose_msg.pose.pose.orientation.w)
        
-        local_yaw = euler_from_quaternion(self.ekf.quat[1, 0], self.ekf.quat[2, 0], \
-                                          self.ekf.quat[3, 0], self.ekf.quat[0, 0])
+        local_yaw = euler_from_quaternion(self.gps_pose.pose.pose.orientation.x, self.gps_pose.pose.pose.orientation.y,\
+                                          self.gps_pose.pose.pose.orientation.z, self.gps_pose.pose.pose.orientation.w)
 
         self.yaw_offset += global_yaw - local_yaw
 
-    # EKF 보정된 위치, 속도를 odometry 메시지로 publish
     def publish_odometry(self):
-        odom_msg = Odometry()
-        odom_msg.header.stamp = self.get_clock().now().to_msg()
-        odom_msg.header.frame_id = 'world'
-        
-        odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y = latlon_to_utm(self.ekf.lat_ins, self.ekf.lon_ins)
-        odom_msg.pose.pose.position.z = self.ekf.alt_ins
+        # GPS 좌표와 IMU 데이터를 이용하여 오도메트리 데이터 생성
+        current_time = self.get_clock().now()
+        dt = (current_time - self.last_time).nanoseconds / 1e9
+        self.last_time = current_time
 
-        local_yaw = euler_from_quaternion(self.ekf.quat[1, 0], self.ekf.quat[2, 0], \
-                                          self.ekf.quat[3, 0], self.ekf.quat[0, 0])
-        global_yaw = local_yaw + self.yaw_offset
-        self.global_yaw = normalise_angle(global_yaw)
-        odom_msg.pose.pose.orientation = yaw_to_quaternion(self.global_yaw)
-        
-        odom_msg.twist.twist.angular.x = self.imu_angular_velocity_x
-        odom_msg.twist.twist.angular.y = self.imu_angular_velocity_y
-        odom_msg.twist.twist.angular.z = self.imu_angular_velocity_z
+        self.ekf.predict(dt)
 
-        odom_msg.twist.twist.linear.x = self.ekf.vn_ins
-        odom_msg.twist.twist.linear.y = self.ekf.ve_ins
-        odom_msg.twist.twist.linear.z = self.ekf.vd_ins
+        # EKF 상태를 Odometry 메시지로 변환
+        self.gps_pose.pose.pose.position.x = self.ekf.state[0]
+        self.gps_pose.pose.pose.position.y = self.ekf.state[1]
+        self.gps_pose.pose.pose.orientation = yaw_to_quaternion(self.ekf.state[2])
+        self.gps_pose.twist.twist.linear.x = self.ekf.state[3]
+        self.gps_pose.twist.twist.angular.z = self.ekf.state[4]
 
-        self.ekf_speed = np.sqrt(self.ekf.vn_ins ** 2 + self.ekf.ve_ins ** 2)
-        
-        self.odom_pub.publish(odom_msg)
-        
+        # 공분산 행렬 업데이트
+        self.gps_pose.pose.covariance = np.pad(self.ekf.P[:3, :3], (0, 3)).flatten()
+        self.gps_pose.twist.covariance = np.pad(self.ekf.P[3:, 3:], (0, 4)).flatten()
+
+        self.odom_pub.publish(self.gps_pose)
+
         self.get_logger().info(
-            f"\nx: {odom_msg.pose.pose.position.x},\n"
-            f"y: {odom_msg.pose.pose.position.y},\n"
-            f"yaw: {self.global_yaw / np.pi * 180.0} degree"
+            f"\nx: {self.gps_pose.pose.pose.position.x},\n"
+            f"y: {self.gps_pose.pose.pose.position.y},\n"
+            f"yaw: {self.ekf.state[2] / np.pi * 180.0} degree,\n"
+            f"speed: {self.ekf.state[3]},\n"
+            f"yaw_rate: {self.ekf.state[4]}\n"
         )
-
-        self.publish_speed_set()
-        self.publish_position_set()
-
-    # GPS, Encoder, EKF 속도 비교를 위해 publish
-    def publish_speed_set(self):
-        speed_set = Float64MultiArray()
-        speed_set.data = [self.gps_speed, self.encoder_speed, self.ekf_speed]  # GPS, Encoder, EKF 속도
-        self.speed_set_pub.publish(speed_set)
-        self.get_logger().info(f'Published: {speed_set.data}')
-    
-    def publish_position_set(self):
-        position_set = Float64MultiArray()
-        position_set.data = [self.gps_lat, self.gps_lon, self.ekf.lat_ins, self.ekf.lon_ins]  # GPS, EKF 위도, 경도
-        self.position_set_pub.publish(position_set)
-        self.get_logger().info(f'Published: {position_set.data}')
-
-
-        # # rviz 차량 위치 시각화
-        # corners = self.get_vehicle_corners(self.global_yaw)
-
-        # # Polygon 메시지 생성 및 퍼블리시
-        # polygon_msg = PolygonStamped()
-        # polygon_msg.header.stamp = self.get_clock().now().to_msg()
-        # polygon_msg.header.frame_id = "base_link"   # 차량의 base_link 좌표 중심으로 시각화
-        # for corner in corners:
-        #     point = Point32()
-        #     point.x, point.y = corner
-        #     polygon_msg.polygon.points.append(point)
-
-        # self.location_viz_pub.publish(polygon_msg)
-
-    # def get_vehicle_corners(self, yaw):
-    #     """ 차량 중심과 yaw를 기준으로 사각형 네 꼭짓점 좌표 계산 """
-    #     half_length = self.vehicle_length / 2
-    #     half_width = self.vehicle_width / 2
-
-    #     # 차량 좌표 기준 네 개 꼭짓점 (로컬 좌표)
-    #     corners_local = np.array([
-    #         [ half_length,  half_width],  # front-right
-    #         [ half_length, -half_width],  # front-left
-    #         [-half_length, -half_width],  # rear-left
-    #         [-half_length,  half_width]   # rear-right
-    #     ])
-
-    #     # 회전 변환 (yaw 적용)
-    #     rotation_matrix = np.array([
-    #         [np.cos(yaw), -np.sin(yaw)],
-    #         [np.sin(yaw),  np.cos(yaw)]
-    #     ])
-    #     rotated_corners = (rotation_matrix @ corners_local.T).T
-
-    #     return rotated_corners
 
 def latlon_to_utm(lat, lon):
     # WGS84 좌표계를 UTM 좌표계로 변환
