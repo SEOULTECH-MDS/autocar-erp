@@ -1,14 +1,6 @@
-import matplotlib.pyplot as plt
-import time
 import cvxpy
 import math
 import numpy as np
-# import sys
-# import pathlib
-# # sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
-# sys.path.append("/home/ysl/PythonRobotics")
-
-# print("sys.path is: ", sys.path[-1])
 
 from autocar_nav import normalise_angle
 
@@ -22,26 +14,16 @@ R = np.diag([0.01, 0.01])  # input cost matrix
 Rd = np.diag([0.01, 1.0])  # input difference cost matrix
 Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
 Qf = Q  # state final matrix
-GOAL_DIS = 1.5  # goal distance
-STOP_SPEED = 0.5 / 3.6  # stop speed
-MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
 MAX_ITER = 3  # Max iteration
 DU_TH = 0.1  # iteration finish param
 
-TARGET_SPEED = 10.0 / 3.6  # [m/s] target speed
+TARGET_SPEED = 1.5  # [m/s] target speed defualt: 10.0 / 3.6
 N_IND_SEARCH = 10  # Search index number
 
 DT = 0.2  # [s] time tick
 
-# Vehicle parameters
-# LENGTH = 4.5  # [m]
-# WIDTH = 2.0  # [m]
-# BACKTOWHEEL = 1.0  # [m]
-# WHEEL_LEN = 0.3  # [m]
-# WHEEL_WIDTH = 0.2  # [m]
-# TREAD = 0.7  # [m]
 WB = 1.566  # [m] default : 2.5, ERP42 : 1.566
 
 MAX_STEER = np.deg2rad(30.0)  # maximum steering angle [rad]  default: 45
@@ -49,9 +31,6 @@ MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
 MAX_SPEED = 1.5  # maximum speed [m/s]
 MIN_SPEED = -1.5  # minimum speed [m/s]
 MAX_ACCEL = 0.614  # maximum accel [m/ss] defualt: 1.0
-
-# show_animation = True
-
 
 class State:
     """
@@ -225,7 +204,7 @@ def iterative_linear_mpc_control(xref, x0, dref, ov, od):
 
 def linear_mpc_control(xref, xbar, x0, dref):
     """
-    선형 MPC 제어
+    선형 MPC 최적화
     xref: 목표 궤적
     xbar: 예측 궤적
     x0: 현재 차량 상태
@@ -329,30 +308,3 @@ def calc_ref_trajectory(state, cx, cy, cyaw, ck, sp, dl, pind):
             dref[0, i] = 0.0
 
     return xref, ind, dref
-
-
-def check_goal(state, goal, tind, nind):
-    """
-    목표 도달 여부 확인
-    state: 차량의 현재 상태
-    goal: 목표 위치
-    tind: 현재 인덱스
-    nind: 목표 인덱스
-    """
-
-    # 목표 도달 여부 확인
-    dx = state.x - goal[0]
-    dy = state.y - goal[1]
-    d = math.hypot(dx, dy)
-
-    isgoal = (d <= GOAL_DIS)
-
-    if abs(tind - nind) >= 5:
-        isgoal = False
-
-    isstop = (abs(state.v) <= STOP_SPEED)
-
-    if isgoal and isstop:
-        return True
-
-    return False

@@ -13,7 +13,6 @@ from autocar_nav.keyboard_input import KeyboardInput
 from autocar_nav.way_selector import WaySelector
 from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 
-from autocar_msgs.msg import State2D
 from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Vector3
 from visualization_msgs.msg import MarkerArray, Marker
 from nav_msgs.msg import Odometry

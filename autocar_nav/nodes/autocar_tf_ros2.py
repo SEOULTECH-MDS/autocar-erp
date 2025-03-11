@@ -6,7 +6,6 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped, TransformStamped, Quaternion, Vector3
 from sensor_msgs.msg import NavSatFix
-from autocar_msgs.msg import State2D
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster, TransformListener, Buffer
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
