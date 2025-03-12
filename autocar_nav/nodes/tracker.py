@@ -5,13 +5,13 @@ import numpy as np
 import rclpy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry, Path
 from rclpy.node import Node
 from std_msgs.msg import Float64
 from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import Marker
 
 
-from autocar_msgs.msg import Path2D, State2D
 from autocar_nav import normalise_angle, yaw_to_quaternion
 
 class PathTracker(Node):
@@ -28,8 +28,8 @@ class PathTracker(Node):
         self.lateral_ref_pub = self.create_publisher(PoseStamped, '/autocar/lateral_ref', 10)
 
         # 서브스크라이버 생성
-        self.localisation_sub = self.create_subscription(State2D, '/autocar/state2D', self.vehicle_state_cb, 10)
-        self.path_sub = self.create_subscription(Path2D, '/autocar/path', self.path_cb, 10)
+        self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
+        self.path_sub = self.create_subscription(Path, '/autocar/path', self.path_cb, 10)
         self.target_vel_sub = self.create_subscription(Float64, '/autocar/target_velocity', self.target_vel_cb, 10)
 
         # ROS2 파라미터 설정
