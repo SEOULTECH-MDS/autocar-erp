@@ -1,0 +1,93 @@
+[0.023s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav -- -j16 -l16
+[0.461s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.462s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.462s] -- Found rclpy: 3.3.15 (/opt/ros/humble/share/rclpy/cmake)
+[0.462s] -- Found geometry_msgs: 4.2.4 (/opt/ros/humble/share/geometry_msgs/cmake)
+[0.462s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.462s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.462s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.462s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.462s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.462s] -- Found nav_msgs: 4.2.4 (/opt/ros/humble/share/nav_msgs/cmake)
+[0.462s] -- Found tf2: 0.25.12 (/opt/ros/humble/share/tf2/cmake)
+[0.462s] -- Found tf2_ros: 0.25.12 (/opt/ros/humble/share/tf2_ros/cmake)
+[0.462s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.462s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[0.462s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.462s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[0.462s] -- Added test 'copyright' to check source files copyright and LICENSE
+[0.462s] -- Added test 'flake8' to check Python code syntax and style conventions
+[0.462s] -- Added test 'lint_cmake' to check CMake code style
+[0.462s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[0.462s] -- Added test 'xmllint' to check XML markup files
+[0.463s] -- Configuring done
+[0.463s] -- Generating done
+[0.463s] -- Build files have been written to: /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav
+[0.472s] Built target ament_cmake_python_symlink_autocar_nav
+[0.607s] running egg_info
+[0.608s] writing autocar_nav.egg-info/PKG-INFO
+[0.609s] writing dependency_links to autocar_nav.egg-info/dependency_links.txt
+[0.609s] writing top-level names to autocar_nav.egg-info/top_level.txt
+[0.609s] reading manifest file 'autocar_nav.egg-info/SOURCES.txt'
+[0.610s] writing manifest file 'autocar_nav.egg-info/SOURCES.txt'
+[0.628s] Built target ament_cmake_python_build_autocar_nav_egg
+[0.636s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav -- -j16 -l16
+[0.637s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav
+[0.644s] -- Install configuration: ""
+[0.644s] -- Execute custom install script
+[0.644s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/pythonpath.sh
+[0.645s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/pythonpath.dsv
+[0.645s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/PKG-INFO
+[0.645s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/SOURCES.txt
+[0.645s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/dependency_links.txt
+[0.645s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/top_level.txt
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/__init__.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/cubic_spline_interpolator.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/euler_from_quaternion.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/keyboard_input.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/mpc.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/normalise_angle.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/osm_handler.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/stopwatch.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/way_selector.py
+[0.646s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/yaw_to_quaternion.py
+[0.647s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/config/navigation_params.yaml
+[0.647s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/boong_LINK.osm
+[0.647s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/hitech2_INTERSECTION_LINK.osm
+[0.647s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/hitech2_LINK.osm
+[0.647s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/hitech2_STOPLINE.osm
+[0.647s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/waypoints.csv
+[0.647s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/localplanner.py
+[0.654s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/tracker.py
+[0.662s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/autocar_tf_ros2.py
+[0.669s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/hitech_test_pub.py
+[0.676s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/autocar_tf_ros2.py
+[0.677s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/mpc_tracker.py
+[0.684s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/global_click_planner.py
+[0.689s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/ament_index/resource_index/package_run_dependencies/autocar_nav
+[0.696s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/ament_index/resource_index/parent_prefix_path/autocar_nav
+[0.703s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/ament_prefix_path.sh
+[0.710s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/ament_prefix_path.dsv
+[0.717s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/path.sh
+[0.725s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/path.dsv
+[0.732s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.bash
+[0.737s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.sh
+[0.743s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.zsh
+[0.748s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.dsv
+[0.756s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.dsv
+[0.764s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/ament_index/resource_index/packages/autocar_nav
+[0.769s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/cmake/autocar_navConfig.cmake
+[0.775s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/cmake/autocar_navConfig-version.cmake
+[0.783s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.xml
+[0.823s] Listing '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav'...
+[0.823s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/__init__.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/cubic_spline_interpolator.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/euler_from_quaternion.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/keyboard_input.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/mpc.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/normalise_angle.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/osm_handler.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/stopwatch.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/way_selector.py'...
+[0.824s] Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/yaw_to_quaternion.py'...
+[0.829s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav

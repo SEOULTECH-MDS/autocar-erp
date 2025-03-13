@@ -1,0 +1,20 @@
+running develop
+running egg_info
+writing erp_control.egg-info/PKG-INFO
+writing dependency_links to erp_control.egg-info/dependency_links.txt
+writing entry points to erp_control.egg-info/entry_points.txt
+writing requirements to erp_control.egg-info/requires.txt
+writing top-level names to erp_control.egg-info/top_level.txt
+reading manifest file 'erp_control.egg-info/SOURCES.txt'
+writing manifest file 'erp_control.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/python3.10/site-packages/erp-control.egg-link (link to .)
+Installing ERP42_ros2 script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+Installing delay script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+Installing erp_client script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+Installing erp_publish script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+Installing erp_test script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+Installing simul_plot script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+
+Installed /home/mds/autocar-erp/autocar-erp-main/build/erp_control
+running symlink_data

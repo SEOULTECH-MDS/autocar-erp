@@ -1,0 +1,44 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+-- Added test 'copyright' to check source files copyright and LICENSE
+-- Added test 'flake8' to check Python code syntax and style conventions
+-- Added test 'lint_cmake' to check CMake code style
+-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/mds/autocar-erp/autocar-erp-main/build/launches
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/click_launch.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/default_launch.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/lane_launch.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/ament_index/resource_index/package_run_dependencies/launches
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/ament_index/resource_index/parent_prefix_path/launches
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/ament_prefix_path.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/ament_prefix_path.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/path.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/path.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.bash
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.zsh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/ament_index/resource_index/packages/launches
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/cmake/launchesConfig.cmake
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/cmake/launchesConfig-version.cmake
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.xml

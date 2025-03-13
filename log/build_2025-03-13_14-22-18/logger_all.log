@@ -1,0 +1,476 @@
+[0.061s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build', '--symlink-install']
+[0.061s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=True, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=16, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x7ddceac740d0>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7ddceac376d0>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7ddceac376d0>>, mixin_verb=('build',))
+[0.146s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.146s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.146s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.146s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.146s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.146s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.146s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/mds/autocar-erp/autocar-erp-main'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extensions ['ignore', 'ignore_ament_install']
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extension 'ignore'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extension 'ignore_ament_install'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extensions ['colcon_pkg']
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extension 'colcon_pkg'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extensions ['colcon_meta']
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extension 'colcon_meta'
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extensions ['ros']
+[0.152s] Level 1:colcon.colcon_core.package_identification:_identify(autocar_nav) by extension 'ros'
+[0.154s] DEBUG:colcon.colcon_core.package_identification:Package 'autocar_nav' with type 'ros.ament_cmake' and name 'autocar_nav'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extensions ['ignore', 'ignore_ament_install']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'ignore'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'ignore_ament_install'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extensions ['colcon_pkg']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'colcon_pkg'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extensions ['colcon_meta']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'colcon_meta'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extensions ['ros']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'ros'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extensions ['cmake', 'python']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'cmake'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'python'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extensions ['python_setup_py']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(carla_scripts) by extension 'python_setup_py'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extensions ['ignore', 'ignore_ament_install']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extension 'ignore'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extension 'ignore_ament_install'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extensions ['colcon_pkg']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extension 'colcon_pkg'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extensions ['colcon_meta']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extension 'colcon_meta'
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extensions ['ros']
+[0.154s] Level 1:colcon.colcon_core.package_identification:_identify(erp_control) by extension 'ros'
+[0.155s] DEBUG:colcon.colcon_core.package_identification:Package 'erp_control' with type 'ros.ament_python' and name 'erp_control'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extensions ['ignore', 'ignore_ament_install']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extension 'ignore'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extension 'ignore_ament_install'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extensions ['colcon_pkg']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extension 'colcon_pkg'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extensions ['colcon_meta']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extension 'colcon_meta'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extensions ['ros']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(launches) by extension 'ros'
+[0.155s] DEBUG:colcon.colcon_core.package_identification:Package 'launches' with type 'ros.ament_cmake' and name 'launches'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extensions ['ignore', 'ignore_ament_install']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extension 'ignore'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extension 'ignore_ament_install'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extensions ['colcon_pkg']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extension 'colcon_pkg'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extensions ['colcon_meta']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extension 'colcon_meta'
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extensions ['ros']
+[0.155s] Level 1:colcon.colcon_core.package_identification:_identify(local_path_planning) by extension 'ros'
+[0.156s] DEBUG:colcon.colcon_core.package_identification:Package 'local_path_planning' with type 'ros.ament_python' and name 'local_path_planning'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extensions ['ignore', 'ignore_ament_install']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extension 'ignore'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extension 'ignore_ament_install'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extensions ['colcon_pkg']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extension 'colcon_pkg'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extensions ['colcon_meta']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extension 'colcon_meta'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extensions ['ros']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(localization) by extension 'ros'
+[0.156s] DEBUG:colcon.colcon_core.package_identification:Package 'localization' with type 'ros.ament_python' and name 'localization'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extensions ['ignore', 'ignore_ament_install']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extension 'ignore'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extension 'ignore_ament_install'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extensions ['colcon_pkg']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extension 'colcon_pkg'
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extensions ['colcon_meta']
+[0.156s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extension 'colcon_meta'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extensions ['ros']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(perception) by extension 'ros'
+[0.157s] DEBUG:colcon.colcon_core.package_identification:Package 'perception' with type 'ros.ament_python' and name 'perception'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extensions ['ignore', 'ignore_ament_install']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'ignore'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'ignore_ament_install'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extensions ['colcon_pkg']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'colcon_pkg'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extensions ['colcon_meta']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'colcon_meta'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extensions ['ros']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'ros'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extensions ['cmake', 'python']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'cmake'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'python'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extensions ['python_setup_py']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(resources) by extension 'python_setup_py'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extensions ['ignore', 'ignore_ament_install']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'ignore'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'ignore_ament_install'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extensions ['colcon_pkg']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'colcon_pkg'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extensions ['colcon_meta']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'colcon_meta'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extensions ['ros']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'ros'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extensions ['cmake', 'python']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'cmake'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'python'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extensions ['python_setup_py']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge) by extension 'python_setup_py'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extensions ['ignore', 'ignore_ament_install']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'ignore'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'ignore_ament_install'
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extensions ['colcon_pkg']
+[0.157s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'colcon_pkg'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extensions ['colcon_meta']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'colcon_meta'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extensions ['ros']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'ros'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extensions ['cmake', 'python']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'cmake'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'python'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extensions ['python_setup_py']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(ros-bridge/src) by extension 'python_setup_py'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extensions ['ignore', 'ignore_ament_install']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'ignore'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'ignore_ament_install'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extensions ['colcon_pkg']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'colcon_pkg'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extensions ['colcon_meta']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'colcon_meta'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extensions ['ros']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'ros'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extensions ['cmake', 'python']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'cmake'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'python'
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extensions ['python_setup_py']
+[0.158s] Level 1:colcon.colcon_core.package_identification:_identify(rviz_satellite) by extension 'python_setup_py'
+[0.158s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.158s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.158s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.158s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.158s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.175s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.175s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.176s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 10 installed packages in /home/mds/autocar-erp/install
+[0.176s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 16 installed packages in /home/mds/ros2_ws/install
+[0.177s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 286 installed packages in /opt/ros/humble
+[0.177s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.196s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'cmake_args' from command line to 'None'
+[0.196s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'cmake_target' from command line to 'None'
+[0.196s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.196s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'cmake_clean_cache' from command line to 'False'
+[0.196s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'cmake_clean_first' from command line to 'False'
+[0.196s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'cmake_force_configure' from command line to 'False'
+[0.196s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'ament_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'catkin_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'autocar_nav' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.197s] DEBUG:colcon.colcon_core.verb:Building package 'autocar_nav' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav', 'merge_install': False, 'path': '/home/mds/autocar-erp/autocar-erp-main/autocar_nav', 'symlink_install': True, 'test_result_base': None}
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'cmake_target' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'cmake_clean_cache' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'cmake_clean_first' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'cmake_force_configure' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'ament_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'catkin_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'erp_control' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.197s] DEBUG:colcon.colcon_core.verb:Building package 'erp_control' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/mds/autocar-erp/autocar-erp-main/build/erp_control', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/mds/autocar-erp/autocar-erp-main/install/erp_control', 'merge_install': False, 'path': '/home/mds/autocar-erp/autocar-erp-main/erp_control', 'symlink_install': True, 'test_result_base': None}
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'cmake_target' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'cmake_clean_cache' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'cmake_clean_first' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'cmake_force_configure' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'ament_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'catkin_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'launches' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.197s] DEBUG:colcon.colcon_core.verb:Building package 'launches' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/mds/autocar-erp/autocar-erp-main/build/launches', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/mds/autocar-erp/autocar-erp-main/install/launches', 'merge_install': False, 'path': '/home/mds/autocar-erp/autocar-erp-main/launches', 'symlink_install': True, 'test_result_base': None}
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'cmake_target' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'cmake_clean_cache' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'cmake_clean_first' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'cmake_force_configure' from command line to 'False'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'ament_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'catkin_cmake_args' from command line to 'None'
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'local_path_planning' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.197s] DEBUG:colcon.colcon_core.verb:Building package 'local_path_planning' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning', 'merge_install': False, 'path': '/home/mds/autocar-erp/autocar-erp-main/local_path_planning', 'symlink_install': True, 'test_result_base': None}
+[0.197s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'cmake_args' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'cmake_target' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'cmake_clean_cache' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'cmake_clean_first' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'cmake_force_configure' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'ament_cmake_args' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'catkin_cmake_args' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'localization' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.198s] DEBUG:colcon.colcon_core.verb:Building package 'localization' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/mds/autocar-erp/autocar-erp-main/build/localization', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/mds/autocar-erp/autocar-erp-main/install/localization', 'merge_install': False, 'path': '/home/mds/autocar-erp/autocar-erp-main/localization', 'symlink_install': True, 'test_result_base': None}
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'cmake_args' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'cmake_target' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'cmake_clean_cache' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'cmake_clean_first' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'cmake_force_configure' from command line to 'False'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'ament_cmake_args' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'catkin_cmake_args' from command line to 'None'
+[0.198s] Level 5:colcon.colcon_core.verb:set package 'perception' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.198s] DEBUG:colcon.colcon_core.verb:Building package 'perception' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/mds/autocar-erp/autocar-erp-main/build/perception', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/mds/autocar-erp/autocar-erp-main/install/perception', 'merge_install': False, 'path': '/home/mds/autocar-erp/autocar-erp-main/perception', 'symlink_install': True, 'test_result_base': None}
+[0.198s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.199s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.199s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/mds/autocar-erp/autocar-erp-main/autocar_nav' with build type 'ament_cmake'
+[0.199s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/mds/autocar-erp/autocar-erp-main/autocar_nav'
+[0.200s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.200s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.200s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.203s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/mds/autocar-erp/autocar-erp-main/erp_control' with build type 'ament_python'
+[0.203s] Level 1:colcon.colcon_core.shell:create_environment_hook('erp_control', 'ament_prefix_path')
+[0.203s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/hook/ament_prefix_path.ps1'
+[0.203s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/hook/ament_prefix_path.dsv'
+[0.203s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/hook/ament_prefix_path.sh'
+[0.204s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.204s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.206s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/mds/autocar-erp/autocar-erp-main/launches' with build type 'ament_cmake'
+[0.206s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/mds/autocar-erp/autocar-erp-main/launches'
+[0.206s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.206s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.209s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/mds/autocar-erp/autocar-erp-main/local_path_planning' with build type 'ament_python'
+[0.209s] Level 1:colcon.colcon_core.shell:create_environment_hook('local_path_planning', 'ament_prefix_path')
+[0.209s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/hook/ament_prefix_path.ps1'
+[0.209s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/hook/ament_prefix_path.dsv'
+[0.209s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/hook/ament_prefix_path.sh'
+[0.210s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.210s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.212s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/mds/autocar-erp/autocar-erp-main/localization' with build type 'ament_python'
+[0.212s] Level 1:colcon.colcon_core.shell:create_environment_hook('localization', 'ament_prefix_path')
+[0.212s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/hook/ament_prefix_path.ps1'
+[0.212s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/hook/ament_prefix_path.dsv'
+[0.213s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/hook/ament_prefix_path.sh'
+[0.213s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.213s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.215s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/mds/autocar-erp/autocar-erp-main/perception' with build type 'ament_python'
+[0.215s] Level 1:colcon.colcon_core.shell:create_environment_hook('perception', 'ament_prefix_path')
+[0.215s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/hook/ament_prefix_path.ps1'
+[0.216s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/hook/ament_prefix_path.dsv'
+[0.216s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/hook/ament_prefix_path.sh'
+[0.216s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.216s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.222s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav -- -j16 -l16
+[0.367s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/mds/autocar-erp/autocar-erp-main/erp_control'
+[0.368s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.368s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.372s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/launches': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/launches -- -j16 -l16
+[0.514s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/mds/autocar-erp/autocar-erp-main/local_path_planning'
+[0.514s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.515s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.657s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/mds/autocar-erp/autocar-erp-main/localization'
+[0.657s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.657s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.663s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/launches' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/launches -- -j16 -l16
+[0.669s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/launches': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/launches
+[0.807s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/mds/autocar-erp/autocar-erp-main/perception'
+[0.808s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.808s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.816s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(launches)
+[0.816s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/launches' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/launches
+[0.817s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches' for CMake module files
+[0.818s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches' for CMake config files
+[0.818s] Level 1:colcon.colcon_core.shell:create_environment_hook('launches', 'cmake_prefix_path')
+[0.818s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/hook/cmake_prefix_path.ps1'
+[0.818s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/hook/cmake_prefix_path.dsv'
+[0.818s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/hook/cmake_prefix_path.sh'
+[0.819s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/bin'
+[0.819s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/lib/pkgconfig/launches.pc'
+[0.819s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/lib/python3.10/site-packages'
+[0.819s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/bin'
+[0.819s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.ps1'
+[0.820s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.dsv'
+[0.820s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.sh'
+[0.820s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.bash'
+[0.821s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.zsh'
+[0.821s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/launches/share/colcon-core/packages/launches)
+[0.821s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(launches)
+[0.821s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches' for CMake module files
+[0.822s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches' for CMake config files
+[0.822s] Level 1:colcon.colcon_core.shell:create_environment_hook('launches', 'cmake_prefix_path')
+[0.822s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/hook/cmake_prefix_path.ps1'
+[0.822s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/hook/cmake_prefix_path.dsv'
+[0.822s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/hook/cmake_prefix_path.sh'
+[0.823s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/bin'
+[0.823s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/lib/pkgconfig/launches.pc'
+[0.823s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/lib/python3.10/site-packages'
+[0.823s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/launches/bin'
+[0.823s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.ps1'
+[0.823s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.dsv'
+[0.823s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.sh'
+[0.824s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.bash'
+[0.824s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.zsh'
+[0.824s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/launches/share/colcon-core/packages/launches)
+[0.835s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav -- -j16 -l16
+[0.836s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav
+[1.014s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/build --no-deps symlink_data
+[1.015s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/erp_control': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/erp_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/erp_control/build --no-deps symlink_data
+[1.017s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/localization': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/localization/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/localization/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/localization/build --no-deps symlink_data
+[1.027s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(autocar_nav)
+[1.027s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav' for CMake module files
+[1.028s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav
+[1.028s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav' for CMake config files
+[1.029s] Level 1:colcon.colcon_core.shell:create_environment_hook('autocar_nav', 'cmake_prefix_path')
+[1.029s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/hook/cmake_prefix_path.ps1'
+[1.030s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/hook/cmake_prefix_path.dsv'
+[1.030s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/hook/cmake_prefix_path.sh'
+[1.030s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib'
+[1.030s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/bin'
+[1.030s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/pkgconfig/autocar_nav.pc'
+[1.030s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/python3.10/site-packages'
+[1.031s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/bin'
+[1.031s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.ps1'
+[1.031s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.dsv'
+[1.031s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.sh'
+[1.031s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.bash'
+[1.032s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.zsh'
+[1.032s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/colcon-core/packages/autocar_nav)
+[1.032s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(autocar_nav)
+[1.032s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav' for CMake module files
+[1.032s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav' for CMake config files
+[1.033s] Level 1:colcon.colcon_core.shell:create_environment_hook('autocar_nav', 'cmake_prefix_path')
+[1.033s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/hook/cmake_prefix_path.ps1'
+[1.033s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/hook/cmake_prefix_path.dsv'
+[1.033s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/hook/cmake_prefix_path.sh'
+[1.033s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib'
+[1.033s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/bin'
+[1.033s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/pkgconfig/autocar_nav.pc'
+[1.033s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/python3.10/site-packages'
+[1.034s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/bin'
+[1.034s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.ps1'
+[1.034s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.dsv'
+[1.034s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.sh'
+[1.034s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.bash'
+[1.035s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.zsh'
+[1.035s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/colcon-core/packages/autocar_nav)
+[1.037s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/perception': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/perception/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/perception/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/perception/build --no-deps symlink_data
+[1.277s] Level 1:colcon.colcon_core.shell:create_environment_hook('local_path_planning', 'pythonpath_develop')
+[1.277s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/share/local_path_planning/hook/pythonpath_develop.ps1'
+[1.278s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning' returned '0': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/build --no-deps symlink_data
+[1.278s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/share/local_path_planning/hook/pythonpath_develop.dsv'
+[1.278s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/share/local_path_planning/hook/pythonpath_develop.sh'
+[1.279s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning' for CMake module files
+[1.280s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning' for CMake config files
+[1.281s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib'
+[1.281s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/bin'
+[1.281s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/pkgconfig/local_path_planning.pc'
+[1.281s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/python3.10/site-packages'
+[1.281s] Level 1:colcon.colcon_core.shell:create_environment_hook('local_path_planning', 'pythonpath')
+[1.281s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/hook/pythonpath.ps1'
+[1.282s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/hook/pythonpath.dsv'
+[1.282s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/hook/pythonpath.sh'
+[1.283s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/bin'
+[1.283s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(local_path_planning)
+[1.284s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/package.ps1'
+[1.285s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/package.dsv'
+[1.285s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/package.sh'
+[1.286s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/package.bash'
+[1.286s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning/package.zsh'
+[1.286s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/colcon-core/packages/local_path_planning)
+[1.287s] Level 1:colcon.colcon_core.shell:create_environment_hook('erp_control', 'pythonpath_develop')
+[1.288s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/erp_control/share/erp_control/hook/pythonpath_develop.ps1'
+[1.288s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/erp_control' returned '0': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/erp_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/erp_control/build --no-deps symlink_data
+[1.288s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/build/erp_control/share/erp_control/hook/pythonpath_develop.dsv'
+[1.289s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/erp_control/share/erp_control/hook/pythonpath_develop.sh'
+[1.289s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/erp_control' for CMake module files
+[1.290s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/erp_control' for CMake config files
+[1.290s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib'
+[1.290s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/bin'
+[1.290s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/pkgconfig/erp_control.pc'
+[1.291s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/python3.10/site-packages'
+[1.291s] Level 1:colcon.colcon_core.shell:create_environment_hook('erp_control', 'pythonpath')
+[1.291s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/hook/pythonpath.ps1'
+[1.291s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/hook/pythonpath.dsv'
+[1.291s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/hook/pythonpath.sh'
+[1.292s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/bin'
+[1.292s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(erp_control)
+[1.292s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/package.ps1'
+[1.293s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/package.dsv'
+[1.293s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/package.sh'
+[1.293s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/package.bash'
+[1.293s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control/package.zsh'
+[1.293s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/colcon-core/packages/erp_control)
+[1.294s] Level 1:colcon.colcon_core.shell:create_environment_hook('localization', 'pythonpath_develop')
+[1.294s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/localization' returned '0': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/localization/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/localization/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/localization/build --no-deps symlink_data
+[1.294s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/localization/share/localization/hook/pythonpath_develop.ps1'
+[1.294s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/build/localization/share/localization/hook/pythonpath_develop.dsv'
+[1.295s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/localization/share/localization/hook/pythonpath_develop.sh'
+[1.295s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/localization' for CMake module files
+[1.295s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/localization' for CMake config files
+[1.295s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/localization/lib'
+[1.295s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/localization/bin'
+[1.295s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/localization/lib/pkgconfig/localization.pc'
+[1.296s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/localization/lib/python3.10/site-packages'
+[1.296s] Level 1:colcon.colcon_core.shell:create_environment_hook('localization', 'pythonpath')
+[1.296s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/hook/pythonpath.ps1'
+[1.296s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/hook/pythonpath.dsv'
+[1.296s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/hook/pythonpath.sh'
+[1.296s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/localization/bin'
+[1.296s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(localization)
+[1.297s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/package.ps1'
+[1.297s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/package.dsv'
+[1.297s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/package.sh'
+[1.297s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/package.bash'
+[1.298s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/localization/share/localization/package.zsh'
+[1.298s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/localization/share/colcon-core/packages/localization)
+[1.299s] Level 1:colcon.colcon_core.shell:create_environment_hook('perception', 'pythonpath_develop')
+[1.299s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/perception/share/perception/hook/pythonpath_develop.ps1'
+[1.299s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/perception' returned '0': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/perception/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/perception/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/perception/build --no-deps symlink_data
+[1.299s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/build/perception/share/perception/hook/pythonpath_develop.dsv'
+[1.299s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/build/perception/share/perception/hook/pythonpath_develop.sh'
+[1.300s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/perception' for CMake module files
+[1.300s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/perception' for CMake config files
+[1.300s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/perception/lib'
+[1.300s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/perception/bin'
+[1.300s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/perception/lib/pkgconfig/perception.pc'
+[1.300s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/perception/lib/python3.10/site-packages'
+[1.300s] Level 1:colcon.colcon_core.shell:create_environment_hook('perception', 'pythonpath')
+[1.301s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/hook/pythonpath.ps1'
+[1.301s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/hook/pythonpath.dsv'
+[1.301s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/hook/pythonpath.sh'
+[1.301s] Level 1:colcon.colcon_core.environment:checking '/home/mds/autocar-erp/autocar-erp-main/install/perception/bin'
+[1.301s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(perception)
+[1.301s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/package.ps1'
+[1.302s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/package.dsv'
+[1.302s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/package.sh'
+[1.302s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/package.bash'
+[1.302s] INFO:colcon.colcon_core.shell:Creating package script '/home/mds/autocar-erp/autocar-erp-main/install/perception/share/perception/package.zsh'
+[1.303s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/mds/autocar-erp/autocar-erp-main/install/perception/share/colcon-core/packages/perception)
+[1.303s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[1.303s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[1.303s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[1.303s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[1.306s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[1.306s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[1.306s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[1.315s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[1.316s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/mds/autocar-erp/autocar-erp-main/install/local_setup.ps1'
+[1.317s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/mds/autocar-erp/autocar-erp-main/install/_local_setup_util_ps1.py'
+[1.319s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/mds/autocar-erp/autocar-erp-main/install/setup.ps1'
+[1.320s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/mds/autocar-erp/autocar-erp-main/install/local_setup.sh'
+[1.321s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/mds/autocar-erp/autocar-erp-main/install/_local_setup_util_sh.py'
+[1.321s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/mds/autocar-erp/autocar-erp-main/install/setup.sh'
+[1.322s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/mds/autocar-erp/autocar-erp-main/install/local_setup.bash'
+[1.323s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/mds/autocar-erp/autocar-erp-main/install/setup.bash'
+[1.324s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/mds/autocar-erp/autocar-erp-main/install/local_setup.zsh'
+[1.325s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/mds/autocar-erp/autocar-erp-main/install/setup.zsh'
