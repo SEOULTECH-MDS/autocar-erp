@@ -1,0 +1,15 @@
+running develop
+running egg_info
+writing local_path_planning.egg-info/PKG-INFO
+writing dependency_links to local_path_planning.egg-info/dependency_links.txt
+writing entry points to local_path_planning.egg-info/entry_points.txt
+writing requirements to local_path_planning.egg-info/requires.txt
+writing top-level names to local_path_planning.egg-info/top_level.txt
+reading manifest file 'local_path_planning.egg-info/SOURCES.txt'
+writing manifest file 'local_path_planning.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/python3.10/site-packages/local-path-planning.egg-link (link to .)
+Installing optimal_frenet_planning script to /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/local_path_planning
+
+Installed /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning
+running symlink_data

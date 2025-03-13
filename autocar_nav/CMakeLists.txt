@@ -35,8 +35,6 @@ install(DIRECTORY
 )
 
 install(PROGRAMS
-  nodes/globalplanner.py
-  nodes/localization.py
   nodes/localplanner.py
   nodes/tracker.py
   nodes/autocar_tf_ros2.py
