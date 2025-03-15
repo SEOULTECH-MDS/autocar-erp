@@ -10,7 +10,7 @@ NU = 2  # u = [v, steer]
 T = 5  # horizon length 5s: default
 
 # mpc parameters
-R = np.diag([0.05, 0.05])  # input cost matrix default: 0.01, 0.01
+R = np.diag([0.01, 0.05])  # input cost matrix default: 0.01, 0.01
 Rd = np.diag([0.01, 1.0])  # input difference cost matrix default: 0.01, 1.0
 Q = np.diag([1.2, 1.2, 0.5, 0.5])  # state cost matrix default: 1.0, 1.0, 0.5, 0.5
 Qf = Q  # state final matrix
