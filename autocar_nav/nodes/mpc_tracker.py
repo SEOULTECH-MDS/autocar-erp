@@ -52,6 +52,9 @@ class PathTracker(Node):
         self.frequency = 5.0
         self.dt = 1 / self.frequency  # 제어 주기 계산
 
+        self.velocity = 0.0
+        self.steering_angle = 0.0
+
         # 주기적인 제어 실행을 위한 타이머 설정
         self.timer = self.create_timer(self.dt, self.timer_cb)
 
@@ -106,7 +109,8 @@ class PathTracker(Node):
             mind *= -1
 
         self.crosstrack_error = mind
-        self.heading_error = normalise_angle(self.cyaw[ind] - self.yaw - np.pi * 0.5)
+        # self.heading_error = normalise_angle(self.cyaw[ind] - self.yaw - np.pi * 0.5)
+        self.heading_error = normalise_angle(self.cyaw[ind] - self.yaw)
 
         # 참조 좌표 퍼블리시
         pose = PoseStamped()
@@ -135,7 +139,10 @@ class PathTracker(Node):
 
         if ov is not None and od is not None:
             state = update_state(state, ov[0], od[0])
-            self.set_vehicle_command(state.v, od[0])
+            self.set_vehicle_command(ov[0], od[0])
+            self.velocity = ov[0]
+            self.steering_angle = od[0]
+            
 
         self.lock.release()
 
@@ -155,16 +162,16 @@ class PathTracker(Node):
         self.ct_error_pub.publish(Float64(data=self.crosstrack_error))
         self.h_error_pub.publish(Float64(data=self.heading_error))
 
-        # self.publish_steering_marker(steering_angle)
-        self.publish_overlay_text(velocity, steering_angle)
+        # self.publish_steering_marker(self.steering_angle)
+        self.publish_overlay_text()
 
-        self.get_logger().info(f'속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg')
+        self.get_logger().info(f'속도: {self.velocity:.2f} m/s | 조향각: {self.steering_angle * 180.0 / np.pi:.2f} deg')
         self.get_logger().info(f'CTE: {self.crosstrack_error:.2f} m | HE: {self.heading_error * 180.0 / np.pi:.2f} deg')
     
-    def publish_overlay_text(self, velocity, steering_angle):
+    def publish_overlay_text(self):
         text_msg = OverlayText()
-        text_msg.width = 300
-        text_msg.height = 100
+        text_msg.width = 500
+        text_msg.height = 200
         text_msg.text_size = 15.0
         text_msg.line_width = 2
 
@@ -172,7 +179,8 @@ class PathTracker(Node):
         text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0) # 글자색 (파란색)
 
         # 표시할 텍스트 설정
-        text_msg.text = f"Velocity: {velocity:.2f}m/s \n Steering Angle: {steering_angle * 180.0 / np.pi:.2f}deg"
+        text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
+            \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg"
 
         self.overlay_pub.publish(text_msg)
 

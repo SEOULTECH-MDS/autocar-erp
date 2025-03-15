@@ -35,7 +35,6 @@ install(DIRECTORY
 )
 
 install(PROGRAMS
-  nodes/localplanner.py
   nodes/tracker.py
   nodes/autocar_tf_ros2.py
   nodes/hitech_test_pub.py
