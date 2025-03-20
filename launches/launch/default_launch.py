@@ -117,7 +117,35 @@ def generate_launch_description():
         package='perception',
         executable='lanenet',
         name='lanenet'
-        )
+        ),
+
+        Node(
+        package='perception',
+        executable='camera_traffic',
+        name='camera_traffic'
+        ),
+
+        Node(
+            package='perception',
+            executable='trafficlight',
+            name='trafficlight'
+        ),
+
+        Node(
+        package='perception',
+        executable='combined_camera',
+        name='combined_camera'
+        ),
+        #Node(
+        #    package='perception',
+        #    executable='camera_obstacle',
+        #    name='camera_obstacle'
+        #),
+        Node(
+            package='perception',
+            executable='obstacle',
+            name='obstacle'
+        ),
     ])
 
 def main():
