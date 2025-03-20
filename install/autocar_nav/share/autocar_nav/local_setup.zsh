@@ -1,1 +1,0 @@
-/home/mds/autocar-erp/autocar-erp-main/build/autocar_nav/ament_cmake_environment_hooks/local_setup.zsh
