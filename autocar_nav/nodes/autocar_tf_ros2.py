@@ -9,6 +9,7 @@ from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster, TransformListener, Buffer
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 # 위도, 경도를 UTM 좌표로 변환하는 함수
 def latlon_to_utm(lat, lon):
@@ -20,53 +21,77 @@ class AutocarTF(Node):
     def __init__(self):
         super().__init__('autocar_tf')
         
-        self.tf_br_w2m = StaticTransformBroadcaster(self)
-        self.tf_br_w2bl = TransformBroadcaster(self)
-
-        self.local_origin_sub = self.create_subscription(NavSatFix, '/ublox_gps_node/fix', self.callback_local_origin, 10)
-        self.global_location_sub = self.create_subscription(Odometry, '/autocar/location', self.callback_global_location, 10)
+        # QoS 설정
+        qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1
+        )
         
-        self.flag_world_to_map = False
-
-        self.get_logger().info("Autocar TF node has been started.")
-
-    def callback_local_origin(self, local_origin):
-        if not self.flag_world_to_map:
-            lat = local_origin.latitude
-            lon = local_origin.longitude
+        # TF 브로드캐스터 설정
+        self.tf_br_static = StaticTransformBroadcaster(self)
+        self.tf_br_dynamic = TransformBroadcaster(self)
+        
+        # 파라미터 설정
+        self.declare_parameter('map_origin_lat', 0.0)
+        self.declare_parameter('map_origin_lon', 0.0)
+        
+        # 구독
+        self.global_location_sub = self.create_subscription(
+            Odometry, 
+            '/autocar/location', 
+            self.callback_global_location, 
+            qos)
+        
+        # map 프레임 초기화
+        self.setup_map_frame()
+        
+    def setup_map_frame(self):
+        try:
+            # 설정된 map 원점 가져오기
+            lat = self.get_parameter('map_origin_lat').value
+            lon = self.get_parameter('map_origin_lon').value
+            
+            # UTM 변환
             world_x, world_y = latlon_to_utm(lat, lon)
-
+            
+            # map 원점 좌표 저장
+            self.map_origin_x = world_x
+            self.map_origin_y = world_y
+            
+            # world -> map 변환 설정
             t = TransformStamped()
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = "world"
             t.child_frame_id = "map"
-            t.transform.translation = Vector3(x=float(world_x), y=float(world_y), z=0.0)
-            t.transform.rotation = Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)  # 기본 회전 설정
             
-            self.tf_br_w2m.sendTransform(t)
-            self.flag_world_to_map = True
+            t.transform.translation = Vector3(x=float(world_x), y=float(world_y), z=0.0)
+            t.transform.rotation = Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)
+            
+            self.tf_br_static.sendTransform(t)
+            
+        except Exception as e:
+            self.get_logger().error(f'Map frame setup failed: {str(e)}')
 
-    def callback_global_location(self, global_location_msg):
-        t = TransformStamped()
-        t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = "world"  
-        t.child_frame_id = "base_link"
-
-        t.transform.translation = Vector3(
-            x=global_location_msg.pose.pose.position.x,
-            y=global_location_msg.pose.pose.position.y,
-            z=0.0  
-        )
-        t.transform.rotation = global_location_msg.pose.pose.orientation
-
-        self.tf_br_w2bl.sendTransform(t)
-
-        q = global_location_msg.pose.pose.orientation
-        global_yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
-        self.get_logger().info(f"Global location: \
-                               x={global_location_msg.pose.pose.position.x}, \
-                                y={global_location_msg.pose.pose.position.y}, \
-                                    yaw={global_yaw:2f}")
+    def callback_global_location(self, msg):
+        try:
+            # map -> base_link 변환
+            t = TransformStamped()
+            t.header.stamp = msg.header.stamp  # 메시지의 타임스탬프 사용
+            t.header.frame_id = "map"
+            t.child_frame_id = "base_link"
+            
+            # world 좌표를 map 좌표로 변환
+            map_x = msg.pose.pose.position.x - self.map_origin_x
+            map_y = msg.pose.pose.position.y - self.map_origin_y
+            
+            t.transform.translation = Vector3(x=map_x, y=map_y, z=0.0)
+            t.transform.rotation = msg.pose.pose.orientation
+            
+            self.tf_br_dynamic.sendTransform(t)
+            
+        except Exception as e:
+            self.get_logger().error(f'Transform broadcast failed: {str(e)}')
 
 def main(args=None):
     rclpy.init(args=args)
