@@ -189,12 +189,28 @@ def iterative_linear_mpc_control(xref, x0, dref, ov, od):
         ov = [TARGET_SPEED] * T
         od = [0.0] * T
 
+    # for i in range(MAX_ITER):
+    #     xbar = predict_motion(x0, ov, od, xref)
+    #     pov, pod = ov[:], od[:] # 이전 속도, 조향각 저장
+    #     ov, od, ox, oy, oyaw, ov_state = linear_mpc_control(xref, xbar, x0, dref) # 최적화 문제를 풀어 새로운 속도, 조향각 계산
+    #     du = sum(abs(ov - pov)) + sum(abs(od - pod))  # 입력 변화량 계산
+    #     if du <= DU_TH: # du가 충분히 작아지면 수렴한 것으로 판단
+    #         break
+    # else:
+    #     print("Iterative is max iter")
     for i in range(MAX_ITER):
         xbar = predict_motion(x0, ov, od, xref)
-        pov, pod = ov[:], od[:] # 이전 속도, 조향각 저장
-        ov, od, ox, oy, oyaw, ov_state = linear_mpc_control(xref, xbar, x0, dref) # 최적화 문제를 풀어 새로운 속도, 조향각 계산
+        pov, pod = ov[:], od[:]  # 이전 속도, 조향각 저장
+        result = linear_mpc_control(xref, xbar, x0, dref)
+
+        if result is None or any(v is None for v in result):
+            print("Error: MPC optimization failed. Using previous control inputs.")
+            break  # 최적화 실패 시 반복문 종료
+
+        ov, od, ox, oy, oyaw, ov_state = result
+
         du = sum(abs(ov - pov)) + sum(abs(od - pod))  # 입력 변화량 계산
-        if du <= DU_TH: # du가 충분히 작아지면 수렴한 것으로 판단
+        if du <= DU_TH:  # 수렴 확인
             break
     else:
         print("Iterative is max iter")
