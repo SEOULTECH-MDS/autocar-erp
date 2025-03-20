@@ -38,8 +38,8 @@ class HitechTestPub(Node):
         msg = NavSatFix()
 
         # x, y 위도, 경도 값 증가
-        # self.latitude += self.velocity * 0.1
-        # self.longitude += self.velocity * 0.1
+        # self.latitude += self.velocity * 0.5
+        # self.longitude += self.velocity * 0.5
         
         msg.latitude = self.latitude
         msg.longitude = self.longitude
