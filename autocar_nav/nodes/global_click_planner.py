@@ -24,7 +24,7 @@ import tf2_geometry_msgs
 TRAFFIC_DETECT_DIST = 20 # [m], 정지선으로부터 몇 m 이내에 들어와야 신호등 인식을 시작할지
 TRAFFIC_STOP_DIST = 8 # [m], 정지선으로부터 몇 m 이내에 들어와야 신호등을 통해 정지를 할지
 
-NEXT_WAY_DIST = 3 # [m], 현재 위치와 다음 way의 첫 번째 노드의 거리 => 다음 way로 넘어가는 기준
+NEXT_WAY_DIST = 3 # [m], 현재 위치와 다음 way의 첫 번째 노드의 거리 => 다음 way로 넘어가는 기준 default: 3m
 
 CHANGE_DIRECTION = ['both', 'left', 'right', 'none']
 
@@ -236,7 +236,7 @@ class GlobalPathPlanning(Node):
         return
     
     def callback_location(self, location_msg):
-        self.location = (location_msg.pose.pose.position.x, location_msg.pose.pose.position.x)
+        self.location = (location_msg.pose.pose.position.x, location_msg.pose.pose.position.y)
         #self.location = (location_msg.pose.x, location_msg.pose.y)
         return
     
@@ -323,6 +323,7 @@ class GlobalPathPlanning(Node):
         next_dist = euclidean_distance(position, next_way_start_node)
 
         if next_dist < NEXT_WAY_DIST: # 다음 way 첫 노드로부터 3m 이내에 들어오면 다음 way로 넘어감
+            print(f"다음 way로 변경: {self.cur_way['id']} → {self.way_selector.selected_ways[self.cur_way['idx']+1]}")
             self.cur_way['idx'] += 1
             self.prev_way = self.cur_way['id']
 
