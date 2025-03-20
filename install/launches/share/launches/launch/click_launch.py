@@ -1,1 +1,0 @@
-/home/mds/autocar-erp/autocar-erp-main/launches/launch/click_launch.py
