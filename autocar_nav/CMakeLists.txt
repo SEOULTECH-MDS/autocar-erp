@@ -31,17 +31,38 @@ ament_python_install_package(${PROJECT_NAME})
 install(DIRECTORY
   config
   data
+  launch
   DESTINATION share/${PROJECT_NAME}
 )
 
 install(PROGRAMS
   nodes/tracker.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME tracker
+)
+
+install(PROGRAMS
   nodes/autocar_tf_ros2.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME autocar_tf_ros2
+)
+
+install(PROGRAMS
   nodes/hitech_test_pub.py
-  nodes/autocar_tf_ros2.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME hitech_test_pub
+)
+
+install(PROGRAMS
   nodes/mpc_tracker.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME mpc_tracker
+)
+
+install(PROGRAMS
   nodes/global_click_planner.py
   DESTINATION lib/${PROJECT_NAME}
+  RENAME global_click_planner
 )
 
 if(BUILD_TESTING)
