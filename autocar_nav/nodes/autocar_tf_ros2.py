@@ -33,8 +33,8 @@ class AutocarTF(Node):
         self.tf_br_dynamic = TransformBroadcaster(self)
         
         # 파라미터 설정
-        self.declare_parameter('map_origin_lat', 0.0)
-        self.declare_parameter('map_origin_lon', 0.0)
+        self.declare_parameter('map_origin_lat', 37.632010)
+        self.declare_parameter('map_origin_lon', 127.076008)
         
         # 구독
         self.global_location_sub = self.create_subscription(
