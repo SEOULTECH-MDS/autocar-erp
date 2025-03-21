@@ -101,6 +101,8 @@ class GlobalPathPlanning(Node):
         self.timer_driving = self.create_timer(0.1, self.callback_timer_driving)
         self.timer_selecting = self.create_timer(0.1, self.callback_timer_selecting_ways_by_key_input)
 
+        self.timer_curway = self.create_timer(1.0, self.callback_timer_curway)
+
         # TF
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -162,6 +164,9 @@ class GlobalPathPlanning(Node):
         print(f"미션 구역: {len(self.mission)}개")
         print(f"정지선: {len(self.stopline)}개")
         print("============================")
+
+    def callback_timer_curway(self):
+        print(self.cur_way['id'])
 
     def callback_timer_driving(self):
     # 최초 한 번만 모든 객체를 publish하도록 설정
