@@ -24,7 +24,7 @@ import tf2_geometry_msgs
 TRAFFIC_DETECT_DIST = 20 # [m], 정지선으로부터 몇 m 이내에 들어와야 신호등 인식을 시작할지
 TRAFFIC_STOP_DIST = 8 # [m], 정지선으로부터 몇 m 이내에 들어와야 신호등을 통해 정지를 할지
 
-NEXT_WAY_DIST = 3 # [m], 현재 위치와 다음 way의 첫 번째 노드의 거리 => 다음 way로 넘어가는 기준 default: 3m
+UPDATE_DSIT = 3 # [m], 현재 위치와 다음 way의 첫 번째 노드의 거리 => 다음 way로 넘어가는 기준 default: 3m
 
 CHANGE_DIRECTION = ['both', 'left', 'right', 'none']
 
@@ -78,7 +78,7 @@ class GlobalPathPlanning(Node):
         self.stoplines_pub = self.create_publisher(MarkerArray, '/stoplines',  10) # 미션구역
         self.clicked_way_pub = self.create_publisher(PoseArray, '/clicked_closest_way',  10) # 해당 지점에서 제일 가까운 way
         self.candidate_ways_pub = self.create_publisher(PoseArray, '/candidates_ways', 10) # 제일 가까운 way 다음의 후보 ways
-        self.selected_ways_pub = self.create_publisher(PoseArray,'/autocar/goals',  10) # target ways /selected_ways
+        self.selected_ways_pub = self.create_publisher(PoseArray,'/autocar/goals',  10) # 선택된 모든 ways
         
         # =================== 주행 중 =======================
         # Subscribers
@@ -90,7 +90,8 @@ class GlobalPathPlanning(Node):
 
         # Publishers
         self.closest_waypoints_pub = self.create_publisher(PoseArray,'/global_closest_waypoints',  10)
-        self.waypoints_pub = self.create_publisher(PoseArray, '/global_waypoints', 10)
+        self.waypoints_pub = self.create_publisher(PoseArray, '/global_waypoints', 10) # current way의 waypoints
+
         # self.driving_mode_pub = self.create_publisher(String, '/driving_mode', queue_size=10)
         # self.traffic_mode_pub = self.create_publisher(String, '/mode/traffic',  queue_size=10)
         # self.gear_override_pub = self.create_publisher(Int8, '/gear/override',  queue_size=10)
@@ -98,6 +99,7 @@ class GlobalPathPlanning(Node):
         # self.cluster_ROI_pub = self.create_publisher(String, '/cluster_ROI',  queue_size=10)
         # self.speed_maxmin_pub = self.create_publisher(Vector3, '/speed_maxmin',  queue_size=10)
         # self.way_change_pub = self.create_publisher(Bool, '/way_change_signal',  queue_size=10)
+
         # Timers
         self.timer_driving = self.create_timer(0.1, self.callback_timer_driving)
         self.timer_selecting = self.create_timer(0.1, self.callback_timer_selecting_ways_by_key_input)
@@ -124,7 +126,7 @@ class GlobalPathPlanning(Node):
                         'path':None,
                         'cluster_ROI':None,
                         'speed_max':2.5,
-                        'speed_min':2.0}
+                        'speed_min':2.0} # id: way 고유 index, idx: selected way에서의 index
 
         # traffic light
         self.traffic = {'status':None, 'detected_sign':[], 'target_sign':None}
@@ -178,11 +180,12 @@ class GlobalPathPlanning(Node):
                 return
         
         # 아직 주행 준비가 되지 않았으면 함수 종료
-        if self.location is None or len(self.way_selector.selected_ways) == 0:
+        if self.location is None or len(self.way_selector.selected_ways) == 0: 
             return
         
         # 현재 위치를 기준으로 현재 진행 중인 경로(cur_way) 업데이트
         self.update_current_way(self.location)
+        print("현재 진행 중인 way: ", self.update_current_way(self.location))
 
         # 만약 현재 진행 중인 경로가 이전 경로와 다르다면, 정보 업데이트 및 publish 수행
         if self.cur_way['id'] != self.prev_way:
@@ -209,7 +212,7 @@ class GlobalPathPlanning(Node):
                 self.cur_way['change_direction'],
                 self.cur_way['path']
             )
-            self.waypoints_pub.publish(global_waypoints_msg)  # 전체 웨이포인트 publish
+            self.waypoints_pub.publish(global_waypoints_msg)  # cur_way 웨이포인트 publish
             
             #self.cluster_ROI_pub.publish(self.cur_way['cluster_ROI'])  # 클러스터 ROI 정보 publish
 
@@ -319,19 +322,19 @@ class GlobalPathPlanning(Node):
     def update_current_way(self, position):
         self.cur_way['id'] = self.way_selector.selected_ways[self.cur_way['idx']]
         
-        # 마지막 노드일 때
+        # 마지막 way일 때
         if self.cur_way['id'] == self.way_selector.selected_ways[-1]:
             return self.cur_way['id']
         
         next_way = self.ways[self.way_selector.selected_ways[self.cur_way['idx']+1]]
         next_way_start_node = self.way_nodes[next_way[0]]
 
-        next_dist = euclidean_distance(position, next_way_start_node)
+        next_way_dist = euclidean_distance(position, next_way_start_node)
 
-        if next_dist < NEXT_WAY_DIST: # 다음 way 첫 노드로부터 3m 이내에 들어오면 다음 way로 넘어감
-            print(f"다음 way로 변경: {self.cur_way['id']} → {self.way_selector.selected_ways[self.cur_way['idx']+1]}")
+        if next_way_dist < UPDATE_DSIT: # 다음 way 첫 노드로부터 3m 이내에 들어오면 다음 way로 넘어감
             self.cur_way['idx'] += 1
             self.prev_way = self.cur_way['id']
+            print(f"다음 way로 변경: {self.cur_way['id']} -> {self.way_selector.selected_ways[self.cur_way['idx']+1]}")
 
         return self.cur_way['id']
     
@@ -390,6 +393,11 @@ class GlobalPathPlanning(Node):
         # end_index = min(self.cur_way['idx'] + 1, len(self.way_selector.selected_ways))
         # near_ways = self.way_selector.selected_ways[start_index:end_index + 1] # 인근한 3개의 way 추출
         
+        # 1. near_way 찾기
+        start_index = max(self.cur_way['idx'] - 1, 0) # 시작 인덱스와 끝 인덱스 계산
+        end_index = min(self.cur_way['idx'] + 1, len(self.way_selector.selected_ways))
+        near_ways = self.way_selector.selected_ways[start_index:end_index + 1] # 인근한 3개의 way 추출
+        
         cur_waypoints = [self.way_nodes[node_id] for node_id in self.ways[self.cur_way['id']]]
         if self.cur_way['idx'] == 0:
             print("1")
@@ -427,6 +435,10 @@ class GlobalPathPlanning(Node):
         # 2. 인근 ways로부터 waypoints 추출
         # for way_id in near_ways:
         #     waypoints += [self.way_nodes[node_id] for node_id in self.ways[way_id]]
+        # 2. 인근 ways로부터 waypoints 추출
+        for way_id in near_ways:
+            waypoints += [self.way_nodes[node_id] for node_id in self.ways[way_id]]
+
         return waypoints
     
     def get_near_waypoints(self):
