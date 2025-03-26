@@ -32,6 +32,9 @@ setup(
             # 'camera_obstacle = perception.yolov11.camera_obstacle:main',
             'combined_camera = perception.yolov11.obstacle_camera.combined_camera:main',
             'obstacle = perception.yolov11.obstacle:main',
+            
+            'camera_sign = perception.yolov11.camera_sign:main',
+            'sign = perception.yolov11.sign:main',
         ],
     },
 )
