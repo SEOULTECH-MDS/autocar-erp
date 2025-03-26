@@ -146,6 +146,16 @@ def generate_launch_description():
             executable='obstacle',
             name='obstacle'
         ),
+        Node(
+            package='perception',
+            executable='camera_sing',
+            name='camera_sing'
+        ),
+        Node(
+            package='perception',
+            executable='sign',
+            name='sign'
+        ),
     ])
 
 def main():
