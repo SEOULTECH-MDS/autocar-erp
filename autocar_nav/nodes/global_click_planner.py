@@ -328,6 +328,8 @@ class GlobalPathPlanning(Node):
 
         next_way_dist = euclidean_distance(position, next_way_start_node)
 
+        print(f'position: {position}, next_way_start_node: {next_way_start_node}, next_way_dist: {next_way_dist}')
+
         if next_way_dist < UPDATE_DSIT: # 다음 way 첫 노드로부터 3m 이내에 들어오면 다음 way로 넘어감
             self.cur_way['idx'] += 1
             self.prev_way = self.cur_way['id']
