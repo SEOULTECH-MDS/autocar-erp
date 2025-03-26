@@ -48,6 +48,8 @@ q: 최근에 선택한 경로 취소
 
 w: 선택했던 경로 다시 Publish
 
+a: 모든 object Publish
+
 Backspace: 모든 선택한 경로 취소
 
 ======================================
@@ -103,8 +105,6 @@ class GlobalPathPlanning(Node):
         # Timers
         self.timer_driving = self.create_timer(0.1, self.callback_timer_driving)
         self.timer_selecting = self.create_timer(0.1, self.callback_timer_selecting_ways_by_key_input)
-
-        self.timer_curway = self.create_timer(1.0, self.callback_timer_curway)
 
         # TF
         self.tf_buffer = Buffer()
@@ -167,9 +167,6 @@ class GlobalPathPlanning(Node):
         print(f"미션 구역: {len(self.mission)}개")
         print(f"정지선: {len(self.stopline)}개")
         print("============================")
-
-    def callback_timer_curway(self):
-        print(self.cur_way['id'])
 
     def callback_timer_driving(self):
     # 최초 한 번만 모든 객체를 publish하도록 설정
