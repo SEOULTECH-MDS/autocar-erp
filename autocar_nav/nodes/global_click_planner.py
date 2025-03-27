@@ -182,7 +182,10 @@ class GlobalPathPlanning(Node):
         
         # 현재 위치를 기준으로 현재 진행 중인 경로(cur_way) 업데이트
         self.update_current_way(self.location)
+        print("현재 선택된 way: ", self.way_selector.selected_ways)
         print("현재 진행 중인 way: ", self.update_current_way(self.location))
+        
+
 
         # 만약 현재 진행 중인 경로가 이전 경로와 다르다면, 정보 업데이트 및 publish 수행
         if self.cur_way['id'] != self.prev_way:
@@ -243,7 +246,7 @@ class GlobalPathPlanning(Node):
     
     def callback_location(self, location_msg):
         self.location = (location_msg.pose.pose.position.x, location_msg.pose.pose.position.y)
-        #self.location = (location_msg.pose.x, location_msg.pose.y)
+        
         return
     
     # def callback_is_avoiding(self, is_avoiding_msg):
@@ -393,11 +396,6 @@ class GlobalPathPlanning(Node):
         # end_index = min(self.cur_way['idx'] + 1, len(self.way_selector.selected_ways))
         # near_ways = self.way_selector.selected_ways[start_index:end_index + 1] # 인근한 3개의 way 추출
         
-        # 1. near_way 찾기
-        start_index = max(self.cur_way['idx'] - 1, 0) # 시작 인덱스와 끝 인덱스 계산
-        end_index = min(self.cur_way['idx'] + 1, len(self.way_selector.selected_ways))
-        near_ways = self.way_selector.selected_ways[start_index:end_index + 1] # 인근한 3개의 way 추출
-        
         cur_waypoints = [self.way_nodes[node_id] for node_id in self.ways[self.cur_way['id']]]
         if self.cur_way['idx'] == 0:
             print("1")
@@ -435,9 +433,7 @@ class GlobalPathPlanning(Node):
         # 2. 인근 ways로부터 waypoints 추출
         # for way_id in near_ways:
         #     waypoints += [self.way_nodes[node_id] for node_id in self.ways[way_id]]
-        # 2. 인근 ways로부터 waypoints 추출
-        for way_id in near_ways:
-            waypoints += [self.way_nodes[node_id] for node_id in self.ways[way_id]]
+
 
         return waypoints
     
@@ -564,6 +560,10 @@ class GlobalPathPlanning(Node):
 
     def callback_timer_selecting_ways_by_key_input(self):
         key_input = self.keyboard_input.update()
+
+        if key_input is None:
+            return
+        
         key_input_list = ['\x7f', 'q', 'w', 'a', '\x03']
 
         if key_input not in key_input_list:
