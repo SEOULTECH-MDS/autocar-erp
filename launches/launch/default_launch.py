@@ -119,19 +119,19 @@ def generate_launch_description():
         name='lanenet'
         ),
 
-        Node(
+        Node( # 신호등 카메라 연결
         package='perception',
         executable='camera_traffic',
         name='camera_traffic'
         ),
 
-        Node(
+        Node( # 신호등 인식
             package='perception',
             executable='trafficlight',
             name='trafficlight'
         ),
 
-        Node(
+        Node( # 라바콘 카메라 2대 combine
         package='perception',
         executable='combined_camera',
         name='combined_camera'
@@ -141,17 +141,17 @@ def generate_launch_description():
         #    executable='camera_obstacle',
         #    name='camera_obstacle'
         #),
-        Node(
+        Node( # 장애물 인식
             package='perception',
             executable='obstacle',
             name='obstacle'
         ),
-        Node(
+        Node( # 표지판 카메라
             package='perception',
             executable='camera_sign',
             name='camera_sign'
         ),
-        Node(
+        Node( # 표지판 인식
             package='perception',
             executable='sign',
             name='sign'

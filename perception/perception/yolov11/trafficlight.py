@@ -140,6 +140,9 @@ class YOLOv11(Node):
                     label = f'{self.names[obj_id]} {conf:.2f}'
 
                 plot_one_box(xyxy, img0, label=label, color=self.colors[obj_id], line_thickness=3)
+                # bounding box 좌표 추출 (필요시 추가 연산 가능)
+                xmin, ymin, xmax, ymax = [int(t.item()) for t in xyxy]
+                # 여기서는 단순히 검출이 된 경우 1을 투표
                 self.queue_list[obj_id].append(1)
             
             # 해당 프레임에서 검출되지 않은 클래스에는 0 추가
