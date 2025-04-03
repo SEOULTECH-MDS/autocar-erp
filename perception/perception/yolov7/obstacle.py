@@ -14,23 +14,23 @@ import time
 import cv2
 
 from numpy import random
-from perception.yolov11.models.experimental import attempt_load
-from perception.yolov11.utils.datasets import letterbox
-from perception.yolov11.utils.general import check_img_size, check_requirements, non_max_suppression, scale_coords
-from perception.yolov11.utils.plots import plot_one_box
-from perception.yolov11.utils.torch_utils import select_device, time_synchronized
+from perception.yolov7.models.experimental import attempt_load
+from perception.yolov7.utils.datasets import letterbox
+from perception.yolov7.utils.general import check_img_size, check_requirements, non_max_suppression, scale_coords
+from perception.yolov7.utils.plots import plot_one_box
+from perception.yolov7.utils.torch_utils import select_device, time_synchronized
 
 # [✓] Modified: "models" alias 추가
 import sys
-import perception.yolov11.models as models
+import perception.yolov7.models as models
 sys.modules['models'] = models
 # [✓] Modified: "utils" alias 추가
-import perception.yolov11.utils as utils
+import perception.yolov7.utils as utils
 sys.modules['utils'] = utils
 
 # 하이퍼파라미터 및 설정
 package_share = get_package_share_directory('perception')
-WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_new.pt')
+WEIGHTS = os.path.join(package_share, 'yolov7', 'weights', 'rubber_new.pt')
 IMG_SIZE = 640
 DEVICE = ''
 AUGMENT = False

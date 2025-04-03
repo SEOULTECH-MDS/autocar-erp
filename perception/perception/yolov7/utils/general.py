@@ -18,9 +18,9 @@ import torch
 import torchvision
 import yaml
 
-from perception.yolov11.utils.google_utils import gsutil_getsize
-from perception.yolov11.utils.metrics import fitness
-from perception.yolov11.utils.torch_utils import init_torch_seeds
+from perception.yolov7.utils.google_utils import gsutil_getsize
+from perception.yolov7.utils.metrics import fitness
+from perception.yolov7.utils.torch_utils import init_torch_seeds
 # from utils.google_utils import gsutil_getsize
 # from utils.metrics import fitness
 # from utils.torch_utils import init_torch_seeds

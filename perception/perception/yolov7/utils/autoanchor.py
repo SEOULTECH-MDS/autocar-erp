@@ -6,7 +6,7 @@ import yaml
 from scipy.cluster.vq import kmeans
 from tqdm import tqdm
 
-from perception.yolov11.utils.general import colorstr
+from perception.yolov7.utils.general import colorstr
 # from utils.general import colorstr
 
 
