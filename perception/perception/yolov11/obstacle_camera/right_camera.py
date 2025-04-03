@@ -16,7 +16,7 @@ class CameraExample(Node):
         width, height = 640, 360
 
         # Set the camera's resolution
-        self.cap = cv2.VideoCapture(4)
+        self.cap = cv2.VideoCapture(2) # 나중에 카메라 번호에 맞게 수정
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 

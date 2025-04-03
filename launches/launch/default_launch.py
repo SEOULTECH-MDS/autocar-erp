@@ -148,8 +148,8 @@ def generate_launch_description():
         ),
         Node(
             package='perception',
-            executable='camera_sing',
-            name='camera_sing'
+            executable='camera_sign',
+            name='camera_sign'
         ),
         Node(
             package='perception',

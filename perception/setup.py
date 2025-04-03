@@ -26,13 +26,24 @@ setup(
             'camera_pub = perception.lanenet.camera_pub:main',
             'lanenet = perception.lanenet.lanenet:main',
 
-            'camera_traffic = perception.yolov8.camera_traffic:main',
-            'trafficlight = perception.yolov8.trafficlight:main',
+            # 'camera_traffic = perception.yolov7.camera_traffic:main',
+            # 'trafficlight = perception.yolov7.trafficlight:main',
+
+            # 'camera_obstacle = perception.yolov7.camera_obstacle:main',
+            # 'combined_camera = perception.yolov7.obstacle_camera.combined_camera:main',
+            # 'obstacle = perception.yolov7.obstacle:main',
+
+            # 'camera_sign = perception.yolov7.camera_sign:main',
+            # 'sign = perception.yolov7.sign:main',
+            
+
+            'camera_traffic = perception.yolov11.camera_traffic:main',
+            'trafficlight = perception.yolov11.trafficlight:main',
 
             # 'camera_obstacle = perception.yolov11.camera_obstacle:main',
             'combined_camera = perception.yolov11.obstacle_camera.combined_camera:main',
             'obstacle = perception.yolov11.obstacle:main',
-            
+
             'camera_sign = perception.yolov11.camera_sign:main',
             'sign = perception.yolov11.sign:main',
         ],
