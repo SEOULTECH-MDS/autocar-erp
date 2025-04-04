@@ -17,7 +17,6 @@ setup(
     maintainer_email='mds2@todo.todo',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
         'erp_publish = erp_control.erp_publish:main',
