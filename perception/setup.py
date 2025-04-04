@@ -17,7 +17,6 @@ setup(
     maintainer_email='kkny2003@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
         	'stopline_camera = perception.stopline_camera:main',
