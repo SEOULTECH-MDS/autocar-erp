@@ -35,10 +35,14 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(PROGRAMS
-  nodes/tracker.py
+install(DIRECTORY
+  nodes/
   DESTINATION lib/${PROJECT_NAME}
-  RENAME tracker
+  FILES_MATCHING
+  PATTERN "*.py"
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+              GROUP_EXECUTE GROUP_READ
+              WORLD_EXECUTE WORLD_READ
 )
 
 install(PROGRAMS
@@ -60,14 +64,15 @@ install(PROGRAMS
 )
 
 install(PROGRAMS
-  nodes/global_click_planner.py
+  nodes/global_planner.py
   DESTINATION lib/${PROJECT_NAME}
-  RENAME global_click_planner
+  RENAME global_planner
 )
+
 install(PROGRAMS
-  nodes/hitech_test_pub2.py
+  nodes/path_selector.py
   DESTINATION lib/${PROJECT_NAME}
-  RENAME hitech_test_pub2
+  RENAME path_selector
 )
 
 if(BUILD_TESTING)

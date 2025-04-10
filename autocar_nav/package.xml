@@ -16,8 +16,10 @@
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>python3</exec_depend>
   <exec_depend>ros2launch</exec_depend>
-
-  <depend>autocar_msgs</depend>
+  <exec_depend>autocar_msgs</exec_depend>
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>python3-pyqt5</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

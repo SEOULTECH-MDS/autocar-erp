@@ -8,8 +8,8 @@ def generate_launch_description():
             executable='autocar_tf_ros2',
             name='autocar_tf',
             parameters=[{
-                'map_origin_lat': 37.632010,  # 원하는 위도 값
-                'map_origin_lon': 127.076008   # 원하는 경도 값
+                'map_origin_lat': 37.2386,  # 원하는 위도 값
+                'map_origin_lon': 126.7728   # 원하는 경도 값
             }]
         )
     ]) 
