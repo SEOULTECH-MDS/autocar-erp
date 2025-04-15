@@ -1,159 +1,289 @@
+#!/usr/bin/env python3
+
+import threading
 import numpy as np
-from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSimSolver
-from casadi import SX, vertcat
 import math
+import rclpy
+from geometry_msgs.msg import PoseStamped, Twist, PoseArray
+from rclpy.node import Node
+from std_msgs.msg import Float64, Header
+from ackermann_msgs.msg import AckermannDriveStamped
+from nav_msgs.msg import Odometry, Path
+from autocar_nav.euler_from_quaternion import euler_from_quaternion
+from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
+from autocar_nav.normalise_angle import normalise_angle
+from acados_solver import acados_solver
+from utils import generate_target_course
 
-# 차량 모델 정의
-def vehicle_model():
-    x = SX.sym('x')      # 차량의 x 위치
-    y = SX.sym('y')      # 차량의 y 위치
-    yaw = SX.sym('yaw')  # 차량의 yaw 각도
-    v = SX.sym('v')      # 차량의 속도
+from rviz_2d_overlay_msgs.msg import OverlayText
+from std_msgs.msg import ColorRGBA
 
-    delta = SX.sym('delta')  # 조향각
-    v_cmd = SX.sym('v_cmd')  # 목표 속도 (제어 입력)
+NX = 4
+NU = 2
+T = 2.0
+N = 20
+        
+class Control(Node):
+    def __init__(self):
+        super().__init__('control')
 
-    # 상태 및 제어 입력
-    states = vertcat(x, y, yaw, v)
-    controls = vertcat(delta, v_cmd)
+        # Publisher 생성
+        self.tracker_pub = self.create_publisher(Twist, '/autocar/cmd_vel', 10)
+        self.erp_pub = self.create_publisher(AckermannDriveStamped, '/erp/cmd_vel', 10)
+        self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte', 10)
+        self.h_error_pub = self.create_publisher(Float64, '/autocar/he', 10)
+        self.overlay_pub = self.create_publisher(OverlayText, '/autocar/steering_angle', 10)
 
-    # 차량 모델 방정식
-    L = 1.566  # 차량의 휠베이스 (ERP42: 1.566)
-    dx = v * np.cos(yaw)
-    dy = v * np.sin(yaw)
-    dyaw = v * np.tan(delta) / L
-    dv = (v_cmd - v) / 0.5  # 속도 변화율 (0.5초의 시간 상수 사용)
+        self.ref_path_pub = self.create_publisher(Path, '/autocar/path', 10)
 
-    # 상태 변화율
-    f = vertcat(dx, dy, dyaw, dv)
+        # Subscriber 생성
+        self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
+        self.global_waypoints_sub = self.create_subscription(PoseArray, '/global_waypoints', self.global_waypoints_cb, 10)
 
-    return states, controls, f
+        # 변수 초기화
 
-# MPC 설정
-def create_ocp():
-    ocp = AcadosOcp()
+        self.x = None
+        self.y = None
+        self.yaw = None
+        self.vel = None
+        self.cx = []
+        self.cy = []
+        self.cyaw = []
+        self.target_ind = None
+        self.heading_error = 0.0
+        self.crosstrack_error = 0.0
+        self.lock = threading.Lock()
+        self.dt = T / N  # 제어 주기 계산
 
-    # 차량 모델 정의
-    states, controls, f = vehicle_model()
-    nx = states.size()[0]  # 상태 변수 개수 (4: [x, y, yaw, v])
-    nu = controls.size()[0]  # 제어 입력 개수 (2: [delta, v_cmd])
+        self.target_vel = 1.5  # 목표 속도 (m/s)
 
-    # OCP 모델 설정
-    ocp.model.name = "vehicle_mpc"
-    ocp.model.x = states
-    ocp.model.u = controls
-    ocp.model.f_expl_expr = f
-    ocp.model.f_impl_expr = f - states
+        # MPC Solver 초기화
+        self.solver = acados_solver()  # 초기 상태 및 제어 입력 참조값
 
-    # 시간 설정
-    T = 5  # 예측 시간 (초)
-    N = 20  # 예측 단계 수
-    ocp.dims.N = N
-    ocp.solver_options.tf = T
+        # 주기적인 제어 실행을 위한 타이머 설정
+        self.timer = self.create_timer(self.dt, self.timer_cb)
 
-    # 비용 함수 설정
-    Q = np.diag([1.2, 1.2, 0.5, 0.5])  # 상태 비용 행렬 (4x4)
-    R = np.diag([0.01, 0.05])          # 제어 입력 비용 행렬 (2x2)
-    ny = nx + nu  # 비용 함수의 총 차원 (상태 + 제어 입력)
+    def timer_cb(self):
+        self.mpc_control()
 
-    ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.cost_type_e = "NONLINEAR_LS"
-    ocp.cost.W = np.block([
-        [Q, np.zeros((nx, nu))],
-        [np.zeros((nu, nx)), R]
-    ])  # (6x6) 비용 행렬
-    ocp.cost.W_e = Q  # 최종 상태 비용 행렬 (4x4)
+    def vehicle_state_cb(self, msg):
+        self.lock.acquire()
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        q = msg.pose.pose.orientation
+        self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+        self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
+        # if abs(self.vel) < 1e-3:  # 임계값 설정 (1e-3 = 0.001 m/s)
+        #     self.vel = 0.1
 
-    # 비용 함수 표현식 정의
-    ocp.model.cost_y_expr = vertcat(states, controls)  # [x, y, yaw, v, delta, v_cmd]
-    ocp.model.cost_y_expr_e = states  # [x, y, yaw, v]
+        self.yawrate = msg.twist.twist.angular.z
+        # print(f'vel: {self.vel}')
+        if self.cyaw:
+            self.calc_nearest_index()
+        self.lock.release()
 
-    # 참조 값 초기화
-    x_ref = np.zeros(nx)  # 상태 참조 값 (4,)
-    u_ref = np.zeros(nu)  # 제어 입력 참조 값 (2,)
-    ocp.cost.yref = np.concatenate((x_ref, u_ref))  # (6,)
-    ocp.cost.yref_e = x_ref  # (4,)
 
-    # 제약 조건 설정
-    ocp.constraints.lbu = np.array([-np.deg2rad(30), 0.0])  # 최소 제어 입력 (조향각, 속도)
-    ocp.constraints.ubu = np.array([np.deg2rad(30), 1.5])   # 최대 제어 입력 (조향각, 속도)
-    ocp.constraints.idxbu = np.array([0, 1])  # 제어 입력 인덱스
-    ocp.constraints.lbx = np.array([-np.inf, -np.inf, -np.inf, 0.0])  # 최소 상태 (속도는 0 이상)
-    ocp.constraints.ubx = np.array([np.inf, np.inf, np.inf, 1.5])     # 최대 상태 (속도는 1.5 이하)
-    ocp.constraints.idxbx = np.array([3])  # 속도에 대한 상태 제약
+    def global_waypoints_cb(self, path_msg):
+        possible_change_direction = path_msg.header.frame_id
 
-    # 초기 상태 설정
-    ocp.constraints.x0 = np.zeros(nx)
+        path = {'x': None, 'y': None, 'yaw': None, 's':None, 'csp':None}
 
-    # Solver 옵션 설정
-    ocp.solver_options.qp_solver = "FULL_CONDENSING_QPOASES"
-    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
-    ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+        xs, ys = [], []
+        for node in path_msg.poses:
+            xs.append(node.position.x)
+            ys.append(node.position.y)
 
-    return ocp
+        xs, ys, yaws, s, csp = generate_target_course(xs, ys, step_size=0.2)
+        path['x'] = xs
+        path['y'] = ys
+        path['yaw'] = yaws
+        path['s'] = s
+        path['csp'] = csp
 
-# 참조 궤적 설정 함수
-def set_reference_trajectory(ocp_solver, ref_path, target_speed=1.0):
-    """
-    참조 궤적을 설정하는 함수
-    ocp_solver: ACADOS OCP Solver 객체
-    ref_path: 참조 경로, (N+1, 3) 크기의 numpy 배열 (x, y, yaw)
-    target_speed: 목표 속도 (기본값: 1.0 m/s)
-    """
-    N = ocp_solver.dims.N
-    ref_trajectory = np.zeros((N + 1, 4))  # [x, y, yaw, v]
-    ref_trajectory[:, :3] = ref_path[:, :3]  # x, y, yaw 설정
-    ref_trajectory[:, 3] = target_speed      # 속도 설정
+        self.cx = xs
+        self.cy = ys
+        self.cyaw = yaws
+        
+        path_msg = self.make_path_msg(path)
+        self.ref_path_pub.publish(path_msg)
 
-    for i in range(N):
-        ocp_solver.set(i, "yref", np.concatenate((ref_trajectory[i], [0.0, target_speed])))
 
-    ocp_solver.set(N, "yref", ref_trajectory[-1])
+        return path, possible_change_direction
 
-# MPC 실행
-def run_mpc():
-    # OCP 생성
-    ocp = create_ocp()
 
-    # ACADOS Solver 생성
-    ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp.json")
-    sim_solver = AcadosSimSolver(ocp)
+    def calc_ref_trajectory(self):
+        """
+        목표 궤적과 상태 참조값 계산
+        """
+        xref = np.zeros((NX, N))  # 상태 참조값 (x, y, yaw, v)
+        uref = np.zeros((NU, N))  # 제어 입력 참조값 (steering, velocity)
 
-    # 초기 상태 설정
-    x0 = np.array([0.0, 0.0, 0.0, 0.0])  # 초기 상태 [x, y, yaw, v]
-    ocp_solver.set(0, "lbx", x0)
-    ocp_solver.set(0, "ubx", x0)
+        if self.cx and self.cy and self.cyaw:
+            for i in range(20):
+                ind = min(self.target_ind + i, len(self.cx) - 1)
+                xref[:, i] = [self.cx[ind], self.cy[ind], self.cyaw[ind], self.target_vel]
+                uref[:, i] = [0.0, self.target_vel]  # 초기 제어 입력 참조값
 
-    # 참조 궤적 설정 (예제)
-    ref_path = np.zeros((ocp.dims.N + 1, 3))  # [x, y, yaw]
-    ref_path[:, 0] = np.linspace(0, 10, ocp.dims.N + 1)  # x 참조
-    ref_path[:, 1] = np.linspace(0, 5, ocp.dims.N + 1)   # y 참조
-    ref_path[:, 2] = 0.0                                # yaw 참조
-    set_reference_trajectory(ocp_solver, ref_path, target_speed=1.0)
+        # 디버깅: xref와 uref 출력
+        print("xref:", xref)
+        print("uref:", uref)
 
-    # MPC 실행
-    for i in range(50):  # 50번 반복
-        status = ocp_solver.solve()
+        return xref, uref
+
+    def calc_nearest_index(self):
+        """
+        차량의 현재 상태를 기반으로 경로에서 가장 가까운 인덱스를 계산하여 self.target_ind를 업데이트
+        """
+        if self.x is None or self.y is None or not self.cx or not self.cy or not self.cyaw:
+            # 차량 상태나 경로 데이터가 없으면 업데이트하지 않음
+            return
+
+        # 차량과 경로의 모든 점 사이의 거리 계산
+        dx = [self.x - icx for icx in self.cx]
+        dy = [self.y - icy for icy in self.cy]
+
+        # 거리 계산 (제곱합)
+        d = [idx ** 2 + idy ** 2 for (idx, idy) in zip(dx, dy)]
+
+        # 최소 거리 찾기
+        mind = min(d)
+        ind = d.index(mind)  # 가장 가까운 인덱스 찾기
+
+        # 실제 거리 값
+        mind = math.sqrt(mind)
+        print(f"mind: {mind}, ind: {ind}")  # 디버깅용 출력
+
+        # 해당 인덱스와의 각도 차이 계산
+        dxl = self.cx[ind] - self.x
+        dyl = self.cy[ind] - self.y
+        angle = normalise_angle(self.cyaw[ind] - math.atan2(dyl, dxl))
+
+
+        # 각도가 음수이면, 거리의 부호를 반전
+        if angle < 0:
+            mind *= -1
+        
+        self.crosstrack_error = mind
+        self.heading_error = angle
+
+        # self.target_ind 업데이트
+        self.target_ind = ind
+        
+
+    def mpc_control(self):
+        """
+        MPC 제어 수행
+        """
+        if self.x is None or self.y is None or self.yaw is None or self.vel is None:
+            return
+
+        if self.cx == [] or self.cy == [] or self.cyaw == []:
+            print("경로 데이터가 없습니다.")
+            return
+
+        # 상태 및 제어 입력 참조값 계산
+        self.calc_nearest_index()
+        xref, uref = self.calc_ref_trajectory()
+        
+
+        # 초기 상태 설정
+        x0 = np.array([self.x, self.y, self.yaw, self.vel])
+        print("x0:", x0)  # 디버깅용 출력
+        self.solver.set(0, "x", x0)
+
+        # 참조값 설정
+        for i in range(20):
+            self.solver.set(i, "yref", np.hstack([xref[:, i], uref[:, i]]))
+        self.solver.set(20, "yref", xref[:, -1])
+
+        # Solver 실행
+        status = self.solver.solve()
         if status != 0:
-            print(f"ACADOS solver failed at iteration {i} with status {status}")
-            break
+            self.get_logger().error(f"MPC Solver failed with status {status}")
+            return
 
-        # 최적화 결과 가져오기
-        u0 = ocp_solver.get(0, "u")
-        x0 = ocp_solver.get(1, "x")
+        # 최적화된 제어 입력 가져오기
+        u_opt = self.solver.get(0, "u")
+        self.steering_angle = u_opt[0]
+        self.velocity = u_opt[1]
 
-        print(f"Iteration {i}: Control = {u0}, State = {x0}")
+        # 차량 명령 퍼블리시
+        self.set_vehicle_command(self.velocity, self.steering_angle)
+        
+    def set_vehicle_command(self, velocity, steering_angle):
+        """
+        차량 명령 퍼블리시
+        """
+        cmd_vel = Twist()
+        cmd_vel.linear.x = velocity
+        cmd_vel.angular.z = steering_angle
 
-        # 시뮬레이션 업데이트
-        sim_solver.set("x", x0)
-        sim_solver.set("u", u0)
-        sim_solver.solve()
-        x0 = sim_solver.get("x")
+        cmd = AckermannDriveStamped()
+        cmd.drive.speed = velocity
+        cmd.drive.steering_angle = steering_angle
 
-        # 다음 단계 초기 상태 설정
-        ocp_solver.set(0, "lbx", x0)
-        ocp_solver.set(0, "ubx", x0)
+        self.erp_pub.publish(cmd)
+        self.tracker_pub.publish(cmd_vel)
+        self.ct_error_pub.publish(Float64(data=self.crosstrack_error))
+        self.h_error_pub.publish(Float64(data=self.heading_error))
+
+        self.publish_overlay_text()
+
+        self.get_logger().info(f"속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg")
+
+    
+    def publish_overlay_text(self):
+        text_msg = OverlayText()
+        text_msg.width = 500
+        text_msg.height = 200
+        text_msg.text_size = 15.0
+        text_msg.line_width = 2
+
+        text_msg.bg_color = ColorRGBA(r=0.0, g=0.0, b=0.0, a=0.5) # 배경색 (반투명 검정)
+        text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0) # 글자색 (파란색)
+
+        # 표시할 텍스트 설정
+        text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
+            \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg"
+
+        self.overlay_pub.publish(text_msg)
+
+    def make_path_msg(self, path):
+        
+        path_x = path['x']
+        path_y = path['y']
+        path_yaw = path['yaw']
+
+        ways = Path()
+        ways.header = Header(frame_id='world', stamp=self.get_clock().now().to_msg())
+
+        for i in range(len(path_x)-1):
+            pose = PoseStamped()
+            pose.header.stamp = self.get_clock().now().to_msg()
+            pose.header.frame_id = "world"
+            pose.pose.position.x = path_x[i]
+            pose.pose.position.y = path_y[i]
+
+            yaw = path_yaw[i]
+
+            quaternion = yaw_to_quaternion(yaw)
+            pose.pose.orientation.x = quaternion.x
+            pose.pose.orientation.y = quaternion.y
+            pose.pose.orientation.z = quaternion.z
+            pose.pose.orientation.w = quaternion.w
+
+            ways.poses.append(pose)
+        return ways
+
+# 메인 함수
+def main(args=None):
+    rclpy.init(args=args)
+    try:
+        control = Control()
+        rclpy.spin(control)
+    finally:
+        control.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == "__main__":
-    run_mpc()
+    main()

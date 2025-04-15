@@ -19,7 +19,7 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'mpc_acados_tracker = control.mpc_acados_tracker:main',
+            'mpc_acados_control = mpc_acados:main',
         ],
     },
 )
