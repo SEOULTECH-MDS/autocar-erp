@@ -16,7 +16,7 @@ def generate_target_course(x, y, step_size):
         ryaw.append(csp.calc_yaw(i_s))
         rk.append(csp.calc_curvature(i_s))
 
-    return rx, ry, ryaw, s, csp
+    return rx, ry, ryaw, rk, s, csp
 
 class CubicSpline1D:
     """
