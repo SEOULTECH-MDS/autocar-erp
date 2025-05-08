@@ -22,8 +22,8 @@ def acados_solver():
 
     # 제약 조건 설정
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
-    MAX_SPEED = 1.5  # 최대 속도 [m/s]
-    MIN_SPEED = -1.5  # 최소 속도 [m/s]
+    MAX_SPEED = 4.0  # 최대 속도 [m/s]
+    MIN_SPEED = -4.0  # 최소 속도 [m/s]
 
     # 제어 입력 제약 조건 (delta, v_cmd)
     ocp.constraints.lbu = np.array([-MAX_STEER, MIN_SPEED])  
@@ -72,9 +72,9 @@ def acados_solver():
     N = 20  # 예측 구간 [s]
 
     # 비용 함수 가중치 설정
-    Q = np.diag([0.5, 0.5, 0.1, 0.1])  # 상태 변수 가중치 (x, y, yaw, v)
-    R = np.diag([0.01, 0.01])  # 제어 입력 가중치 (delta, v_cmd)
-    Qe = np.diag([0.5, 0.5, 0.1, 0.1])  # 최종 상태 가중치 (x, y, yaw, v)
+    Q = np.diag([0.5, 0.5, 0.5, 0.1])  # 상태 변수 가중치 (x, y, yaw, v)
+    R = np.diag([0.1, 0.01])  # 제어 입력 가중치 (delta, v_cmd)
+    Qe = np.diag([0.5, 0.5, 0.5, 0.1])  # 최종 상태 가중치 (x, y, yaw, v)
 
     ocp.cost.W = np.block([
         [Q, np.zeros((NX, NU))],

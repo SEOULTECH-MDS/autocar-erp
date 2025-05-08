@@ -22,11 +22,14 @@ class HitechTestPub(Node):
 
         self.get_logger().info("hitech_test_pub START")
 
-        self.yaw = 1.5  # 초기 yaw 값 (라디안 단위)
+        self.yaw = np.deg2rad(0.0)  # 초기 yaw 값 (라디안 단위)
         self.yaw_rate = np.deg2rad(5.0)  # 1초에 1도 회전 (라디안 변환)
         
-        self.latitude = 37.632010
-        self.longitude = 127.076008  # 하이테크 텐트 앞
+        # self.latitude = 37.632010
+        # self.longitude = 127.076008  # 하이테크 텐트 앞
+ 
+        self.latitude = 37.630096
+        self.longitude = 127.081397 # 미래관 주차장
 
         # self.latitude = 37.63283317
         # self.longitude = 127.07819321 # 붕어방 도로
@@ -41,8 +44,8 @@ class HitechTestPub(Node):
         msg = NavSatFix()
 
         # x, y 위도, 경도 값 증가
-        # self.latitude += self.velocity * 2.0
-        # self.longitude += self.velocity * 0.8  
+        # self.latitude += self.velocity * 1.0
+        # self.longitude += self.velocity * 0.4  
         
         msg.latitude = self.latitude
         msg.longitude = self.longitude

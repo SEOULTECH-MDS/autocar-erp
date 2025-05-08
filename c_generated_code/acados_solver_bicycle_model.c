@@ -460,9 +460,9 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     // change only the non-zero elements:
     W_0[0+(NY0) * 0] = 0.5;
     W_0[1+(NY0) * 1] = 0.5;
-    W_0[2+(NY0) * 2] = 0.1;
+    W_0[2+(NY0) * 2] = 0.5;
     W_0[3+(NY0) * 3] = 0.1;
-    W_0[4+(NY0) * 4] = 0.01;
+    W_0[4+(NY0) * 4] = 0.1;
     W_0[5+(NY0) * 5] = 0.01;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "W", W_0);
     free(W_0);
@@ -492,9 +492,9 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     // change only the non-zero elements:
     W[0+(NY) * 0] = 0.5;
     W[1+(NY) * 1] = 0.5;
-    W[2+(NY) * 2] = 0.1;
+    W[2+(NY) * 2] = 0.5;
     W[3+(NY) * 3] = 0.1;
-    W[4+(NY) * 4] = 0.01;
+    W[4+(NY) * 4] = 0.1;
     W[5+(NY) * 5] = 0.01;
 
     for (int i = 1; i < N; i++)
@@ -534,7 +534,7 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     // change only the non-zero elements:
     W_e[0+(NYN) * 0] = 0.5;
     W_e[1+(NYN) * 1] = 0.5;
-    W_e[2+(NYN) * 2] = 0.1;
+    W_e[2+(NYN) * 2] = 0.5;
     W_e[3+(NYN) * 3] = 0.1;
     ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "W", W_e);
     free(W_e);
@@ -573,8 +573,8 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     double* ubu = lubu + NBU;
     lbu[0] = -0.5235987755982988;
     ubu[0] = 0.5235987755982988;
-    lbu[1] = -1.5;
-    ubu[1] = 1.5;
+    lbu[1] = -4;
+    ubu[1] = 4;
 
     for (int i = 0; i < N; i++)
     {
@@ -607,8 +607,8 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     ubx[1] = 10000000000;
     lbx[2] = -10000000000;
     ubx[2] = 10000000000;
-    lbx[3] = -1.5;
-    ubx[3] = 1.5;
+    lbx[3] = -4;
+    ubx[3] = 4;
 
     for (int i = 1; i < N; i++)
     {

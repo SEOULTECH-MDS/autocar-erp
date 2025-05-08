@@ -37,12 +37,11 @@ class Control(Node):
 
         self.ref_path_pub = self.create_publisher(Path, '/autocar/path', 10)
         self.mpc_ref_pub = self.create_publisher(MarkerArray, '/autocar/mpc_ref', 10)  
-        self.mpc_predict_pub = self.create_publisher(MarkerArray, '/autocar/mpc_predict', 10)
 
 
         # Subscriber 생성
-        self.localization_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
-        self.global_waypoints_sub = self.create_subscription(PoseArray, '/global_waypoints', self.global_waypoints_cb, 10)
+        self.localisation_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
+        self.ref_path_sub = self.create_subscription(Path, '/autocar/path', self.local_path_cb, 10)
 
         # 변수 초기화
 
@@ -53,7 +52,6 @@ class Control(Node):
         self.cx = []
         self.cy = []
         self.cyaw = []
-        self.ck = []
         self.target_ind = None
         self.heading_error = 0.0
         self.crosstrack_error = 0.0
@@ -78,8 +76,8 @@ class Control(Node):
         q = msg.pose.pose.orientation
         self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
         self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
-        if abs(self.vel) < 1e-3:  # 임계값 설정 (1e-3 = 0.001 m/s)
-            self.vel = 0.1
+        # if abs(self.vel) < 1e-3:  # 임계값 설정 (1e-3 = 0.001 m/s)
+        #     self.vel = 0.1
 
         self.yawrate = msg.twist.twist.angular.z
         # print(f'vel: {self.vel}')
@@ -87,35 +85,22 @@ class Control(Node):
             self.calc_nearest_index()
         self.lock.release()
 
+    def local_path_cb(self, msg):
+        self.lock.acquire()
+        self.cx = []
+        self.cy = []
+        self.cyaw = []
+        for i in range(len(msg.poses)):
+            px = msg.poses[i].pose.position.x
+            py = msg.poses[i].pose.position.y
+            quaternion = msg.poses[i].pose.orientation
+            ptheta = euler_from_quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w)
+            
+            self.cx.append(px)
+            self.cy.append(py)
+            self.cyaw.append(ptheta) 
+        self.lock.release()       
 
-    def global_waypoints_cb(self, path_msg):
-        possible_change_direction = path_msg.header.frame_id
-
-        path = {'x': None, 'y': None, 'yaw': None, 'k' : None, 's':None, 'csp':None}
-
-        xs, ys = [], []
-        for node in path_msg.poses:
-            xs.append(node.position.x)
-            ys.append(node.position.y)
-
-        xs, ys, yaws, ks, s, csp = generate_target_course(xs, ys, step_size=0.2)
-        path['x'] = xs
-        path['y'] = ys
-        path['yaw'] = yaws
-        path['k'] = ks
-        path['s'] = s
-        path['csp'] = csp
-
-        self.cx = xs
-        self.cy = ys
-        self.cyaw = yaws
-        self.ck = ks
-        
-        path_msg = self.make_path_msg(path)
-        self.ref_path_pub.publish(path_msg)
-
-
-        return path, possible_change_direction
 
 
     def calc_ref_trajectory(self):
@@ -125,28 +110,11 @@ class Control(Node):
         xref = np.zeros((NX, N))  # 상태 참조값 (x, y, yaw, v)
         uref = np.zeros((NU, N))  # 제어 입력 참조값 (steering, velocity)
 
-        if self.cx and self.cy and self.cyaw and self.ck:
-            current_index = self.target_ind  # 시작 인덱스
-            for i in range(N):
-                # 곡률에 따라 인덱스 증가 간격 설정
-                curvature = abs(self.ck[current_index])  # 현재 곡률의 절대값
-                if curvature < 0.1:  # 곡률이 작은 경우 (직선 구간)
-                    print(f"curvature:, {curvature:.2f}")
-                    step = 2  
-                elif curvature < 0.2:  # 곡률이 중간 정도인 경우
-                    print(f"curvature:, {curvature:.2f}")
-                    step = 1  
-                else:  # 곡률이 큰 경우 (곡선 구간)
-                    print(f"curvature:, {curvature:.2f}")
-                    step = 1  
-
-                # 다음 참조 인덱스 계산
-                next_index = min(current_index + step, len(self.cx) - 1)
-                xref[:, i] = [self.cx[next_index], self.cy[next_index], self.cyaw[next_index], self.target_vel]                
+        if self.cx and self.cy and self.cyaw:
+            for i in range(20):
+                ind = min(self.target_ind + i, len(self.cx) - 1)
+                xref[:, i] = [self.cx[ind], self.cy[ind], self.cyaw[ind], self.target_vel]
                 uref[:, i] = [0.0, self.target_vel]  # 초기 제어 입력 참조값
-
-                # 현재 인덱스를 업데이트
-                current_index = next_index
 
         # 디버깅: xref와 uref 출력
         print("xref:", xref)
@@ -155,27 +123,6 @@ class Control(Node):
         self.visualize_ref_trajectory(xref)  
 
         return xref, uref
-    
-    # def calc_ref_trajectory(self):
-    #     """
-    #     목표 궤적과 상태 참조값 계산
-    #     """
-    #     xref = np.zeros((NX, N))  # 상태 참조값 (x, y, yaw, v)
-    #     uref = np.zeros((NU, N))  # 제어 입력 참조값 (steering, velocity)
-
-    #     if self.cx and self.cy and self.cyaw:
-    #         for i in range(N):
-    #             ind = min(self.target_ind + i, len(self.cx) - 1)
-    #             xref[:, i] = [self.cx[ind], self.cy[ind], self.cyaw[ind], self.target_vel]
-    #             uref[:, i] = [0.0, self.target_vel]  # 초기 제어 입력 참조값
-
-    #     # 디버깅: xref와 uref 출력
-    #     print("xref:", xref)
-    #     print("uref:", uref)
-
-    #     self.visualize_ref_trajectory(xref)  
-
-    #     return xref, uref    
 
     def calc_nearest_index(self):
         """
@@ -254,11 +201,6 @@ class Control(Node):
         u_opt = self.solver.get(0, "u")
         self.steering_angle = u_opt[0]
         self.velocity = u_opt[1]
-
-        # Solver에서 예측된 상태값 가져오기
-        x_opt = np.array([self.solver.get(i, "x") for i in range(N)])  # 예측된 상태값
-        self.visualize_predicted_trajectory(x_opt)
-        print("x_opt:", x_opt)  # 디버깅용 출력
 
         print(f"u_opt: {u_opt}")
 
@@ -375,51 +317,6 @@ class Control(Node):
 
         # 퍼블리시
         self.mpc_ref_pub.publish(marker_array)
-
-    def visualize_predicted_trajectory(self, x_opt):
-        """
-        Solver에서 예측된 경로를 시각화
-        """
-        marker_array = MarkerArray()
-
-        for i in range(x_opt.shape[0]):  # x_opt의 각 점에 대해 반복
-            marker = Marker()
-            marker.header.frame_id = "world"
-            marker.header.stamp = self.get_clock().now().to_msg()
-            marker.ns = "predicted_points"
-            marker.id = i
-            marker.type = Marker.ARROW  # 화살표로 표시
-            marker.action = Marker.ADD
-
-            # 위치 설정
-            marker.pose.position.x = x_opt[i, 0]  # x 위치
-            marker.pose.position.y = x_opt[i, 1]  # y 위치
-            marker.pose.position.z = 0.0
-
-            # 방향 설정 (yaw를 쿼터니언으로 변환)
-            yaw = x_opt[i, 2]  # yaw 값
-            quaternion = yaw_to_quaternion(yaw)
-            marker.pose.orientation.x = quaternion.x
-            marker.pose.orientation.y = quaternion.y
-            marker.pose.orientation.z = quaternion.z
-            marker.pose.orientation.w = quaternion.w
-
-            # 크기 설정
-            marker.scale.x = 0.3  # 화살표 길이
-            marker.scale.y = 0.05  # 화살표 두께
-            marker.scale.z = 0.05  # 화살표 두께
-
-            # 색상 설정
-            marker.color.r = 1.0  # 빨간색
-            marker.color.g = 0.0
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # 불투명
-
-            # MarkerArray에 추가
-            marker_array.markers.append(marker)
-
-        # 퍼블리시
-        self.mpc_predict_pub.publish(marker_array)
 
 # 메인 함수
 def main(args=None):
