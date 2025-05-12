@@ -329,7 +329,7 @@ class GlobalPathPlanning(Node):
         next_way = self.ways[self.way_selector.selected_ways[self.cur_way['idx']+1]]
         next_way_start_node = self.way_nodes[next_way[0]]
 
-        next_way_dist = euclidean_distance(position, next_way_start_node)
+        next_way_dist = euclidean_distance(position, next_way_start_node) # 현재 위치와 다음 way 첫 노드까지 거리
 
         if next_way_dist < UPDATE_DSIT: # 다음 way 첫 노드로부터 3m 이내에 들어오면 다음 way로 넘어감
             self.cur_way['idx'] += 1
@@ -344,7 +344,7 @@ class GlobalPathPlanning(Node):
     #     # Traffic detection 시작 여부 1: 신호 인식 필요 없는 곳은 return
     #     if self.traffic['target_sign'] == 'no_traffic':
     #         return 0
-        
+         
     #     if self.traffic['status'] == 'finish':
     #         return 0
         
