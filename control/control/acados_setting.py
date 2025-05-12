@@ -99,7 +99,8 @@ def acados_solver():
 
     # Solver 옵션 설정
     ocp.solver_options.tf = T  # 예측 시간
-    ocp.dims.N = N
+    # ocp.dims.N = N
+    ocp.solver_options.N_horizon = N
 
     ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
