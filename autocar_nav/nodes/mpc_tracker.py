@@ -71,6 +71,7 @@ class PathTracker(Node):
         self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
         self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
         self.yawrate = msg.twist.twist.angular.z
+        print(f'vel: {self.vel}')
         if self.cyaw:
             self.target_index_calculator()
         self.lock.release()
@@ -98,8 +99,9 @@ class PathTracker(Node):
     # 목표 인덱스 계산 (경로에서 가장 가까운 점 찾기)
     def target_index_calculator(self):  
         state = State(x=self.x, y=self.y, yaw=self.yaw, v=self.vel)
-        ind, mind = calc_nearest_index(state, self.cx, self.cy, self.cyaw, self.target_ind if self.target_ind is not None else 0)
-        self.target_ind = ind
+        # 가장 가까운 인덱스를 계산하고, self.target_ind를 갱신
+        ind, mind = calc_nearest_index(state, self.cx, self.cy, self.cyaw)
+        self.target_ind = ind  # 새로 계산된 인덱스를 self.target_ind에 저장
 
         dxl = self.cx[ind] - self.x
         dyl = self.cy[ind] - self.y
@@ -134,7 +136,7 @@ class PathTracker(Node):
 
         x0 = [state.x, state.y, state.v, state.yaw]  # current state
 
-        xref, target_ind, dref = calc_ref_trajectory(state, self.cx, self.cy, self.cyaw, [0]*len(self.cx), [self.target_vel]*len(self.cx), 1.0, self.target_ind)
+        xref, target_ind, dref = calc_ref_trajectory(state, self.cx, self.cy, self.cyaw, [0]*len(self.cx), [self.target_vel]*len(self.cx), 1.0)
         ov, od, ox, oy, oyaw, ov_state = iterative_linear_mpc_control(xref, x0, dref, ov=None, od=None)
 
         if ov is not None and od is not None:
@@ -179,6 +181,7 @@ class PathTracker(Node):
         text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0) # 글자색 (파란색)
 
         # 표시할 텍스트 설정
+        # CTE, HE 계산 코드 추가해야함
         text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
             \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg"
 

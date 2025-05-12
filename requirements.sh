@@ -9,3 +9,5 @@ sudo apt install ros-humble-gazebo-ros-pkgs
 
 pip install --upgrade pip
 pip install -r requirements.txt
+
+pip install ultralytics
