@@ -115,33 +115,38 @@ def get_nparray_from_matrix(x):
     """
     return np.array(x).flatten()
 
-def calc_nearest_index(state, cx, cy, cyaw, pind):
+def calc_nearest_index(state, cx, cy, cyaw):
     """
-    가장 가까운 인덱스 계산
+    가장 가까운 인덱스를 계산하는 함수 
     state: 차량의 현재 상태
     cx, cy, cyaw : 경로의 x, y, yaw 값
-    pind: 이전 인덱스
     """
+    # 차량과 경로의 모든 점 사이의 거리 계산
+    dx = [state.x - icx for icx in cx]
+    dy = [state.y - icy for icy in cy]
 
-    dx = [state.x - icx for icx in cx[pind:(pind + N_IND_SEARCH)]]
-    dy = [state.y - icy for icy in cy[pind:(pind + N_IND_SEARCH)]]
-
+    # 거리 계산 (제곱합)
     d = [idx ** 2 + idy ** 2 for (idx, idy) in zip(dx, dy)]
 
+    # 최소 거리 찾기
     mind = min(d)
+    ind = d.index(mind)  # 가장 가까운 인덱스 찾기
 
-    ind = d.index(mind) + pind
-
+    # 실제 거리 값
     mind = math.sqrt(mind)
 
+    # 해당 인덱스와의 각도 차이 계산
     dxl = cx[ind] - state.x
     dyl = cy[ind] - state.y
-
     angle = pi_2_pi(cyaw[ind] - math.atan2(dyl, dxl))
+    
+    # 각도가 음수이면, 거리의 부호를 반전
     if angle < 0:
         mind *= -1
 
-    return ind, mind # 가장 가까운 인덱스, 인덱스까지 거리 반환
+    # print(f'ind: {ind}, mind: {mind}')
+    return ind, mind  # 가장 가까운 인덱스와 거리 반환
+
 
 
 def predict_motion(x0, ov, od, xref):
@@ -279,7 +284,7 @@ def linear_mpc_control(xref, xbar, x0, dref):
     return ov, od, ox, oy, oyaw, ov_state
 
 
-def calc_ref_trajectory(state, cx, cy, cyaw, ck, sp, dl, pind):
+def calc_ref_trajectory(state, cx, cy, cyaw, ck, sp, dl):
     """
     참조 궤적 계산
     state: 차량의 현재 상태
@@ -287,16 +292,14 @@ def calc_ref_trajectory(state, cx, cy, cyaw, ck, sp, dl, pind):
     ck: 곡률
     sp: 속도 프로파일
     dl: 경로 간격
-    pind: 이전 인덱스
     """
     xref = np.zeros((NX, T + 1))
     dref = np.zeros((1, T + 1))
     ncourse = len(cx)
 
-    ind, _ = calc_nearest_index(state, cx, cy, cyaw, pind)
+    #가장 가까운 인덱스를 계산
+    ind, _ = calc_nearest_index(state, cx, cy, cyaw)
 
-    if pind >= ind:
-        ind = pind
     # 차량이 가장 가까운 경로 인덱스를 따르도록 초기 상태 설정
     xref[0, 0] = cx[ind]
     xref[1, 0] = cy[ind]

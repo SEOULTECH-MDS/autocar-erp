@@ -49,9 +49,9 @@ class YOLO(Node):
         self.subscription  # 사용하지 않는 변수 경고 방지
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성
-        self.pose_array_pub = self.create_publisher(PoseArray, '/bounding_boxes', 10)
+        self.pose_array_pub = self.create_publisher(PoseArray, '/bounding_boxes/obstacle', 10)
         self.img_res_pub = self.create_publisher(Image, '/yolo/obstacle', 10)
-        # self.traffic_pub = self.create_publisher(String, '/obstacle_type', 10)
+        # self.obstacle_pub = self.create_publisher(String, '/obstacle_type', 10)
         
         # CvBridge 초기화 (ROS 이미지와 OpenCV 이미지 간 변환)
         self.bridge = CvBridge()
@@ -173,7 +173,24 @@ class YOLO(Node):
                 rubbers.append(rubber)
             return rubbers
         return None
+    '''
+    def callback_obstacle_pub(self):
+        final_check = String()
+        data = ""
+        # 각 클래스의 큐 크기를 QUEUE_SIZE로 유지
+        for n in range(5):
+            while len(self.queue_list[n]) > QUEUE_SIZE:
+                del self.queue_list[n][0]
+            if self.hard_vote(self.queue_list[n]):
+                data += CLASS_MAP[n] if data == "" else f",{CLASS_MAP[n]}"
 
+        if data == "":
+            data = "None"
+
+        self.get_logger().info(f"Obstacle type: {data}")
+        final_check.data = data
+        self.obstacle_pub.publish(final_check)
+    '''
 def main(args=None):
     rclpy.init(args=args)
     yolo_detector = YOLO()

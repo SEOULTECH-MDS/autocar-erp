@@ -9,7 +9,7 @@ import numpy as np
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
 from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 from geometry_msgs.msg import Quaternion
-
+from ackermann_msgs.msg import AckermannDriveStamped
 
 
 # gps , imu 데이터 테스트용 노드
@@ -18,13 +18,18 @@ class HitechTestPub(Node):
         super().__init__('hitech_test_pub')
         self.publisher_gps = self.create_publisher(NavSatFix, '/ublox_gps_node/fix', 10)
         self.publisher_imu = self.create_publisher(Imu, '/imu/data', 10)
+
+
         self.get_logger().info("hitech_test_pub START")
 
-        self.yaw = 1.5  # 초기 yaw 값 (라디안 단위)
+        self.yaw = np.deg2rad(0.0)  # 초기 yaw 값 (라디안 단위)
         self.yaw_rate = np.deg2rad(5.0)  # 1초에 1도 회전 (라디안 변환)
         
-        self.latitude = 37.632010
-        self.longitude = 127.076008  # 하이테크 텐트 앞
+        # self.latitude = 37.632010
+        # self.longitude = 127.076008  # 하이테크 텐트 앞
+ 
+        self.latitude = 37.630096
+        self.longitude = 127.081397 # 미래관 주차장
 
         # self.latitude = 37.63283317
         # self.longitude = 127.07819321 # 붕어방 도로
@@ -33,13 +38,14 @@ class HitechTestPub(Node):
         self.create_timer(0.1, self.publish_gps)  # GPS 데이터 퍼블리시
         self.create_timer(0.1, self.publish_imu)  # IMU 데이터 퍼블리시
 
+
     # GPS 메시지 퍼블리싱
     def publish_gps(self):
         msg = NavSatFix()
 
         # x, y 위도, 경도 값 증가
-        # self.latitude += self.velocity * 0.5
-        # self.longitude += self.velocity * 0.5
+        # self.latitude += self.velocity * 1.0
+        # self.longitude += self.velocity * 0.4  
         
         msg.latitude = self.latitude
         msg.longitude = self.longitude
