@@ -37,10 +37,8 @@
 #include "acados_c/ocp_nlp_interface.h"
 #include "acados_c/external_function_interface.h"
 
-// openmp
-#include <omp.h>
-
 // example specific
+
 #include "bicycle_model_model/bicycle_model_model.h"
 
 
@@ -119,6 +117,7 @@ int bicycle_model_acados_create(bicycle_model_solver_capsule* capsule)
 
 int bicycle_model_acados_update_time_steps(bicycle_model_solver_capsule* capsule, int N, double* new_time_steps)
 {
+
     if (N != capsule->nlp_solver_plan->N) {
         fprintf(stderr, "bicycle_model_acados_update_time_steps: given number of time steps (= %d) " \
             "differs from the currently allocated number of " \
@@ -138,6 +137,7 @@ int bicycle_model_acados_update_time_steps(bicycle_model_solver_capsule* capsule
         ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "scaling", &new_time_steps[i]);
     }
     return 0;
+
 }
 
 /**
@@ -155,7 +155,6 @@ void bicycle_model_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const
 
     nlp_solver_plan->ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
     nlp_solver_plan->relaxed_ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
-
     nlp_solver_plan->nlp_cost[0] = LINEAR_LS;
     for (int i = 1; i < N; i++)
         nlp_solver_plan->nlp_cost[i] = LINEAR_LS;
@@ -242,7 +241,9 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     nbx[0] = NBX0;
     nsbx[0] = 0;
     ns[0] = NS0;
+    
     nbxe[0] = 0;
+    
     ny[0] = NY0;
     nh[0] = NH0;
     nsh[0] = NSH0;
@@ -306,7 +307,6 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nh", &nh[N]);
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nsh", &nsh[N]);
     ocp_nlp_dims_set_cost(nlp_config, nlp_dims, N, "ny", &ny[N]);
-
     free(intNp1mem);
 
     return nlp_dims;
@@ -366,7 +366,7 @@ void bicycle_model_acados_create_setup_functions(bicycle_model_solver_capsule* c
 
 
 /**
- * Internal function for bicycle_model_acados_create: step 4
+ * Internal function for bicycle_model_acados_create: step 5
  */
 void bicycle_model_acados_create_set_default_parameters(bicycle_model_solver_capsule* capsule)
 {
@@ -392,9 +392,11 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     /************************************************
     *  nlp_in
     ************************************************/
-//    ocp_nlp_in * nlp_in = ocp_nlp_in_create(nlp_config, nlp_dims);
-//    capsule->nlp_in = nlp_in;
     ocp_nlp_in * nlp_in = capsule->nlp_in;
+    /************************************************
+    *  nlp_out
+    ************************************************/
+    ocp_nlp_out * nlp_out = capsule->nlp_out;
 
     // set up time_steps and cost_scaling
 
@@ -440,6 +442,7 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
         }
         free(cost_scaling);
     }
+
 
 
     /**** Dynamics ****/
@@ -552,6 +555,7 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
 
 
 
+
     /**** Constraints ****/
 
     // bounds for initial stage
@@ -578,9 +582,9 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
 
     for (int i = 0; i < N; i++)
     {
-        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "idxbu", idxbu);
-        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "lbu", lbu);
-        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "ubu", ubu);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "idxbu", idxbu);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "lbu", lbu);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "ubu", ubu);
     }
     free(idxbu);
     free(lubu);
@@ -612,9 +616,9 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
 
     for (int i = 1; i < N; i++)
     {
-        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "idxbx", idxbx);
-        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "lbx", lbx);
-        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "ubx", ubx);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "idxbx", idxbx);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "lbx", lbx);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "ubx", ubx);
     }
     free(idxbx);
     free(lubx);
@@ -721,6 +725,9 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
     int log_primal_step_norm = false;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "log_primal_step_norm", &log_primal_step_norm);
 
+    int log_dual_step_norm = false;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "log_dual_step_norm", &log_dual_step_norm);
+
     double nlp_solver_tol_min_step_norm = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_min_step_norm", &nlp_solver_tol_min_step_norm);
     // set HPIPM mode: should be done before setting other QP solver options
@@ -793,6 +800,7 @@ void bicycle_model_acados_set_nlp_out(bicycle_model_solver_capsule* capsule)
     ocp_nlp_config* nlp_config = capsule->nlp_config;
     ocp_nlp_dims* nlp_dims = capsule->nlp_dims;
     ocp_nlp_out* nlp_out = capsule->nlp_out;
+    ocp_nlp_in* nlp_in = capsule->nlp_in;
 
     // initialize primal solution
     double* xu0 = calloc(NX+NU, sizeof(double));
@@ -805,11 +813,11 @@ void bicycle_model_acados_set_nlp_out(bicycle_model_solver_capsule* capsule)
     for (int i = 0; i < N; i++)
     {
         // x0
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "x", x0);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "x", x0);
         // u0
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "u", u0);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", u0);
     }
-    ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, N, "x", x0);
+    ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, N, "x", x0);
     free(xu0);
 }
 
@@ -855,23 +863,24 @@ int bicycle_model_acados_create_with_discretization(bicycle_model_solver_capsule
     capsule->nlp_opts = ocp_nlp_solver_opts_create(capsule->nlp_config, capsule->nlp_dims);
     bicycle_model_acados_create_set_opts(capsule);
 
-    // 4) create nlp_in
+    // 4) create and set nlp_out
+    // 4.1) nlp_out
+    capsule->nlp_out = ocp_nlp_out_create(capsule->nlp_config, capsule->nlp_dims);
+    // 4.2) sens_out
+    capsule->sens_out = ocp_nlp_out_create(capsule->nlp_config, capsule->nlp_dims);
+    bicycle_model_acados_set_nlp_out(capsule);
+
+    // 5) create nlp_in
     capsule->nlp_in = ocp_nlp_in_create(capsule->nlp_config, capsule->nlp_dims);
 
-    // 5) setup functions, nlp_in and default parameters
+    // 6) setup functions, nlp_in and default parameters
     bicycle_model_acados_create_setup_functions(capsule);
     bicycle_model_acados_setup_nlp_in(capsule, N, new_time_steps);
     bicycle_model_acados_create_set_default_parameters(capsule);
 
-    // 6) create solver
+    // 7) create solver
     capsule->nlp_solver = ocp_nlp_solver_create(capsule->nlp_config, capsule->nlp_dims, capsule->nlp_opts, capsule->nlp_in);
 
-    // 7) create and set nlp_out
-    // 7.1) nlp_out
-    capsule->nlp_out = ocp_nlp_out_create(capsule->nlp_config, capsule->nlp_dims);
-    // 7.2) sens_out
-    capsule->sens_out = ocp_nlp_out_create(capsule->nlp_config, capsule->nlp_dims);
-    bicycle_model_acados_set_nlp_out(capsule);
 
     // 8) do precomputations
     int status = bicycle_model_acados_create_precompute(capsule);
@@ -919,15 +928,15 @@ int bicycle_model_acados_reset(bicycle_model_solver_capsule* capsule, int reset_
 
     for(int i=0; i<N+1; i++)
     {
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "x", buffer);
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "u", buffer);
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "sl", buffer);
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "su", buffer);
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "lam", buffer);
-        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "z", buffer);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "x", buffer);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", buffer);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "sl", buffer);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "su", buffer);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "lam", buffer);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "z", buffer);
         if (i<N)
         {
-            ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "pi", buffer);
+            ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "pi", buffer);
         }
     }
     // get qp_status: if NaN -> reset memory
