@@ -9,7 +9,10 @@ import time
 from sensor_fusion_handler import *
 
 # ROS
-import rospy
+import rclpy
+from rclpy.node import Node
+from rclpy.duration import Duration
+from rclpy.clock import Clock, ClockType
 from cv_bridge import CvBridge
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose, PoseArray
@@ -50,7 +53,7 @@ from std_msgs.msg import Int32MultiArray, String, Int32
 #                                         tx = 1.52, ty = 0.496, tz = -0.808)
 
 
-class SensorFusion():
+class SensorFusion(Node):
     def __init__(self):
         self.bridge = CvBridge()
         # self.intrinsic = np.array([[515.19, 0.0, 333.26, 0.0],
@@ -89,19 +92,21 @@ class SensorFusion():
         self.target_sign = None
     
         # ROS
-        rospy.init_node('sensor_fusion', anonymous=True)
-        self.cluster_sub = message_filters.Subscriber('/adaptive_clustering/markers', MarkerArray)
-        self.bbox_sub = message_filters.Subscriber("/bounding_boxes/deliver", PoseArray)
+        super().__init__('sensor_fusion')
+
+        self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
+        self.bbox_sub = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/deliver")
 
         self.sync = message_filters.ApproximateTimeSynchronizer([self.cluster_sub, self.bbox_sub], queue_size=10, slop=0.5, allow_headerless=True)
         self.sync.registerCallback(self.callback_fusion)
         
-        self.image_sub = rospy.Subscriber("/yolo/delivery", Image, self.callback_img)
-        self.target_sign_sub = rospy.Subscriber('/target_sign', Int32, self.callback_targetsign)
-        self.result_img_pub = rospy.Publisher("/result_img",Image,queue_size=10)
-        self.deliverysign_spot_pub = rospy.Publisher('/deliverysign_spot',PoseArray,queue_size=10)
-        
-        print("\033[1;33m Starting camera and 3D LiDAR sensor fusion. \033[0m")
+        self.image_sub = self.create_subscription(Image, '/yolo/sign', self.callback_img, 10)
+        self.target_sign_sub = self.create_subscription(Int32, '/target_sign', self.callback_targetsign, 10)
+
+        self.result_img_pub = self.create_publisher(Image, '/result_img', 10)
+        self.deliverysign_spot_pub = self.create_publisher(PoseArray, '/deliverysign_spot', 10)
+
+        self.get_logger().info('\033[1;33mStarting camera + LiDAR sensor-fusion (ROS 2)…\033[0m')
         return
     
     def callback_img(self, img_msg):
@@ -111,8 +116,8 @@ class SensorFusion():
             visualize_cluster_2d(self.clusters_2d, img)
             visualize_bbox(self.bboxes, img)
 
-        result_img = bridge.cv2_to_imgmsg(img, encoding="bgr8") 
-        result_img.header.stamp = rospy.Time.now()
+        result_img = bridge.cv2_to_imgmsg(img, encoding="bgr8")
+        result_img.header.stamp = self.get_clock().now().to_msg()
         self.result_img_pub.publish(result_img)
 
     def callback_targetsign(self, sign_msg):
@@ -133,16 +138,15 @@ class SensorFusion():
 
         # Sensor Fusion (Hungarian Algorithm)
         matched = hungarian_match(clusters_2d, bboxes, bboxes_label, distance_threshold=30)
-        print(matched)
+        self.get_logger().debug(f'Matched indices: {matched}')
         
         labels = get_label(matched, valid_indicies)
-
-        print(labels)
+        self.get_logger().debug(f'Labels: {labels}')
         
         target_clusters = []
         delivery_pose_array = PoseArray()
         delivery_pose_array.header.frame_id = 'velodyne'
-        delivery_pose_array.header.stamp = rospy.Time.now()
+        delivery_pose_array.header.stamp = self.get_clock().now().to_msg()
         for idx, id in enumerate(labels):
             if id == 0:
                 target_clusters.append(clusters.T[:,:3][idx])
@@ -153,7 +157,7 @@ class SensorFusion():
             elif id == self.target_sign:
                 target_clusters.append(clusters.T[:,:3][idx])    
             
-        print(target_clusters)
+        self.get_logger().debug(f'Target clusters: {target_clusters}')
 
 
         if target_clusters:
@@ -169,8 +173,7 @@ class SensorFusion():
         
             self.deliverysign_spot_pub.publish(delivery_pose_array)
         
-        print("소요 시간: {:.5f}".format(time.perf_counter() - first_time))
-        print("")
+        self.get_logger().info(f'소요시간: {time.perf_counter() - first_time:.5f}')
         return
     
     def rtlc(self, alpha, beta, gamma, tx, ty, tz):              
@@ -212,8 +215,8 @@ class SensorFusion():
         marker.action = marker.ADD
         marker.type = marker.POINTS
         marker.header.frame_id = "velodyne"
-        marker.header.stamp = rospy.Time.now()
-        marker.lifetime = rospy.Duration(0.1)
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.lifetime = Duration(seconds=0.1).to_msg()
         marker.id = int((color[0] + color[1] + color[2]) * 10000)
         marker.scale.x = 0.2
         marker.scale.y = 0.2
@@ -228,7 +231,7 @@ class SensorFusion():
     @staticmethod
     def make_pose_array(points):
         pose_array = PoseArray()
-        pose_array.header.stamp = rospy.Time.now()
+        pose_array.header.stamp = Clock(clock_type=ClockType.ROS_TIME).now().to_msg()
         pose_array.header.frame_id = 'yolo'
         for x, y in points:
             pose = Pose()
@@ -238,6 +241,16 @@ class SensorFusion():
             pose_array.poses.append(pose)
         return pose_array
     
+def main():
+    rclpy.init()
+    node = SensorFusion()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
 if __name__ == '__main__':
-    sensor_fusion = SensorFusion()
-    rospy.spin()
+    main()
