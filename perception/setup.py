@@ -45,6 +45,9 @@ setup(
 
             'camera_sign = perception.yolov11.camera_sign:main',
             'sign = perception.yolov11.sign:main',
+
+            "sensor_fusion = perception.sensor_fusion.src.sensor_fusion:main",
+            # "sensor_fusion = perception.sensor_fusion.src.sensor_fusion_v3kcity:maim",
         ],
     },
 )
