@@ -23,7 +23,7 @@ from numpy import random
 from cv_bridge import CvBridge
 # YOLOv8 사용: ultralytics의 YOLO 모델을 import
 from ultralytics import YOLO
-from perception.yolov7.utils.plots import plot_one_box
+from perception.yolov11.utils.plots import plot_one_box
 
 import rclpy
 from rclpy.node import Node
