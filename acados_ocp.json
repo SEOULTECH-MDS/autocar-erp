@@ -1,7 +1,7 @@
 {
-    "acados_include_path": "/home/mds/acados/include",
-    "acados_lib_path": "/home/mds/acados/lib",
-    "code_export_directory": "/home/mds/autocar-erp/autocar-erp-main/c_generated_code",
+    "acados_include_path": "/home/ysl/acados/include",
+    "acados_lib_path": "/home/ysl/acados/lib",
+    "code_export_directory": "/home/ysl/autocar/autocar-erp/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],
@@ -428,7 +428,7 @@
         "zu_e": []
     },
     "cython_include_dirs": [
-        "/home/mds/.local/lib/python3.10/site-packages/numpy/core/include",
+        "/home/ysl/.local/lib/python3.10/site-packages/numpy/core/include",
         "/usr/include/python3.10"
     ],
     "dims": {
@@ -613,7 +613,6 @@
         "hpipm_mode": "BALANCE",
         "integrator_type": "ERK",
         "levenberg_marquardt": 0.0,
-        "log_dual_step_norm": false,
         "log_primal_step_norm": false,
         "model_external_shared_lib_dir": null,
         "model_external_shared_lib_name": null,
