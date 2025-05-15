@@ -201,42 +201,12 @@ class PathTracker(Node):
         text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0) # 글자색 (파란색)
 
         # 표시할 텍스트 설정
+        # CTE, HE 계산 코드 추가해야함
         text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
             \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg"
 
         self.overlay_pub.publish(text_msg)
 
-    def calculate_curvature(self, points):
-        """포인트들의 곡률 계산"""
-        curvatures = []
-        for i in range(1, len(points)-1):
-            # 3점을 이용한 곡률 계산
-            p1 = points[i-1]
-            p2 = points[i]
-            p3 = points[i+1]
-            
-            # 곡률 계산 로직
-            # ...
-            
-            curvatures.append(curvature)
-        return curvatures
-
-    def publish_visualization(self):
-        # 곡률 시각화
-        curvature_markers = MarkerArray()
-        for i, curvature in enumerate(self.curvatures):
-            marker = Marker()
-            # 곡률 정보를 시각화하는 마커 설정
-            # ...
-            curvature_markers.markers.append(marker)
-        
-        # 참조점 시각화
-        ref_marker = Marker()
-        # 현재 참조점 정보를 시각화하는 마커 설정
-        # ...
-        
-        self.curvature_pub.publish(curvature_markers)
-        self.reference_point_pub.publish(ref_marker)
 
 # 메인 함수
 def main(args=None):

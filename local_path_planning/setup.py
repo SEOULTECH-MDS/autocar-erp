@@ -17,7 +17,6 @@ setup(
     maintainer_email='dldbstjd5566@gmail.com',
     description='Local path planning package',
     license='Apache License 2.0', 
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'optimal_frenet_planning = local_path_planning.optimal_frenet_planning:main',

@@ -18,8 +18,8 @@ import yaml
 from PIL import Image, ImageDraw, ImageFont
 from scipy.signal import butter, filtfilt
 
-from perception.yolov8.utils.general import xywh2xyxy, xyxy2xywh
-from perception.yolov8.utils.metrics import fitness
+from perception.yolov11.utils.general import xywh2xyxy, xyxy2xywh
+from perception.yolov11.utils.metrics import fitness
 # from utils.general import xywh2xyxy, xyxy2xywh
 # from utils.metrics import fitness
 
