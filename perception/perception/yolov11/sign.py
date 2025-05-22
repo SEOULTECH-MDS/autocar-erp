@@ -60,7 +60,7 @@ class YOLOv11(Node):
 
         self.detected_pub = self.create_publisher(Image, "/yolo/sign", 10)
         self.delivery_pub = self.create_publisher(Int32MultiArray, "/delivery_sign", 10)
-        self.boungingboxes_pub = self.create_publisher(PoseArray, "/bounding_boxes/sign", 10)
+        self.boungingboxes_pub = self.create_publisher(PoseArray, "/bounding_boxes/deliver", 10)
         self.target_sign_pub = self.create_publisher(Int32, "/target_sign", 10)
         
         self.create_subscription(String, "/driving_mode", self.callback_mode, 10)
@@ -130,6 +130,11 @@ class YOLOv11(Node):
                 pose.orientation.y = float(coord[2])  # ymin
                 pose.orientation.z = float(coord[3])  # xmax
                 pose.orientation.w = float(coord[4])  # ymax
+
+                self.get_logger().info(
+                    f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
+                    f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
+                )
 
                 poses.poses.append(pose)
             self.boungingboxes_pub.publish(poses)
