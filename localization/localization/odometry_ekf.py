@@ -118,7 +118,7 @@ class OdometryNode(Node):
         # self.location_viz_pub = self.create_publisher(PolygonStamped, '/autocar/viz_location', 10)
 
         # 타이머 초기화
-        self.timer = self.create_timer(0.1, self.publish_odometry)
+        self.timer = self.create_timer(0.05, self.publish_odometry)
 
     def callback_gps(self, gps_msg):
         # GPS 좌표를 UTM 좌표로 변환
