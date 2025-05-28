@@ -156,6 +156,13 @@ void bicycle_model_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const
 
     nlp_solver_plan->ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
     nlp_solver_plan->relaxed_ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
+<<<<<<< HEAD
+=======
+
+    nlp_solver_plan->nlp_cost[0] = LINEAR_LS;
+    for (int i = 1; i < N; i++)
+        nlp_solver_plan->nlp_cost[i] = LINEAR_LS;
+>>>>>>> 6832e04 (0515)
 
     nlp_solver_plan->nlp_cost[0] = EXTERNAL;
     for (int i = 1; i < N; i++)
@@ -243,7 +250,11 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     nbx[0] = NBX0;
     nsbx[0] = 0;
     ns[0] = NS0;
+<<<<<<< HEAD
     nbxe[0] = 5;
+=======
+    nbxe[0] = 0;
+>>>>>>> 6832e04 (0515)
     ny[0] = NY0;
     nh[0] = NH0;
     nsh[0] = NSH0;
@@ -303,6 +314,10 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     }
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nh", &nh[N]);
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nsh", &nsh[N]);
+<<<<<<< HEAD
+=======
+    ocp_nlp_dims_set_cost(nlp_config, nlp_dims, N, "ny", &ny[N]);
+>>>>>>> 6832e04 (0515)
 
     free(intNp1mem);
 
@@ -512,7 +527,6 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, N, "ext_cost_fun_jac_hess", &capsule->ext_cost_e_fun_jac_hess);
     
     
-
 
 
 
