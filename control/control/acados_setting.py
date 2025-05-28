@@ -39,10 +39,10 @@ def acados_solver():
     ocp.cost.cost_type_e = 'EXTERNAL'
 
     # 비용 함수 가중치 설정 
-    Q = np.diag([3.0, 3.0, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v) 
-    R = np.diag([0.03, 0.1])  # 제어 입력 가중치 (delta, v_cmd) 
-    Rd = np.diag([0.5, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd)
-    Qe = np.diag([4.0, 4.0, 0.5, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 
+    Q = np.diag([1.0, 1.0, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v) 
+    R = np.diag([0.1, 0.1])  # 제어 입력 가중치 (delta, v_cmd) 
+    Rd = np.diag([1.0, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd)
+    Qe = np.diag([2.0, 2.0, 0.5, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 
     
     # 장애물 회피 가중치 (더 부드럽게 설정)
     W_obs = 50.0  # 장애물 회피 가중치 
@@ -74,14 +74,18 @@ def acados_solver():
     obstacle_cost = W_obs * exp(-barrier_gain * (distance_sq - safe_distance_sq))
 
     # stage cost (장애물 회피 비용 포함)
+    # stage_cost = (x_err.T @ Q @ x_err) + \
+    #             (ocp.model.u.T @ R @ ocp.model.u) + \
+    #             (u_diff.T @ Rd @ u_diff) + \
+    #             obstacle_cost
     stage_cost = (x_err.T @ Q @ x_err) + \
                 (ocp.model.u.T @ R @ ocp.model.u) + \
-                (u_diff.T @ Rd @ u_diff) + \
-                obstacle_cost
+                (u_diff.T @ Rd @ u_diff) 
     ocp.model.cost_expr_ext_cost = stage_cost
 
     # terminal cost (장애물 회피 비용 포함)
-    terminal_cost = (x_err.T @ Qe @ x_err) + obstacle_cost
+    # terminal_cost = (x_err.T @ Qe @ x_err) + obstacle_cost
+    terminal_cost = (x_err.T @ Qe @ x_err)
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # 제어 입력 제약 조건 (delta, v_cmd)
