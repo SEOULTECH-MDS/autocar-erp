@@ -1,0 +1,1 @@
+/home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2/ament_cmake_core/ndt_omp_ros2Config-version.cmake

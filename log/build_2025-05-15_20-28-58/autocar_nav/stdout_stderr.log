@@ -1,0 +1,117 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found rclpy: 3.3.15 (/opt/ros/humble/share/rclpy/cmake)
+-- Found geometry_msgs: 4.2.4 (/opt/ros/humble/share/geometry_msgs/cmake)
+-- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+-- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found nav_msgs: 4.2.4 (/opt/ros/humble/share/nav_msgs/cmake)
+-- Found tf2: 0.25.12 (/opt/ros/humble/share/tf2/cmake)
+-- Found tf2_ros: 0.25.12 (/opt/ros/humble/share/tf2_ros/cmake)
+-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+-- Found FastRTPS: /opt/ros/humble/include  
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+-- Added test 'copyright' to check source files copyright and LICENSE
+-- Added test 'flake8' to check Python code syntax and style conventions
+-- Added test 'lint_cmake' to check CMake code style
+-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/mds/autocar-erp/autocar-erp-main/build/autocar_nav
+Built target ament_cmake_python_symlink_autocar_nav
+running egg_info
+creating autocar_nav.egg-info
+writing autocar_nav.egg-info/PKG-INFO
+writing dependency_links to autocar_nav.egg-info/dependency_links.txt
+writing top-level names to autocar_nav.egg-info/top_level.txt
+writing manifest file 'autocar_nav.egg-info/SOURCES.txt'
+reading manifest file 'autocar_nav.egg-info/SOURCES.txt'
+writing manifest file 'autocar_nav.egg-info/SOURCES.txt'
+Built target ament_cmake_python_build_autocar_nav_egg
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/pythonpath.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/pythonpath.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/PKG-INFO
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/SOURCES.txt
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/dependency_links.txt
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav-0.0.0-py3.10.egg-info/top_level.txt
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/__init__.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/cubic_spline_interpolator.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/euler_from_quaternion.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/keyboard_input.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/mpc.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/normalise_angle.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/osm_handler.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/stopwatch.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/utils.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/way_selector.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/yaw_to_quaternion.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/config/navigation_params.yaml
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/KCITY_INTERSECTION_LINK_MAIN.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/KCITY_MAIN.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/boong_LINK.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/hitech2_INTERSECTION_LINK.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/hitech2_LINK.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/hitech2_STOPLINE.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/mirae_intersection.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/mirae_link.osm
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/data/waypoints.csv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/launch/autocar_tf.launch.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/ament_index/resource_index/package_run_dependencies/autocar_nav
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/ament_index/resource_index/parent_prefix_path/autocar_nav
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/ament_prefix_path.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/ament_prefix_path.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/path.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/environment/path.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.bash
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.zsh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/local_setup.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/ament_index/resource_index/packages/autocar_nav
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/cmake/autocar_navConfig.cmake
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/cmake/autocar_navConfig-version.cmake
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/share/autocar_nav/package.xml
+Listing '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/__init__.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/cubic_spline_interpolator.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/euler_from_quaternion.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/keyboard_input.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/mpc.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/normalise_angle.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/osm_handler.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/stopwatch.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/utils.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/way_selector.py'...
+Compiling '/home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/local/lib/python3.10/dist-packages/autocar_nav/yaw_to_quaternion.py'...
+-- Installing: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/tracker
+-- Installing: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/autocar_tf_ros2
+-- Installing: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/hitech_test_pub
+-- Installing: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/mpc_tracker
+-- Installing: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/global_click_planner
+-- Installing: /home/mds/autocar-erp/autocar-erp-main/install/autocar_nav/lib/autocar_nav/hitech_test_pub2

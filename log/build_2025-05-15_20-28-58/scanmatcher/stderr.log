@@ -1,0 +1,157 @@
+[33mCMake Warning (dev) at CMakeLists.txt:38 (find_package):
+  Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
+  Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+
+  CMake variable PCL_ROOT is set to:
+
+    /usr
+
+  For compatibility, CMake is ignoring the variable.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+[0m
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:65[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/tf2_eigen/tf2_eigen/tf2_eigen.h:32:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   32 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:66[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.h:35:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   35 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:65[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/tf2_eigen/tf2_eigen/tf2_eigen.h:32:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   32 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:66[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.h:35:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   35 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:65[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/scanmatcher_component.h:61[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/scanmatcher_component.cpp:1[m[K:
+[01m[K/opt/ros/humble/include/tf2_eigen/tf2_eigen/tf2_eigen.h:32:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   32 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:66[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/scanmatcher_component.h:61[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/scanmatcher_component.cpp:1[m[K:
+[01m[K/opt/ros/humble/include/tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.h:35:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   35 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead
+      |  [01;35m[K^~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:189:65:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksensor_msgs::msg::Imu_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  189 |   void imuHandler(const sensor_msgs::msg::Imu::ConstPtr & imuMsg[01;35m[K)[m[K
+      |                                                                 [01;35m[K^[m[K
+In file included from [01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/imu.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:39[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/detail/imu__struct.hpp:182:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  182 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:214:77:[m[K [01;35m[Kwarning: [m[K‘[01m[Knav_msgs::msg::Odometry_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  214 |   void odometryHandler(const nav_msgs::msg::Odometry::ConstPtr & odometryMsg[01;35m[K)[m[K
+      |                                                                             [01;35m[K^[m[K
+In file included from [01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/odometry.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:42[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:146:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  146 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:220:82:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksensor_msgs::msg::PointCloud2_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  220 |   void cloudHandler(const sensor_msgs::msg::PointCloud2::ConstPtr & laserCloudMsg[01;35m[K)[m[K
+      |                                                                                  [01;35m[K^[m[K
+In file included from [01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/point_cloud2.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:40[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/detail/point_cloud2__struct.hpp:194:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  194 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:239:85:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksensor_msgs::msg::PointCloud2_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  239 |   bool cachePointCloud(const sensor_msgs::msg::PointCloud2::ConstPtr & laserCloudMsg[01;35m[K)[m[K
+      |                                                                                     [01;35m[K^[m[K
+In file included from [01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/point_cloud2.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:40[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/detail/point_cloud2__struct.hpp:194:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  194 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:[m[K In constructor ‘[01m[KImageProjection::ImageProjection(const rclcpp::NodeOptions&)[m[K’:
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:127:60:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksensor_msgs::msg::Imu_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  127 |       [this](const sensor_msgs::msg::Imu::ConstPtr msg) -> [01;35m[Kvoid[m[K
+      |                                                            [01;35m[K^~~~[m[K
+In file included from [01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/imu.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:39[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/detail/imu__struct.hpp:182:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  182 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:134:62:[m[K [01;35m[Kwarning: [m[K‘[01m[Knav_msgs::msg::Odometry_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  134 |       [this](const nav_msgs::msg::Odometry::ConstPtr msg) -> [01;35m[Kvoid[m[K
+      |                                                              [01;35m[K^~~~[m[K
+In file included from [01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/odometry.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:42[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:146:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  146 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:141:68:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksensor_msgs::msg::PointCloud2_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  141 |       [this](const sensor_msgs::msg::PointCloud2::ConstPtr msg) -> [01;35m[Kvoid[m[K
+      |                                                                    [01;35m[K^~~~[m[K
+In file included from [01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/point_cloud2.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:40[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/image_projection.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/detail/point_cloud2__struct.hpp:194:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  194 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:196:73:[m[K [01;35m[Kwarning: [m[K‘[01m[Knav_msgs::msg::Odometry_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  196 |   void odometryHandler(const nav_msgs::msg::Odometry::ConstPtr & odomMsg[01;35m[K)[m[K
+      |                                                                         [01;35m[K^[m[K
+In file included from [01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/odometry.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:42[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:146:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  146 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:415:66:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksensor_msgs::msg::Imu_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  415 |   void imuHandler(const sensor_msgs::msg::Imu::ConstPtr & imu_raw[01;35m[K)[m[K
+      |                                                                  [01;35m[K^[m[K
+In file included from [01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/imu.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:39[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/detail/imu__struct.hpp:182:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  182 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:[m[K In constructor ‘[01m[KIMUPreintegration::IMUPreintegration(const rclcpp::NodeOptions&)[m[K’:
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:125:60:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksensor_msgs::msg::Imu_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  125 |       [this](const sensor_msgs::msg::Imu::ConstPtr msg) -> [01;35m[Kvoid[m[K
+      |                                                            [01;35m[K^~~~[m[K
+In file included from [01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/imu.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:39[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/sensor_msgs/sensor_msgs/msg/detail/imu__struct.hpp:182:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  182 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:130:62:[m[K [01;35m[Kwarning: [m[K‘[01m[Knav_msgs::msg::Odometry_<std::allocator<void> >::ConstPtr[m[K’ is deprecated [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations-Wdeprecated-declarations]8;;[m[K]
+  130 |       [this](const nav_msgs::msg::Odometry::ConstPtr msg) -> [01;35m[Kvoid[m[K
+      |                                                              [01;35m[K^~~~[m[K
+In file included from [01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/odometry.hpp:7[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:42[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/imu_preintegration.cpp:31[m[K:
+[01m[K/opt/ros/humble/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:146:5:[m[K [01;36m[Knote: [m[Kdeclared here
+  146 |     [01;36m[KConstPtr[m[K;
+      |     [01;36m[K^~~~~~~~[m[K
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:65[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/scanmatcher_component.h:61[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/scanmatcher_node.cpp:1[m[K:
+[01m[K/opt/ros/humble/include/tf2_eigen/tf2_eigen/tf2_eigen.h:32:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   32 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_eigen/tf2_eigen.hpp instead
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/utility.h:66[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/include/scanmatcher/scanmatcher_component.h:61[m[K,
+                 from [01m[K/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/scanmatcher/src/scanmatcher_node.cpp:1[m[K:
+[01m[K/opt/ros/humble/include/tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.h:35:2:[m[K [01;35m[Kwarning: [m[K#warning This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wcpp-Wcpp]8;;[m[K]
+   35 | #[01;35m[Kwarning[m[K This header is obsolete, please include tf2_geometry_msgs/tf2_geometry_msgs.hpp instead
+      |  [01;35m[K^~~~~~~[m[K

@@ -1,0 +1,24 @@
+[1.286s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/build --no-deps symlink_data
+[1.499s] running develop
+[1.607s] running egg_info
+[1.607s] creating local_path_planning.egg-info
+[1.607s] writing local_path_planning.egg-info/PKG-INFO
+[1.607s] writing dependency_links to local_path_planning.egg-info/dependency_links.txt
+[1.608s] writing entry points to local_path_planning.egg-info/entry_points.txt
+[1.608s] writing requirements to local_path_planning.egg-info/requires.txt
+[1.608s] writing top-level names to local_path_planning.egg-info/top_level.txt
+[1.608s] writing manifest file 'local_path_planning.egg-info/SOURCES.txt'
+[1.609s] reading manifest file 'local_path_planning.egg-info/SOURCES.txt'
+[1.610s] writing manifest file 'local_path_planning.egg-info/SOURCES.txt'
+[1.637s] running build_ext
+[1.637s] Creating /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/python3.10/site-packages/local-path-planning.egg-link (link to .)
+[1.637s] Installing optimal_frenet_planning script to /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/local_path_planning
+[1.638s] 
+[1.638s] Installed /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning
+[1.638s] running symlink_data
+[1.638s] creating /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/ament_index
+[1.638s] creating /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/ament_index/resource_index
+[1.638s] creating /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/ament_index/resource_index/packages
+[1.638s] symbolically linking /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/resource/local_path_planning -> /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/ament_index/resource_index/packages
+[1.638s] symbolically linking /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/package.xml -> /home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/share/local_path_planning
+[1.663s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning' returned '0': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/local_path_planning/build --no-deps symlink_data

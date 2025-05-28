@@ -1,0 +1,233 @@
+[0.014s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/lidarslam_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs
+[0.080s] -- The C compiler identification is GNU 11.4.0
+[0.131s] -- The CXX compiler identification is GNU 11.4.0
+[0.138s] -- Detecting C compiler ABI info
+[0.271s] -- Detecting C compiler ABI info - done
+[0.277s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.277s] -- Detecting C compile features
+[0.277s] -- Detecting C compile features - done
+[0.280s] -- Detecting CXX compiler ABI info
+[0.379s] -- Detecting CXX compiler ABI info - done
+[0.384s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.384s] -- Detecting CXX compile features
+[0.385s] -- Detecting CXX compile features - done
+[0.387s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.556s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.607s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.638s] -- Found std_msgs: 4.2.4 (/opt/ros/humble/share/std_msgs/cmake)
+[0.667s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.672s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.679s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.690s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.703s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.723s] -- Found geometry_msgs: 4.2.4 (/opt/ros/humble/share/geometry_msgs/cmake)
+[0.732s] -- Found sensor_msgs: 4.2.4 (/opt/ros/humble/share/sensor_msgs/cmake)
+[0.744s] -- Found rosidl_default_generators: 1.2.0 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+[0.997s] -- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+[1.395s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.558s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.584s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.10.12", minimum required is "3.6") 
+[1.585s] -- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+[1.619s] -- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.10.so (found suitable version "3.10.12", minimum required is "3.5") 
+[1.619s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[1.619s] -- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+[1.619s] -- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+[1.643s] -- Found PythonExtra: .so  
+[1.737s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[1.757s] -- Added test 'copyright' to check source files copyright and LICENSE
+[1.758s] -- Added test 'lint_cmake' to check CMake code style
+[1.759s] -- Added test 'xmllint' to check XML markup files
+[1.762s] -- Configuring done
+[1.782s] -- Generating done
+[1.789s] -- Build files have been written to: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs
+[1.794s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/lidarslam_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs
+[1.795s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs -- -j16 -l16
+[1.856s] [  2%] [34m[1mGenerating C code for ROS interfaces[0m
+[1.884s] [  5%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[1.887s] [  5%] Built target ament_cmake_python_symlink_lidarslam_msgs
+[2.093s] running egg_info
+[2.093s] creating lidarslam_msgs.egg-info
+[2.093s] writing lidarslam_msgs.egg-info/PKG-INFO
+[2.094s] writing dependency_links to lidarslam_msgs.egg-info/dependency_links.txt
+[2.094s] writing top-level names to lidarslam_msgs.egg-info/top_level.txt
+[2.094s] writing manifest file 'lidarslam_msgs.egg-info/SOURCES.txt'
+[2.095s] reading manifest file 'lidarslam_msgs.egg-info/SOURCES.txt'
+[2.096s] writing manifest file 'lidarslam_msgs.egg-info/SOURCES.txt'
+[2.120s] [  5%] Built target ament_cmake_python_build_lidarslam_msgs_egg
+[2.121s] [  5%] Built target lidarslam_msgs__cpp
+[2.130s] [  7%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_generator_c.dir/rosidl_generator_c/lidarslam_msgs/msg/detail/sub_map__functions.c.o[0m
+[2.131s] [ 10%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_generator_c.dir/rosidl_generator_c/lidarslam_msgs/msg/detail/map_array__functions.c.o[0m
+[2.144s] [ 12%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[2.145s] [ 15%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[2.147s] [ 17%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[2.179s] [ 20%] [32m[1mLinking C shared library liblidarslam_msgs__rosidl_generator_c.so[0m
+[2.229s] [ 20%] Built target lidarslam_msgs__rosidl_generator_c
+[2.248s] [ 23%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[2.251s] [ 25%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[2.254s] [ 28%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[2.350s] [ 30%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/lidarslam_msgs/msg/map_array__type_support.cpp.o[0m
+[2.354s] [ 33%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/lidarslam_msgs/msg/sub_map__type_support.cpp.o[0m
+[2.358s] [ 35%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/lidarslam_msgs/msg/detail/map_array__type_support.cpp.o[0m
+[2.363s] [ 38%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/lidarslam_msgs/msg/detail/sub_map__type_support.cpp.o[0m
+[2.380s] [ 43%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/lidarslam_msgs/msg/detail/dds_fastrtps/sub_map__type_support.cpp.o[0m
+[2.380s] [ 43%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/lidarslam_msgs/msg/detail/dds_fastrtps/map_array__type_support.cpp.o[0m
+[2.462s] [ 46%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/lidarslam_msgs/msg/map_array__type_support.cpp.o[0m
+[2.463s] [ 48%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/lidarslam_msgs/msg/sub_map__type_support.cpp.o[0m
+[2.496s] [ 51%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/lidarslam_msgs/msg/detail/sub_map__type_support_c.cpp.o[0m
+[2.499s] [ 53%] [32mBuilding CXX object CMakeFiles/lidarslam_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/lidarslam_msgs/msg/detail/map_array__type_support_c.cpp.o[0m
+[2.514s] [ 56%] [32m[1mLinking CXX shared library liblidarslam_msgs__rosidl_typesupport_c.so[0m
+[2.518s] [ 58%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/lidarslam_msgs/msg/detail/sub_map__type_support.c.o[0m
+[2.518s] [ 61%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/lidarslam_msgs/msg/detail/map_array__type_support.c.o[0m
+[2.573s] [ 64%] [32m[1mLinking CXX shared library liblidarslam_msgs__rosidl_typesupport_cpp.so[0m
+[2.574s] [ 66%] [32m[1mLinking C shared library liblidarslam_msgs__rosidl_typesupport_introspection_c.so[0m
+[2.581s] [ 66%] Built target lidarslam_msgs__rosidl_typesupport_c
+[2.633s] [ 66%] Built target lidarslam_msgs__rosidl_typesupport_introspection_c
+[2.635s] [ 66%] Built target lidarslam_msgs__rosidl_typesupport_cpp
+[2.722s] [ 69%] [32m[1mLinking CXX shared library liblidarslam_msgs__rosidl_typesupport_introspection_cpp.so[0m
+[2.734s] [ 71%] [32m[1mLinking CXX shared library liblidarslam_msgs__rosidl_typesupport_fastrtps_c.so[0m
+[2.735s] [ 74%] [32m[1mLinking CXX shared library liblidarslam_msgs__rosidl_typesupport_fastrtps_cpp.so[0m
+[2.801s] [ 74%] Built target lidarslam_msgs__rosidl_typesupport_introspection_cpp
+[2.809s] [ 74%] Built target lidarslam_msgs__rosidl_typesupport_fastrtps_cpp
+[2.813s] [ 74%] Built target lidarslam_msgs__rosidl_typesupport_fastrtps_c
+[2.848s] [ 74%] Built target lidarslam_msgs
+[2.931s] [ 76%] [34m[1mGenerating Python code for ROS interfaces[0m
+[3.195s] [ 76%] Built target lidarslam_msgs__py
+[3.252s] [ 79%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_generator_py.dir/rosidl_generator_py/lidarslam_msgs/msg/_sub_map_s.c.o[0m
+[3.255s] [ 82%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_generator_py.dir/rosidl_generator_py/lidarslam_msgs/msg/_map_array_s.c.o[0m
+[3.335s] [ 84%] [32m[1mLinking C shared library rosidl_generator_py/lidarslam_msgs/liblidarslam_msgs__rosidl_generator_py.so[0m
+[3.389s] [ 84%] Built target lidarslam_msgs__rosidl_generator_py
+[3.434s] [ 89%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/lidarslam_msgs/_lidarslam_msgs_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[3.434s] [ 89%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/lidarslam_msgs/_lidarslam_msgs_s.ep.rosidl_typesupport_c.c.o[0m
+[3.435s] [ 92%] [32mBuilding C object CMakeFiles/lidarslam_msgs__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/lidarslam_msgs/_lidarslam_msgs_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[3.509s] [ 94%] [32m[1mLinking C shared library rosidl_generator_py/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so[0m
+[3.517s] [ 97%] [32m[1mLinking C shared library rosidl_generator_py/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so[0m
+[3.519s] [100%] [32m[1mLinking C shared library rosidl_generator_py/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so[0m
+[3.555s] [100%] Built target lidarslam_msgs__rosidl_typesupport_c__pyext
+[3.567s] [100%] Built target lidarslam_msgs__rosidl_typesupport_introspection_c__pyext
+[3.570s] [100%] Built target lidarslam_msgs__rosidl_typesupport_fastrtps_c__pyext
+[3.580s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs -- -j16 -l16
+[3.590s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs
+[3.602s] -- Install configuration: ""
+[3.602s] -- Execute custom install script
+[3.602s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/ament_index/resource_index/rosidl_interfaces/lidarslam_msgs
+[3.618s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__functions.h
+[3.629s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__struct.h
+[3.638s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__type_support.h
+[3.649s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__functions.h
+[3.670s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__struct.h
+[3.694s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__type_support.h
+[3.716s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/map_array.h
+[3.728s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/rosidl_generator_c__visibility_control.h
+[3.739s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/sub_map.h
+[3.750s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/library_path.sh
+[3.761s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/library_path.dsv
+[3.775s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__rosidl_typesupport_fastrtps_c.h
+[3.784s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__rosidl_typesupport_fastrtps_c.h
+[3.795s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[3.806s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__builder.hpp
+[3.815s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__struct.hpp
+[3.824s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__traits.hpp
+[3.833s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__type_support.hpp
+[3.841s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__builder.hpp
+[3.849s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__struct.hpp
+[3.862s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__traits.hpp
+[3.879s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__type_support.hpp
+[3.901s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/map_array.hpp
+[3.917s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/rosidl_generator_cpp__visibility_control.hpp
+[3.927s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/sub_map.hpp
+[3.937s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__rosidl_typesupport_fastrtps_cpp.hpp
+[3.947s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__rosidl_typesupport_fastrtps_cpp.hpp
+[3.954s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[3.964s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__rosidl_typesupport_introspection_c.h
+[3.976s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__rosidl_typesupport_introspection_c.h
+[3.987s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[3.997s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/map_array__rosidl_typesupport_introspection_cpp.hpp
+[4.007s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/include/lidarslam_msgs/lidarslam_msgs/msg/detail/sub_map__rosidl_typesupport_introspection_cpp.hpp
+[4.018s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/pythonpath.sh
+[4.030s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/pythonpath.dsv
+[4.038s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs-0.0.0-py3.10.egg-info/PKG-INFO
+[4.049s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs-0.0.0-py3.10.egg-info/SOURCES.txt
+[4.066s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs-0.0.0-py3.10.egg-info/dependency_links.txt
+[4.084s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs-0.0.0-py3.10.egg-info/top_level.txt
+[4.095s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/__init__.py
+[4.115s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/_lidarslam_msgs_s.ep.rosidl_typesupport_c.c
+[4.127s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/_lidarslam_msgs_s.ep.rosidl_typesupport_fastrtps_c.c
+[4.137s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/_lidarslam_msgs_s.ep.rosidl_typesupport_introspection_c.c
+[4.149s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/liblidarslam_msgs__rosidl_generator_py.so
+[4.166s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[4.181s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[4.206s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[4.225s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/__init__.py
+[4.246s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/_map_array.py
+[4.266s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/_map_array_s.c
+[4.289s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/_sub_map.py
+[4.302s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/_sub_map_s.c
+[4.317s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[4.317s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[4.318s] -- Up-to-date symlink: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/lidarslam_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[4.318s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/msg/SubMap.idl
+[4.330s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/msg/MapArray.idl
+[4.339s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/msg/SubMap.msg
+[4.349s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/msg/MapArray.msg
+[4.367s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/ament_index/resource_index/package_run_dependencies/lidarslam_msgs
+[4.381s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/ament_index/resource_index/parent_prefix_path/lidarslam_msgs
+[4.397s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/ament_prefix_path.sh
+[4.418s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/ament_prefix_path.dsv
+[4.432s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/path.sh
+[4.442s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/environment/path.dsv
+[4.453s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/local_setup.bash
+[4.466s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/local_setup.sh
+[4.480s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/local_setup.zsh
+[4.499s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/local_setup.dsv
+[4.513s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/package.dsv
+[4.523s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/ament_index/resource_index/packages/lidarslam_msgs
+[4.534s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/rosidl_cmake-extras.cmake
+[4.547s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/ament_cmake_export_dependencies-extras.cmake
+[4.568s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/ament_cmake_export_include_directories-extras.cmake
+[4.595s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/ament_cmake_export_libraries-extras.cmake
+[4.604s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/ament_cmake_export_targets-extras.cmake
+[4.613s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[4.624s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[4.637s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgsConfig.cmake
+[4.647s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgsConfig-version.cmake
+[4.659s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/package.xml
+[4.671s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_generator_c.so
+[4.671s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_generator_c.so" to ""
+[4.671s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_fastrtps_c.so
+[4.671s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_fastrtps_c.so" to ""
+[4.671s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_fastrtps_cpp.so
+[4.671s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_fastrtps_cpp.so" to ""
+[4.671s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_introspection_c.so
+[4.672s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_introspection_c.so" to ""
+[4.672s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_c.so
+[4.672s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_c.so" to ""
+[4.672s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_introspection_cpp.so
+[4.672s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_introspection_cpp.so" to ""
+[4.672s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_cpp.so
+[4.672s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_typesupport_cpp.so" to ""
+[4.714s] Listing '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs'...
+[4.714s] Compiling '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/__init__.py'...
+[4.714s] Listing '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg'...
+[4.714s] Compiling '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/__init__.py'...
+[4.714s] Compiling '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/_map_array.py'...
+[4.714s] Compiling '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/local/lib/python3.10/dist-packages/lidarslam_msgs/msg/_sub_map.py'...
+[4.717s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_generator_py.so
+[4.717s] -- Set runtime path of "/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/lib/liblidarslam_msgs__rosidl_generator_py.so" to ""
+[4.717s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_generator_cExport.cmake
+[4.717s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_generator_cExport-noconfig.cmake
+[4.717s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_typesupport_fastrtps_cExport.cmake
+[4.717s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[4.717s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_generator_cppExport.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_typesupport_fastrtps_cppExport.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_introspection_cExport.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_cExport.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_cExport-noconfig.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_introspection_cppExport.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_cppExport.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/lidarslam_msgs__rosidl_typesupport_cppExport-noconfig.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_generator_pyExport.cmake
+[4.718s] -- Installing: /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/install/lidarslam_msgs/share/lidarslam_msgs/cmake/export_lidarslam_msgs__rosidl_generator_pyExport-noconfig.cmake
+[4.719s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/lidarslam_msgs

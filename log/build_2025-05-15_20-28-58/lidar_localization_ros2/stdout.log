@@ -1,0 +1,122 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found rclcpp_lifecycle: 16.0.11 (/opt/ros/humble/share/rclcpp_lifecycle/cmake)
+-- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+-- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+-- Found FastRTPS: /opt/ros/humble/include  
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Found geometry_msgs: 4.2.4 (/opt/ros/humble/share/geometry_msgs/cmake)
+-- Found sensor_msgs: 4.2.4 (/opt/ros/humble/share/sensor_msgs/cmake)
+-- Found nav_msgs: 4.2.4 (/opt/ros/humble/share/nav_msgs/cmake)
+-- Found tf2_ros: 0.25.12 (/opt/ros/humble/share/tf2_ros/cmake)
+-- Found tf2_geometry_msgs: 0.25.12 (/opt/ros/humble/share/tf2_geometry_msgs/cmake)
+-- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+-- Found Eigen3: TRUE (found version "3.4.0") 
+-- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+-- Found tf2_sensor_msgs: 0.25.12 (/opt/ros/humble/share/tf2_sensor_msgs/cmake)
+-- Found tf2_eigen: 0.25.12 (/opt/ros/humble/share/tf2_eigen/cmake)
+-- Found pcl_conversions: 2.4.5 (/opt/ros/humble/share/pcl_conversions/cmake)
+-- Checking for module 'eigen3'
+--   Found eigen3, version 3.4.0
+-- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1") 
+-- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+-- Checking for module 'flann'
+--   Found flann, version 1.9.1
+-- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so  
+-- FLANN found (include: /usr/include, lib: /usr/lib/x86_64-linux-gnu/libflann_cpp.so)
+-- Checking for module 'libusb-1.0'
+--   Found libusb-1.0, version 1.0.25
+-- Found libusb: /usr/lib/x86_64-linux-gnu/libusb-1.0.so  
+-- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+-- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+-- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+-- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+-- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+-- Found Qhull version 8.0.2
+-- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+-- Found PCL_COMMON: /usr/lib/x86_64-linux-gnu/libpcl_common.so  
+-- Found PCL_KDTREE: /usr/lib/x86_64-linux-gnu/libpcl_kdtree.so  
+-- Found PCL_OCTREE: /usr/lib/x86_64-linux-gnu/libpcl_octree.so  
+-- Found PCL_SEARCH: /usr/lib/x86_64-linux-gnu/libpcl_search.so  
+-- Found PCL_SAMPLE_CONSENSUS: /usr/lib/x86_64-linux-gnu/libpcl_sample_consensus.so  
+-- Found PCL_FILTERS: /usr/lib/x86_64-linux-gnu/libpcl_filters.so  
+-- Found PCL_2D: /usr/include/pcl-1.12  
+-- Found PCL_GEOMETRY: /usr/include/pcl-1.12  
+-- Found PCL_IO: /usr/lib/x86_64-linux-gnu/libpcl_io.so  
+-- Found PCL_FEATURES: /usr/lib/x86_64-linux-gnu/libpcl_features.so  
+-- Found PCL_ML: /usr/lib/x86_64-linux-gnu/libpcl_ml.so  
+-- Found PCL_SEGMENTATION: /usr/lib/x86_64-linux-gnu/libpcl_segmentation.so  
+-- Found PCL_VISUALIZATION: /usr/lib/x86_64-linux-gnu/libpcl_visualization.so  
+-- Found PCL_SURFACE: /usr/lib/x86_64-linux-gnu/libpcl_surface.so  
+-- Found PCL_REGISTRATION: /usr/lib/x86_64-linux-gnu/libpcl_registration.so  
+-- Found PCL_KEYPOINTS: /usr/lib/x86_64-linux-gnu/libpcl_keypoints.so  
+-- Found PCL_TRACKING: /usr/lib/x86_64-linux-gnu/libpcl_tracking.so  
+-- Found PCL_RECOGNITION: /usr/lib/x86_64-linux-gnu/libpcl_recognition.so  
+-- Found PCL_STEREO: /usr/lib/x86_64-linux-gnu/libpcl_stereo.so  
+-- Found PCL_APPS: /usr/lib/x86_64-linux-gnu/libpcl_apps.so  
+-- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.12  
+-- Found PCL_MODELER: /usr/include/pcl-1.12  
+-- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.12  
+-- Found PCL_OUTOFCORE: /usr/lib/x86_64-linux-gnu/libpcl_outofcore.so  
+-- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so  
+-- Found ndt_omp_ros2: 0.0.0 (/home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/cmake)
+-- Found OpenMP_C: -fopenmp (found version "4.5") 
+-- Found OpenMP_CXX: -fopenmp (found version "4.5") 
+-- Found OpenMP: TRUE (found version "4.5")  
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/mds/autocar-erp/autocar-erp-main/build/lidar_localization_ros2
+[ 25%] [32mBuilding CXX object CMakeFiles/lidar_localization_component.dir/src/lidar_localization_component.cpp.o[0m
+[ 50%] [32m[1mLinking CXX shared library liblidar_localization_component.so[0m
+[ 50%] Built target lidar_localization_component
+[ 75%] [32mBuilding CXX object CMakeFiles/lidar_localization_node.dir/src/lidar_localization_node.cpp.o[0m
+[100%] [32m[1mLinking CXX executable lidar_localization_node[0m
+[100%] Built target lidar_localization_node
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/environment/library_path.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/environment/library_path.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/lib/lidar_localization_ros2/lidar_localization_node
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/lib/liblidar_localization_component.so
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2//launch/lidar_localization.launch.py
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2//param/localization.yaml
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/ament_index/resource_index/package_run_dependencies/lidar_localization_ros2
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/ament_index/resource_index/parent_prefix_path/lidar_localization_ros2
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/environment/ament_prefix_path.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/environment/ament_prefix_path.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/environment/path.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/environment/path.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/local_setup.bash
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/local_setup.sh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/local_setup.zsh
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/local_setup.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/package.dsv
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/ament_index/resource_index/packages/lidar_localization_ros2
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/cmake/lidar_localization_ros2Config.cmake
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/cmake/lidar_localization_ros2Config-version.cmake
+-- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/lidar_localization_ros2/share/lidar_localization_ros2/package.xml

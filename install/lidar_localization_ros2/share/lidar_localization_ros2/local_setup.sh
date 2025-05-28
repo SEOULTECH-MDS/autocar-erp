@@ -1,0 +1,1 @@
+/home/mds/autocar-erp/autocar-erp-main/build/lidar_localization_ros2/ament_cmake_environment_hooks/local_setup.sh

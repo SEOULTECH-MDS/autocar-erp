@@ -1,0 +1,29 @@
+[1.345s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/erp_control': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/erp_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/erp_control/build --no-deps symlink_data
+[1.561s] running develop
+[1.677s] running egg_info
+[1.677s] creating erp_control.egg-info
+[1.677s] writing erp_control.egg-info/PKG-INFO
+[1.677s] writing dependency_links to erp_control.egg-info/dependency_links.txt
+[1.677s] writing entry points to erp_control.egg-info/entry_points.txt
+[1.677s] writing requirements to erp_control.egg-info/requires.txt
+[1.677s] writing top-level names to erp_control.egg-info/top_level.txt
+[1.677s] writing manifest file 'erp_control.egg-info/SOURCES.txt'
+[1.679s] reading manifest file 'erp_control.egg-info/SOURCES.txt'
+[1.679s] writing manifest file 'erp_control.egg-info/SOURCES.txt'
+[1.709s] running build_ext
+[1.709s] Creating /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/python3.10/site-packages/erp-control.egg-link (link to .)
+[1.710s] Installing ERP42_ros2 script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+[1.710s] Installing delay script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+[1.710s] Installing erp_client script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+[1.710s] Installing erp_publish script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+[1.710s] Installing erp_test script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+[1.710s] Installing simul_plot script to /home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/erp_control
+[1.710s] 
+[1.710s] Installed /home/mds/autocar-erp/autocar-erp-main/build/erp_control
+[1.711s] running symlink_data
+[1.711s] creating /home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/ament_index
+[1.711s] creating /home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/ament_index/resource_index
+[1.711s] creating /home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/ament_index/resource_index/packages
+[1.711s] symbolically linking /home/mds/autocar-erp/autocar-erp-main/build/erp_control/resource/erp_control -> /home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/ament_index/resource_index/packages
+[1.711s] symbolically linking /home/mds/autocar-erp/autocar-erp-main/build/erp_control/package.xml -> /home/mds/autocar-erp/autocar-erp-main/install/erp_control/share/erp_control
+[1.742s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/erp_control' returned '0': PYTHONPATH=/home/mds/autocar-erp/autocar-erp-main/build/erp_control/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mds/autocar-erp/autocar-erp-main/install/erp_control/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/mds/autocar-erp/autocar-erp-main/build/erp_control/build --no-deps symlink_data

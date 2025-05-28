@@ -1,0 +1,54 @@
+[0.384s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/launches': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake /home/mds/autocar-erp/autocar-erp-main/launches -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/mds/autocar-erp/autocar-erp-main/install/launches
+[0.575s] -- The C compiler identification is GNU 11.4.0
+[0.575s] -- The CXX compiler identification is GNU 11.4.0
+[0.575s] -- Detecting C compiler ABI info
+[0.662s] -- Detecting C compiler ABI info - done
+[0.668s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.668s] -- Detecting C compile features
+[0.668s] -- Detecting C compile features - done
+[0.670s] -- Detecting CXX compiler ABI info
+[0.771s] -- Detecting CXX compiler ABI info - done
+[0.778s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.778s] -- Detecting CXX compile features
+[0.778s] -- Detecting CXX compile features - done
+[0.781s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.956s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[1.021s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.066s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[1.151s] -- Added test 'copyright' to check source files copyright and LICENSE
+[1.154s] -- Added test 'flake8' to check Python code syntax and style conventions
+[1.154s] -- Added test 'lint_cmake' to check CMake code style
+[1.154s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[1.156s] -- Added test 'xmllint' to check XML markup files
+[1.158s] -- Configuring done
+[1.159s] -- Generating done
+[1.160s] -- Build files have been written to: /home/mds/autocar-erp/autocar-erp-main/build/launches
+[1.163s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/launches' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake /home/mds/autocar-erp/autocar-erp-main/launches -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/mds/autocar-erp/autocar-erp-main/install/launches
+[1.165s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/launches': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/launches -- -j16 -l16
+[1.235s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/launches' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/launches -- -j16 -l16
+[1.250s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/launches': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/launches
+[1.266s] -- Install configuration: ""
+[1.266s] -- Execute custom install script
+[1.266s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/click_launch.py
+[1.280s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/default_launch.py
+[1.297s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/lane_launch.py
+[1.315s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/obstacle_launch.py
+[1.329s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/sign_launch.py
+[1.341s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/stopline_launch.py
+[1.355s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/launch/traffic_launch.py
+[1.370s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/ament_index/resource_index/package_run_dependencies/launches
+[1.384s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/ament_index/resource_index/parent_prefix_path/launches
+[1.398s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/ament_prefix_path.sh
+[1.411s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/ament_prefix_path.dsv
+[1.424s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/path.sh
+[1.438s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/environment/path.dsv
+[1.449s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.bash
+[1.467s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.sh
+[1.482s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.zsh
+[1.498s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/local_setup.dsv
+[1.509s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.dsv
+[1.522s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/ament_index/resource_index/packages/launches
+[1.533s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/cmake/launchesConfig.cmake
+[1.544s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/cmake/launchesConfig-version.cmake
+[1.554s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/launches/share/launches/package.xml
+[1.569s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/launches' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/launches

@@ -1,0 +1,60 @@
+/**:
+    ros__parameters:
+      # LiDAR setting
+      pointCloudTopic: "velodyne_points"
+      sensor: velodyne    # lidar sensor type, 'velodyne' or 'ouster' or 'livox'
+      N_SCAN: 16          # number of lidar channel (i.e., Velodyne/Ouster: 16, 32, 64, 128, Livox Horizon: 6)
+      Horizon_SCAN: 1800  # lidar horizontal resolution (Velodyne:1800, Ouster:512,1024,2048, Livox Horizon: 4000)
+      # IMU setting
+      imuTopic: "imu/data"
+      imuAccNoise: 0.005
+      imuGyrNoise: 0.0005
+      imuAccBiasN: 0.00005
+      imuGyrBiasN: 0.00005
+      imuGravity: 9.80511
+      extrinsicTrans: [0.9, 0.0, -0.75]
+      extrinsicRot: [ 1.0, 0.0, 0.0,     # 회전 행렬 (3x3)
+                      0.0, 1.0, 0.0,
+                      0.0, 0.0, 1.0]
+      extrinsicRPY: [ 1.0, 0.0, 0.0,     # Roll-Pitch-Yaw 회전 행렬 (3x3)
+                      0.0, 1.0, 0.0,
+                      0.0, 0.0, 1.0]
+
+scan_matcher:
+    ros__parameters:
+      global_frame_id: "map"
+      robot_frame_id: "base_link"
+      registration_method: "NDT"
+      ndt_resolution: 0.5
+      ndt_num_threads: 0
+      trans_for_mapupdate: 1.5
+      vg_size_for_input: 0.1
+      vg_size_for_map: 0.1
+      use_min_max_filter: false
+      map_publish_period: 100.0
+      num_targeted_cloud: 20
+      set_initial_pose: true
+      initial_pose_x: 0.0
+      initial_pose_y: 0.0
+      initial_pose_z: 0.0
+      initial_pose_qx: 0.0
+      initial_pose_qy: 0.0
+      initial_pose_qz: 0.0
+      initial_pose_qw: 1.0
+      use_imu: true
+      use_odom: false
+      debug_flag: false
+
+graph_based_slam:
+    ros__parameters:
+      registration_method: "GICP"
+      ndt_resolution: 5.0
+      ndt_num_threads: 1
+      voxel_leaf_size: 0.05
+      loop_detection_period: 3000
+      threshold_loop_closure_score: 1.0
+      distance_loop_closure: 25.0
+      range_of_searching_loop_closure: 20.0
+      search_submap_num: 4
+      num_adjacent_pose_cnstraints: 5
+      use_save_map_in_loop: false

@@ -1,0 +1,22 @@
+running develop
+running egg_info
+creating control.egg-info
+writing control.egg-info/PKG-INFO
+writing dependency_links to control.egg-info/dependency_links.txt
+writing entry points to control.egg-info/entry_points.txt
+writing requirements to control.egg-info/requires.txt
+writing top-level names to control.egg-info/top_level.txt
+writing manifest file 'control.egg-info/SOURCES.txt'
+reading manifest file 'control.egg-info/SOURCES.txt'
+writing manifest file 'control.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/mds/autocar-erp/autocar-erp-main/install/control/lib/python3.10/site-packages/control.egg-link (link to .)
+Installing mpc_acados_control script to /home/mds/autocar-erp/autocar-erp-main/install/control/lib/control
+
+Installed /home/mds/autocar-erp/autocar-erp-main/build/control
+running symlink_data
+creating /home/mds/autocar-erp/autocar-erp-main/install/control/share/ament_index
+creating /home/mds/autocar-erp/autocar-erp-main/install/control/share/ament_index/resource_index
+creating /home/mds/autocar-erp/autocar-erp-main/install/control/share/ament_index/resource_index/packages
+symbolically linking /home/mds/autocar-erp/autocar-erp-main/build/control/resource/control -> /home/mds/autocar-erp/autocar-erp-main/install/control/share/ament_index/resource_index/packages
+symbolically linking /home/mds/autocar-erp/autocar-erp-main/build/control/package.xml -> /home/mds/autocar-erp/autocar-erp-main/install/control/share/control

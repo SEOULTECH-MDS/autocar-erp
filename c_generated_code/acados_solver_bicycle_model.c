@@ -577,8 +577,8 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     double* ubu = lubu + NBU;
     lbu[0] = -0.5235987755982988;
     ubu[0] = 0.5235987755982988;
-    lbu[1] = -4;
-    ubu[1] = 4;
+    lbu[1] = -2;
+    ubu[1] = 2;
 
     for (int i = 0; i < N; i++)
     {
@@ -611,8 +611,8 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     ubx[1] = 10000000000;
     lbx[2] = -10000000000;
     ubx[2] = 10000000000;
-    lbx[3] = -4;
-    ubx[3] = 4;
+    lbx[3] = -2;
+    ubx[3] = 2;
 
     for (int i = 1; i < N; i++)
     {

@@ -1,0 +1,1 @@
+/home/mds/autocar-erp/autocar-erp-main/li_slam_ros2-humble/build/graph_based_slam/ament_cmake_environment_hooks/local_setup.sh

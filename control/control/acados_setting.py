@@ -22,8 +22,8 @@ def acados_solver():
 
     # 제약 조건 설정
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
-    MAX_SPEED = 4.0  # 최대 속도 [m/s]
-    MIN_SPEED = -4.0  # 최소 속도 [m/s]
+    MAX_SPEED = 2.0  # 최대 속도 [m/s]
+    MIN_SPEED = -2.0  # 최소 속도 [m/s]
 
     # 제어 입력 제약 조건 (delta, v_cmd)
     ocp.constraints.lbu = np.array([-MAX_STEER, MIN_SPEED])  

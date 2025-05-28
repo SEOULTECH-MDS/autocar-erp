@@ -1,0 +1,183 @@
+[0.044s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake /home/mds/autocar-erp/autocar-erp-main/ndt_omp_ros2-humble -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2
+[0.595s] -- The C compiler identification is GNU 11.4.0
+[0.595s] -- The CXX compiler identification is GNU 11.4.0
+[0.595s] -- Detecting C compiler ABI info
+[0.595s] -- Detecting C compiler ABI info - done
+[0.595s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.595s] -- Detecting C compile features
+[0.595s] -- Detecting C compile features - done
+[0.595s] -- Detecting CXX compiler ABI info
+[0.595s] -- Detecting CXX compiler ABI info - done
+[0.595s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.595s] -- Detecting CXX compile features
+[0.595s] -- Detecting CXX compile features - done
+[0.595s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.624s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.696s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.738s] -- Found rclcpp: 16.0.11 (/opt/ros/humble/share/rclcpp/cmake)
+[0.779s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.784s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.792s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.802s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.817s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.856s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.860s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[1.019s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[1.057s] -- Found FastRTPS: /opt/ros/humble/include  
+[1.113s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.126s] -- Looking for pthread.h
+[1.232s] -- Looking for pthread.h - found
+[1.232s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.364s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[1.364s] -- Found Threads: TRUE  
+[1.431s] -- Checking for module 'eigen3'
+[1.463s] --   Found eigen3, version 3.4.0
+[1.555s] -- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1") 
+[1.555s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[1.596s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found suitable version "1.74.0", minimum required is "1.65.0") found components: system filesystem date_time iostreams serialization 
+[1.620s] -- Checking for module 'flann'
+[1.655s] --   Found flann, version 1.9.1
+[1.754s] -- Found FLANN: /usr/lib/x86_64-linux-gnu/libflann_cpp.so  
+[1.754s] -- FLANN found (include: /usr/include, lib: /usr/lib/x86_64-linux-gnu/libflann_cpp.so)
+[1.779s] -- Found GLEW: /usr/lib/x86_64-linux-gnu/libGLEW.so  
+[1.784s] -- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so  found components: OpenGL GLX 
+[1.969s] -- Found MPI_C: /usr/lib/x86_64-linux-gnu/libmpi.so (found version "3.1") 
+[1.969s] -- Found MPI: TRUE (found version "3.1") found components: C 
+[1.971s] -- Found JsonCpp: /usr/lib/x86_64-linux-gnu/libjsoncpp.so (found suitable version "1.9.5", minimum required is "0.7.0") 
+[1.979s] -- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.2.11") 
+[1.992s] -- Found PNG: /usr/lib/x86_64-linux-gnu/libpng.so (found version "1.6.37") 
+[2.003s] -- Found Eigen3: /usr/include/eigen3 (found version "3.4.0") 
+[2.171s] -- Found X11: /usr/include   
+[2.171s] -- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so
+[2.276s] -- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so - found
+[2.276s] -- Looking for gethostbyname
+[2.376s] -- Looking for gethostbyname - found
+[2.376s] -- Looking for connect
+[2.501s] -- Looking for connect - found
+[2.501s] -- Looking for remove
+[2.612s] -- Looking for remove - found
+[2.612s] -- Looking for shmat
+[2.749s] -- Looking for shmat - found
+[2.749s] -- Looking for IceConnectionNumber in ICE
+[2.910s] -- Looking for IceConnectionNumber in ICE - found
+[3.096s] -- Found EXPAT: /usr/lib/x86_64-linux-gnu/libexpat.so (found version "2.4.7") 
+[3.098s] -- Found double-conversion: /usr/lib/x86_64-linux-gnu/libdouble-conversion.so  
+[3.101s] -- Found LZ4: /usr/lib/x86_64-linux-gnu/liblz4.so (found version "1.9.3") 
+[3.102s] -- Found LZMA: /usr/lib/x86_64-linux-gnu/liblzma.so (found version "5.2.5") 
+[3.111s] -- Found JPEG: /usr/lib/x86_64-linux-gnu/libjpeg.so (found version "80") 
+[3.117s] -- Found TIFF: /usr/lib/x86_64-linux-gnu/libtiff.so (found version "4.3.0")  
+[3.120s] -- Found Freetype: /usr/lib/x86_64-linux-gnu/libfreetype.so (found version "2.11.1") 
+[3.124s] -- Found utf8cpp: /usr/include/utf8cpp  
+[3.256s] -- Checking for module 'libusb-1.0'
+[3.282s] --   Found libusb-1.0, version 1.0.25
+[3.359s] -- Found libusb: /usr/lib/x86_64-linux-gnu/libusb-1.0.so  
+[3.360s] -- Found OpenNI: /usr/lib/libOpenNI.so;libusb::libusb (found version "1.5.4.0") 
+[3.360s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[3.468s] -- Found OpenNI2: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb (found version "2.2.0.33") 
+[3.468s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[3.468s] [0m** WARNING ** io features related to pcap will be disabled[0m
+[3.628s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[3.637s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[3.644s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[3.769s] -- Found Qhull version 8.0.2
+[3.902s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[4.032s] -- looking for PCL_COMMON
+[4.032s] -- Found PCL_COMMON: /usr/lib/x86_64-linux-gnu/libpcl_common.so  
+[4.032s] -- looking for PCL_KDTREE
+[4.033s] -- Found PCL_KDTREE: /usr/lib/x86_64-linux-gnu/libpcl_kdtree.so  
+[4.033s] -- looking for PCL_OCTREE
+[4.033s] -- Found PCL_OCTREE: /usr/lib/x86_64-linux-gnu/libpcl_octree.so  
+[4.033s] -- looking for PCL_SEARCH
+[4.034s] -- Found PCL_SEARCH: /usr/lib/x86_64-linux-gnu/libpcl_search.so  
+[4.034s] -- looking for PCL_SAMPLE_CONSENSUS
+[4.034s] -- Found PCL_SAMPLE_CONSENSUS: /usr/lib/x86_64-linux-gnu/libpcl_sample_consensus.so  
+[4.035s] -- looking for PCL_FILTERS
+[4.035s] -- Found PCL_FILTERS: /usr/lib/x86_64-linux-gnu/libpcl_filters.so  
+[4.035s] -- looking for PCL_2D
+[4.035s] -- Found PCL_2D: /usr/include/pcl-1.12  
+[4.035s] -- looking for PCL_GEOMETRY
+[4.035s] -- Found PCL_GEOMETRY: /usr/include/pcl-1.12  
+[4.036s] -- looking for PCL_IO
+[4.036s] -- Found PCL_IO: /usr/lib/x86_64-linux-gnu/libpcl_io.so  
+[4.036s] -- looking for PCL_FEATURES
+[4.037s] -- Found PCL_FEATURES: /usr/lib/x86_64-linux-gnu/libpcl_features.so  
+[4.037s] -- looking for PCL_ML
+[4.037s] -- Found PCL_ML: /usr/lib/x86_64-linux-gnu/libpcl_ml.so  
+[4.037s] -- looking for PCL_SEGMENTATION
+[4.038s] -- Found PCL_SEGMENTATION: /usr/lib/x86_64-linux-gnu/libpcl_segmentation.so  
+[4.038s] -- looking for PCL_VISUALIZATION
+[4.038s] -- Found PCL_VISUALIZATION: /usr/lib/x86_64-linux-gnu/libpcl_visualization.so  
+[4.038s] -- looking for PCL_SURFACE
+[4.039s] -- Found PCL_SURFACE: /usr/lib/x86_64-linux-gnu/libpcl_surface.so  
+[4.039s] -- looking for PCL_REGISTRATION
+[4.040s] -- Found PCL_REGISTRATION: /usr/lib/x86_64-linux-gnu/libpcl_registration.so  
+[4.040s] -- looking for PCL_KEYPOINTS
+[4.040s] -- Found PCL_KEYPOINTS: /usr/lib/x86_64-linux-gnu/libpcl_keypoints.so  
+[4.040s] -- looking for PCL_TRACKING
+[4.041s] -- Found PCL_TRACKING: /usr/lib/x86_64-linux-gnu/libpcl_tracking.so  
+[4.041s] -- looking for PCL_RECOGNITION
+[4.041s] -- Found PCL_RECOGNITION: /usr/lib/x86_64-linux-gnu/libpcl_recognition.so  
+[4.042s] -- looking for PCL_STEREO
+[4.042s] -- Found PCL_STEREO: /usr/lib/x86_64-linux-gnu/libpcl_stereo.so  
+[4.042s] -- looking for PCL_APPS
+[4.042s] -- Found PCL_APPS: /usr/lib/x86_64-linux-gnu/libpcl_apps.so  
+[4.043s] -- looking for PCL_IN_HAND_SCANNER
+[4.043s] -- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.12  
+[4.043s] -- looking for PCL_MODELER
+[4.043s] -- Found PCL_MODELER: /usr/include/pcl-1.12  
+[4.043s] -- looking for PCL_POINT_CLOUD_EDITOR
+[4.043s] -- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.12  
+[4.044s] -- looking for PCL_OUTOFCORE
+[4.044s] -- Found PCL_OUTOFCORE: /usr/lib/x86_64-linux-gnu/libpcl_outofcore.so  
+[4.044s] -- looking for PCL_PEOPLE
+[4.045s] -- Found PCL_PEOPLE: /usr/lib/x86_64-linux-gnu/libpcl_people.so  
+[4.045s] -- Found PCL: pcl_common;pcl_kdtree;pcl_octree;pcl_search;pcl_sample_consensus;pcl_filters;pcl_io;pcl_features;pcl_ml;pcl_segmentation;pcl_visualization;pcl_surface;pcl_registration;pcl_keypoints;pcl_tracking;pcl_recognition;pcl_stereo;pcl_apps;pcl_outofcore;pcl_people;Boost::system;Boost::filesystem;Boost::date_time;Boost::iostreams;Boost::serialization;/usr/lib/libOpenNI.so;libusb::libusb;/usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb;VTK::ChartsCore;VTK::CommonColor;VTK::CommonComputationalGeometry;VTK::CommonCore;VTK::CommonDataModel;VTK::CommonExecutionModel;VTK::CommonMath;VTK::CommonMisc;VTK::CommonTransforms;VTK::FiltersCore;VTK::FiltersExtraction;VTK::FiltersGeneral;VTK::FiltersGeometry;VTK::FiltersModeling;VTK::FiltersSources;VTK::ImagingCore;VTK::ImagingSources;VTK::InteractionImage;VTK::InteractionStyle;VTK::InteractionWidgets;VTK::IOCore;VTK::IOGeometry;VTK::IOImage;VTK::IOLegacy;VTK::IOPLY;VTK::RenderingAnnotation;VTK::RenderingCore;VTK::RenderingContext2D;VTK::RenderingLOD;VTK::RenderingFreeType;VTK::ViewsCore;VTK::ViewsContext2D;VTK::RenderingOpenGL2;VTK::GUISupportQt;FLANN::FLANN;QHULL::QHULL (Required is at least version "1.12") 
+[4.045s] -- PCL_INCLUDE_DIRS:/usr/include/pcl-1.12/usr/include/eigen3/usr/include/usr/include/ni/usr/include/openni2
+[4.045s] -- PCL_LIBRARY_DIRS:/usr/lib/x86_64-linux-gnu
+[4.045s] -- PCL_DEFINITIONS:-DDISABLE_PCAP
+[4.339s] -- Found OpenMP_C: -fopenmp (found version "4.5") 
+[4.434s] -- Found OpenMP_CXX: -fopenmp (found version "4.5") 
+[4.434s] -- Found OpenMP: TRUE (found version "4.5")  
+[4.495s] -- Configuring done
+[4.508s] -- Generating done
+[4.513s] -- Build files have been written to: /home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2
+[4.524s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake /home/mds/autocar-erp/autocar-erp-main/ndt_omp_ros2-humble -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2
+[4.525s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2 -- -j16 -l16
+[4.607s] [ 16%] [32mBuilding CXX object CMakeFiles/ndt_omp.dir/src/pclomp/voxel_grid_covariance_omp.cpp.o[0m
+[4.609s] [ 33%] [32mBuilding CXX object CMakeFiles/ndt_omp.dir/src/pclomp/gicp_omp.cpp.o[0m
+[4.611s] [ 50%] [32mBuilding CXX object CMakeFiles/ndt_omp.dir/src/pclomp/ndt_omp.cpp.o[0m
+[13.954s] [ 66%] [32m[1mLinking CXX static library libndt_omp.a[0m
+[14.007s] [ 66%] Built target ndt_omp
+[14.071s] [ 83%] [32mBuilding CXX object CMakeFiles/align.dir/apps/align.cpp.o[0m
+[28.213s] [100%] [32m[1mLinking CXX executable align[0m
+[28.799s] [100%] Built target align
+[28.810s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --build /home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2 -- -j16 -l16
+[28.811s] Invoking command in '/home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2
+[28.824s] -- Install configuration: "RELEASE"
+[28.824s] -- Execute custom install script
+[28.824s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/lib/ndt_omp_ros2/align
+[28.837s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/bin/align
+[28.848s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/include/pclomp/gicp_omp.h
+[28.859s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/include/pclomp/gicp_omp_impl.hpp
+[28.882s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/include/pclomp/ndt_omp.h
+[28.899s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/include/pclomp/ndt_omp_impl.hpp
+[28.908s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/include/pclomp/voxel_grid_covariance_omp.h
+[28.922s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/include/pclomp/voxel_grid_covariance_omp_impl.hpp
+[28.931s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ament_index/resource_index/package_run_dependencies/ndt_omp_ros2
+[28.940s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ament_index/resource_index/parent_prefix_path/ndt_omp_ros2
+[28.949s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/environment/ament_prefix_path.sh
+[28.963s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/environment/ament_prefix_path.dsv
+[28.981s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/environment/path.sh
+[29.000s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/environment/path.dsv
+[29.008s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/local_setup.bash
+[29.022s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/local_setup.sh
+[29.039s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/local_setup.zsh
+[29.055s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/local_setup.dsv
+[29.077s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/package.dsv
+[29.097s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ament_index/resource_index/packages/ndt_omp_ros2
+[29.108s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/cmake/ament_cmake_export_dependencies-extras.cmake
+[29.120s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/cmake/ament_cmake_export_include_directories-extras.cmake
+[29.132s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/cmake/ndt_omp_ros2Config.cmake
+[29.146s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/cmake/ndt_omp_ros2Config-version.cmake
+[29.159s] -- Symlinking: /home/mds/autocar-erp/autocar-erp-main/install/ndt_omp_ros2/share/ndt_omp_ros2/package.xml
+[29.169s] Invoked command in '/home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/mds/autocar-erp/autocar-erp-main/install/perception:/home/mds/autocar-erp/autocar-erp-main/install/localization:/home/mds/autocar-erp/autocar-erp-main/install/local_path_planning:/home/mds/autocar-erp/autocar-erp-main/install/erp_control:/home/mds/autocar-erp/autocar-erp-main/install/control:/home/mds/gd_calib_capture/install/gd_calib_capture:/home/mds/ros2_ws/install/ntrip_client:/home/mds/autocar-erp/install/perception:/home/mds/autocar-erp/install/localization:/home/mds/autocar-erp/install/local_path_planning:/home/mds/autocar-erp/install/erp_control:/home/mds/autocar-erp/install/control:/opt/ros/humble /usr/bin/cmake --install /home/mds/autocar-erp/autocar-erp-main/build/ndt_omp_ros2
