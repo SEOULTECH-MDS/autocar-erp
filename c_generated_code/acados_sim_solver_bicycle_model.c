@@ -169,11 +169,18 @@ int bicycle_model_acados_sim_create(bicycle_model_sim_solver_capsule * capsule)
     capsule->acados_sim_solver = bicycle_model_sim_solver;
 
 
+    /* initialize parameter values */
+    double* p = calloc(np, sizeof(double));
+    
+
+    bicycle_model_acados_sim_update_params(capsule, p, np);
+    free(p);
+
 
     /* initialize input */
     // x
-    double x0[4];
-    for (int ii = 0; ii < 4; ii++)
+    double x0[5];
+    for (int ii = 0; ii < 5; ii++)
         x0[ii] = 0.0;
 
     sim_in_set(bicycle_model_sim_config, bicycle_model_sim_dims,
@@ -189,11 +196,11 @@ int bicycle_model_acados_sim_create(bicycle_model_sim_solver_capsule * capsule)
                bicycle_model_sim_in, "u", u0);
 
     // S_forw
-    double S_forw[24];
-    for (int ii = 0; ii < 24; ii++)
+    double S_forw[35];
+    for (int ii = 0; ii < 35; ii++)
         S_forw[ii] = 0.0;
-    for (int ii = 0; ii < 4; ii++)
-        S_forw[ii + ii * 4 ] = 1.0;
+    for (int ii = 0; ii < 5; ii++)
+        S_forw[ii + ii * 5 ] = 1.0;
 
 
     sim_in_set(bicycle_model_sim_config, bicycle_model_sim_dims,
