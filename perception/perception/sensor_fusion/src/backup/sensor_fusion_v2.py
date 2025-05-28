@@ -7,10 +7,14 @@ import time
 # from motrackers.utils import draw_tracks
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from perception.sensor_fusion.src.backup.sensor_fusion_handler_v2 import *
 =======
 from sensor_fusion_handler_v2 import *
 >>>>>>> d19642e (sensor fusion ros2)
+=======
+from perception.sensor_fusion.src.backup.sensor_fusion_handler_v2 import *
+>>>>>>> e77db1c (setup.py 및 경로 수정)
 
 # ROS
 import rclpy
