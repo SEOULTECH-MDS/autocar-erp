@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/ysl/autocar/autocar-erp/autocar_nav"
+    "cmake.sourceDirectory": "/home/ysl/autocar/autocar-erp/autocar_nav",
+    "ros.distro": "humble"
 }

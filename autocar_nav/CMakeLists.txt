@@ -64,11 +64,13 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
   RENAME global_click_planner
 )
+
 install(PROGRAMS
-  nodes/hitech_test_pub2.py
+  nodes/simulation_pub.py
   DESTINATION lib/${PROJECT_NAME}
-  RENAME hitech_test_pub2
+  RENAME simulation_pub
 )
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

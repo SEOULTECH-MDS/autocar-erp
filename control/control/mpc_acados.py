@@ -12,7 +12,7 @@ from nav_msgs.msg import Odometry, Path
 from autocar_nav.euler_from_quaternion import euler_from_quaternion
 from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
 from autocar_nav.normalise_angle import normalise_angle
-from acados_setting import acados_solver
+from control.acados_setting import acados_solver
 from autocar_nav.utils import generate_target_course
 
 from rviz_2d_overlay_msgs.msg import OverlayText
@@ -33,8 +33,9 @@ class Control(Node):
         self.erp_pub = self.create_publisher(AckermannDriveStamped, '/erp/cmd_vel', 10)
         self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte', 10)
         self.h_error_pub = self.create_publisher(Float64, '/autocar/he', 10)
+        
+        # 시각화 Publisher
         self.overlay_pub = self.create_publisher(OverlayText, '/autocar/steering_angle', 10)
-
         self.ref_path_pub = self.create_publisher(Path, '/autocar/path', 10)
         self.mpc_ref_pub = self.create_publisher(MarkerArray, '/autocar/mpc_ref', 10)  
         self.mpc_predict_pub = self.create_publisher(MarkerArray, '/autocar/mpc_predict', 10)
@@ -43,6 +44,8 @@ class Control(Node):
         # Subscriber 생성
         self.localization_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/global_waypoints', self.global_waypoints_cb, 10)
+
+        self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)
 
         # 변수 초기화
 
@@ -60,7 +63,14 @@ class Control(Node):
         self.lock = threading.Lock()
         self.dt = T / N  # 제어 주기 계산
 
+        self.obs_x = None
+        self.obs_y = None
+        self.obs_a = None
+        self.obs_b = None
+
         self.target_vel = 1.5  # 목표 속도 (m/s)
+        self.steering_angle = 0.0
+        self.velocity = 0.0
 
         # MPC Solver 초기화
         self.solver = acados_solver()  # 초기 상태 및 제어 입력 참조값
@@ -116,6 +126,14 @@ class Control(Node):
 
 
         return path, possible_change_direction
+    
+    def obstacle_cb(self, msg):
+        self.obs_x = msg.markers[0].pose.position.x
+        self.obs_y = msg.markers[0].pose.position.y
+        self.obs_a = msg.markers[0].scale.x
+        self.obs_b = msg.markers[0].scale.y
+        print(f"obs_x: {self.obs_x}, obs_y: {self.obs_y}, obs_a: {self.obs_a}, obs_b: {self.obs_b}")
+        
 
 
     def calc_ref_trajectory(self):
@@ -126,22 +144,35 @@ class Control(Node):
         uref = np.zeros((NU, N))  # 제어 입력 참조값 (steering, velocity)
 
         if self.cx and self.cy and self.cyaw and self.ck:
-            current_index = self.target_ind  # 시작 인덱스
+            current_index = self.target_ind
+            
+            # 디버깅을 위한 참조 경로 시각화 추가
+            self.visualize_ref_trajectory(np.array([
+                self.cx[current_index:current_index+N] if current_index+N < len(self.cx) else self.cx[current_index:],
+                self.cy[current_index:current_index+N] if current_index+N < len(self.cy) else self.cy[current_index:],
+                self.cyaw[current_index:current_index+N] if current_index+N < len(self.cyaw) else self.cyaw[current_index:],
+                [self.target_vel] * min(N, len(self.cx) - current_index)
+            ]))
+            
             for i in range(N):
-                # 곡률에 따라 인덱스 증가 간격 설정
-                curvature = abs(self.ck[current_index])  # 현재 곡률의 절대값
-                if curvature < 0.1:  # 곡률이 작은 경우 (직선 구간)
-                    print(f"curvature:, {curvature:.2f}")
-                    step = 2  
-                elif curvature < 0.2:  # 곡률이 중간 정도인 경우
-                    print(f"curvature:, {curvature:.2f}")
-                    step = 1  
-                else:  # 곡률이 큰 경우 (곡선 구간)
-                    print(f"curvature:, {curvature:.2f}")
-                    step = 1  
-
+                # 곡률에 따른 동적 스텝 크기 계산
+                curvature = abs(self.ck[current_index]) if current_index < len(self.ck) else 0
+                
+                # 곡률 기반 스텝 크기 계산
+                # 곡률이 클수록 더 작은 스텝 (더 조밀한 포인트)
+                base_step = 1.0
+                # 곡률에 더 민감하게 반응하도록 계수 조정
+                curvature_factor = 1.0 / (1.0 + 15.0 * curvature)  # 곡률이 클수록 작아짐 (8.0 -> 15.0)
+                
+                # 최종 스텝 크기 계산 (최소 0.5, 최대 2.0으로 제한)
+                step = base_step * curvature_factor
+                step = max(0.5, min(2.0, step))
+                
+                # 실제 인덱스 증가량 계산 (정수로 반올림)
+                index_increment = max(1, round(step))
+                
                 # 다음 참조 인덱스 계산
-                next_index = min(current_index + step, len(self.cx) - 1)
+                next_index = min(current_index + index_increment, len(self.cx) - 1)
                 xref[:, i] = [self.cx[next_index], self.cy[next_index], self.cyaw[next_index], self.target_vel]                
                 uref[:, i] = [0.0, self.target_vel]  # 초기 제어 입력 참조값
 
@@ -150,7 +181,7 @@ class Control(Node):
 
         # 디버깅: xref와 uref 출력
         print("xref:", xref)
-        print("uref:", uref)
+        # print("uref:", uref)
         
         self.visualize_ref_trajectory(xref)  
 
@@ -200,18 +231,20 @@ class Control(Node):
         mind = math.sqrt(mind)
         print(f"mind: {mind}, ind: {ind}")  # 디버깅용 출력
 
-        # 해당 인덱스와의 각도 차이 계산
+        # 해당 인덱스와의 각도 차이 계산 (crosstrack error용)
         dxl = self.cx[ind] - self.x
         dyl = self.cy[ind] - self.y
         angle = normalise_angle(self.cyaw[ind] - math.atan2(dyl, dxl))
 
-
-        # 각도가 음수이면, 거리의 부호를 반전
+        # 각도가 음수이면, 거리의 부호를 반전 (crosstrack error 부호 결정)
         if angle < 0:
             mind *= -1
         
         self.crosstrack_error = mind
-        self.heading_error = angle
+        
+        # heading error 올바른 계산: 목표 방향 - 현재 방향
+        self.heading_error = normalise_angle(self.cyaw[ind] - self.yaw)
+        
 
         # self.target_ind 업데이트
         self.target_ind = ind
@@ -232,17 +265,26 @@ class Control(Node):
         # 상태 및 제어 입력 참조값 계산
         self.calc_nearest_index()
         xref, uref = self.calc_ref_trajectory()
-        
+        u_prev = np.zeros((NU, N))  # 이전 제어 입력 초기화
+        obs = np.array([self.obs_x, self.obs_y])
 
         # 초기 상태 설정
         x0 = np.array([self.x, self.y, self.yaw, self.vel])
         print("x0:", x0)  # 디버깅용 출력
         self.solver.set(0, "x", x0)
+        self.solver.constraints_set(0, "lbx", x0)
+        self.solver.constraints_set(0, "ubx", x0)
 
-        # 참조값 설정
-        for i in range(20):
-            self.solver.set(i, "yref", np.hstack([xref[:, i], uref[:, i]]))
-        self.solver.set(20, "yref", xref[:, -1])
+        # 장애물 정보 설정
+        if self.obs_x is not None and self.obs_y is not None:
+            obs = np.array([self.obs_x, self.obs_y])  # 장애물 
+        else:
+            obs = np.array([0.0, 0.0])  # 기본값 설정
+
+        # 참조값 설정 (EXTERNAL cost에서는 p로 넘김)
+        for i in range(N):
+            self.solver.set(i, "p", np.hstack([xref[:, i], u_prev[:,i], obs]))
+        self.solver.set(N, "p", np.hstack([xref[:, -1], u_prev[:, -1], obs]))  
 
         # Solver 실행
         status = self.solver.solve()
@@ -252,6 +294,8 @@ class Control(Node):
 
         # 최적화된 제어 입력 가져오기
         u_opt = self.solver.get(0, "u")
+        for i in range(N):
+            u_prev = np.array([self.solver.get(i, "u") for i in range(N)])  # 예측된 제어 입력
         self.steering_angle = u_opt[0]
         self.velocity = u_opt[1]
 

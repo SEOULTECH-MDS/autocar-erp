@@ -44,6 +44,15 @@ MODEL_OBJ := $(MODEL_SRC:.c=.o)
 OCP_SRC=
 
 
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_0_fun.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_0_fun_jac_hess.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_0_fun_jac.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_fun.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_fun_jac_hess.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_fun_jac.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_e_fun.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_e_fun_jac_hess.c
+OCP_SRC+= bicycle_model_cost/bicycle_model_cost_ext_cost_e_fun_jac.c
 
 OCP_SRC+= acados_solver_bicycle_model.c
 

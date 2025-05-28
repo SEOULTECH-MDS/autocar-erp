@@ -11,7 +11,7 @@ def export_bicycle_modle() -> AcadosModel:
     model_name = "bicycle_model"
 
     # constasnts 
-    Tf = 5.0  # 예측 시간 [s]
+    Tf = 2.0  # 예측 시간 [s]
     N = 20 
     DT = Tf / N  # [s] time tick
 

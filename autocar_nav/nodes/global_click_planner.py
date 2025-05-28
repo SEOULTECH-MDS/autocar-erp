@@ -406,7 +406,7 @@ class GlobalPathPlanning(Node):
             else:
                 next_way_id = self.way_selector.selected_ways[self.cur_way['idx']+1]
                 next_waypoints = [self.way_nodes[node_id] for node_id in self.ways[next_way_id]]
-                end_len = min(len(next_waypoints), 7)
+                end_len = min(len(next_waypoints), 15)  
                 waypoints = cur_waypoints +\
                             next_waypoints[:end_len-1]
         
@@ -425,7 +425,7 @@ class GlobalPathPlanning(Node):
 
             next_way_id = self.way_selector.selected_ways[self.cur_way['idx']+1]
             next_waypoints = [self.way_nodes[node_id] for node_id in self.ways[next_way_id]]
-            end_len = min(len(next_waypoints), 7)
+            end_len = min(len(next_waypoints), 15)  
             
             waypoints = prev_waypoints[len(prev_waypoints)-start_len:] +\
                         cur_waypoints +\
@@ -444,7 +444,7 @@ class GlobalPathPlanning(Node):
         waypoints_kdtree = KDTree(waypoints)
         _, closest_node_idx = waypoints_kdtree.query(self.location)
 
-        # 가장 가까운 노드로부터 앞으로 15개, 뒤로 4개 찾기
+        # 가장 가까운 노드로부터 앞, 뒤로 노드 추가 추출
         n_back = 4
         n_forward = 10
         start_index = max(closest_node_idx - n_back, 0)

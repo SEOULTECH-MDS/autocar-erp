@@ -44,6 +44,7 @@
 #include "bicycle_model_model/bicycle_model_model.h"
 
 
+#include "bicycle_model_cost/bicycle_model_cost.h"
 
 
 
@@ -156,11 +157,11 @@ void bicycle_model_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const
     nlp_solver_plan->ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
     nlp_solver_plan->relaxed_ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
 
-    nlp_solver_plan->nlp_cost[0] = LINEAR_LS;
+    nlp_solver_plan->nlp_cost[0] = EXTERNAL;
     for (int i = 1; i < N; i++)
-        nlp_solver_plan->nlp_cost[i] = LINEAR_LS;
+        nlp_solver_plan->nlp_cost[i] = EXTERNAL;
 
-    nlp_solver_plan->nlp_cost[N] = LINEAR_LS;
+    nlp_solver_plan->nlp_cost[N] = EXTERNAL;
 
     for (int i = 0; i < N; i++)
     {
@@ -176,7 +177,7 @@ void bicycle_model_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const
     }
     nlp_solver_plan->nlp_constraints[N] = BGH;
 
-    nlp_solver_plan->regularization = NO_REGULARIZE;
+    nlp_solver_plan->regularization = PROJECT_REDUC_HESS;
 
     nlp_solver_plan->globalization = FIXED_STEP;
 }
@@ -242,7 +243,7 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     nbx[0] = NBX0;
     nsbx[0] = 0;
     ns[0] = NS0;
-    nbxe[0] = 0;
+    nbxe[0] = 5;
     ny[0] = NY0;
     nh[0] = NH0;
     nsh[0] = NSH0;
@@ -292,9 +293,6 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
         ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, i, "nsg", &nsg[i]);
         ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, i, "nbxe", &nbxe[i]);
     }
-    ocp_nlp_dims_set_cost(nlp_config, nlp_dims, 0, "ny", &ny[0]);
-    for (int i = 1; i < N; i++)
-        ocp_nlp_dims_set_cost(nlp_config, nlp_dims, i, "ny", &ny[i]);
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, 0, "nh", &nh[0]);
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, 0, "nsh", &nsh[0]);
 
@@ -305,7 +303,6 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     }
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nh", &nh[N]);
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nsh", &nsh[N]);
-    ocp_nlp_dims_set_cost(nlp_config, nlp_dims, N, "ny", &ny[N]);
 
     free(intNp1mem);
 
@@ -339,6 +336,10 @@ void bicycle_model_acados_create_setup_functions(bicycle_model_solver_capsule* c
 
 
     ext_fun_opts.external_workspace = true;
+    // external cost
+    MAP_CASADI_FNC(ext_cost_0_fun, bicycle_model_cost_ext_cost_0_fun);
+    MAP_CASADI_FNC(ext_cost_0_fun_jac, bicycle_model_cost_ext_cost_0_fun_jac);
+    MAP_CASADI_FNC(ext_cost_0_fun_jac_hess, bicycle_model_cost_ext_cost_0_fun_jac_hess);
 
 
 
@@ -360,6 +361,41 @@ void bicycle_model_acados_create_setup_functions(bicycle_model_solver_capsule* c
     }
 
 
+    // external cost
+    capsule->ext_cost_fun = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*(N-1));
+    for (int i = 0; i < N-1; i++)
+    {
+        MAP_CASADI_FNC(ext_cost_fun[i], bicycle_model_cost_ext_cost_fun);
+    }
+
+    capsule->ext_cost_fun_jac = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*(N-1));
+    for (int i = 0; i < N-1; i++)
+    {
+        MAP_CASADI_FNC(ext_cost_fun_jac[i], bicycle_model_cost_ext_cost_fun_jac);
+    }
+
+    capsule->ext_cost_fun_jac_hess = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*(N-1));
+    for (int i = 0; i < N-1; i++)
+    {
+        MAP_CASADI_FNC(ext_cost_fun_jac_hess[i], bicycle_model_cost_ext_cost_fun_jac_hess);
+    }
+
+    
+
+    
+    // external cost - function
+    MAP_CASADI_FNC(ext_cost_e_fun, bicycle_model_cost_ext_cost_e_fun);
+
+    // external cost - jacobian
+    MAP_CASADI_FNC(ext_cost_e_fun_jac, bicycle_model_cost_ext_cost_e_fun_jac);
+
+    // external cost - hessian
+    MAP_CASADI_FNC(ext_cost_e_fun_jac_hess, bicycle_model_cost_ext_cost_e_fun_jac_hess);
+
+    // external cost - jacobian wrt params
+    
+
+    
 
 #undef MAP_CASADI_FNC
 }
@@ -371,7 +407,14 @@ void bicycle_model_acados_create_setup_functions(bicycle_model_solver_capsule* c
 void bicycle_model_acados_create_set_default_parameters(bicycle_model_solver_capsule* capsule)
 {
 
-    // no parameters defined
+    const int N = capsule->nlp_solver_plan->N;
+    // initialize parameters to nominal value
+    double* p = calloc(NP, sizeof(double));
+
+    for (int i = 0; i <= N; i++) {
+        bicycle_model_acados_update_params(capsule, i, p, NP);
+    }
+    free(p);
 
 
     // no global parameters defined
@@ -451,101 +494,24 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     }
 
     /**** Cost ****/
-    double* yref_0 = calloc(NY0, sizeof(double));
-    // change only the non-zero elements:
-    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "yref", yref_0);
-    free(yref_0);
-
-   double* W_0 = calloc(NY0*NY0, sizeof(double));
-    // change only the non-zero elements:
-    W_0[0+(NY0) * 0] = 0.5;
-    W_0[1+(NY0) * 1] = 0.5;
-    W_0[2+(NY0) * 2] = 0.5;
-    W_0[3+(NY0) * 3] = 0.1;
-    W_0[4+(NY0) * 4] = 0.1;
-    W_0[5+(NY0) * 5] = 0.01;
-    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "W", W_0);
-    free(W_0);
-    double* Vx_0 = calloc(NY0*NX, sizeof(double));
-    // change only the non-zero elements:
-    Vx_0[0+(NY0) * 0] = 1;
-    Vx_0[1+(NY0) * 1] = 1;
-    Vx_0[2+(NY0) * 2] = 1;
-    Vx_0[3+(NY0) * 3] = 1;
-    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "Vx", Vx_0);
-    free(Vx_0);
-    double* Vu_0 = calloc(NY0*NU, sizeof(double));
-    // change only the non-zero elements:
-    Vu_0[4+(NY0) * 0] = 1;
-    Vu_0[5+(NY0) * 1] = 1;
-    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, 0, "Vu", Vu_0);
-    free(Vu_0);
-    double* yref = calloc(NY, sizeof(double));
-    // change only the non-zero elements:
-
-    for (int i = 1; i < N; i++)
-    {
-        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref);
-    }
-    free(yref);
-    double* W = calloc(NY*NY, sizeof(double));
-    // change only the non-zero elements:
-    W[0+(NY) * 0] = 0.5;
-    W[1+(NY) * 1] = 0.5;
-    W[2+(NY) * 2] = 0.5;
-    W[3+(NY) * 3] = 0.1;
-    W[4+(NY) * 4] = 0.1;
-    W[5+(NY) * 5] = 0.01;
-
-    for (int i = 1; i < N; i++)
-    {
-        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "W", W);
-    }
-    free(W);
-    double* Vx = calloc(NY*NX, sizeof(double));
-    // change only the non-zero elements:
-    Vx[0+(NY) * 0] = 1;
-    Vx[1+(NY) * 1] = 1;
-    Vx[2+(NY) * 2] = 1;
-    Vx[3+(NY) * 3] = 1;
-    for (int i = 1; i < N; i++)
-    {
-        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "Vx", Vx);
-    }
-    free(Vx);
-
+    ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, 0, "ext_cost_fun", &capsule->ext_cost_0_fun);
+    ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, 0, "ext_cost_fun_jac", &capsule->ext_cost_0_fun_jac);
+    ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, 0, "ext_cost_fun_jac_hess", &capsule->ext_cost_0_fun_jac_hess);
     
-    double* Vu = calloc(NY*NU, sizeof(double));
-    // change only the non-zero elements:
-    Vu[4+(NY) * 0] = 1;
-    Vu[5+(NY) * 1] = 1;
-
+    
     for (int i = 1; i < N; i++)
     {
-        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "Vu", Vu);
+        ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "ext_cost_fun", &capsule->ext_cost_fun[i-1]);
+        ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "ext_cost_fun_jac", &capsule->ext_cost_fun_jac[i-1]);
+        ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "ext_cost_fun_jac_hess", &capsule->ext_cost_fun_jac_hess[i-1]);
+        
+        
     }
-    free(Vu);
-    double* yref_e = calloc(NYN, sizeof(double));
-    // change only the non-zero elements:
-    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "yref", yref_e);
-    free(yref_e);
-
-    double* W_e = calloc(NYN*NYN, sizeof(double));
-    // change only the non-zero elements:
-    W_e[0+(NYN) * 0] = 0.5;
-    W_e[1+(NYN) * 1] = 0.5;
-    W_e[2+(NYN) * 2] = 0.5;
-    W_e[3+(NYN) * 3] = 0.1;
-    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "W", W_e);
-    free(W_e);
-    double* Vx_e = calloc(NYN*NX, sizeof(double));
-    // change only the non-zero elements:
-    Vx_e[0+(NYN) * 0] = 1;
-    Vx_e[1+(NYN) * 1] = 1;
-    Vx_e[2+(NYN) * 2] = 1;
-    Vx_e[3+(NYN) * 3] = 1;
-    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "Vx", Vx_e);
-    free(Vx_e);
+    ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, N, "ext_cost_fun", &capsule->ext_cost_e_fun);
+    ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, N, "ext_cost_fun_jac", &capsule->ext_cost_e_fun_jac);
+    ocp_nlp_cost_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, N, "ext_cost_fun_jac_hess", &capsule->ext_cost_e_fun_jac_hess);
+    
+    
 
 
 
@@ -555,6 +521,33 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     /**** Constraints ****/
 
     // bounds for initial stage
+    // x0
+    int* idxbx0 = malloc(NBX0 * sizeof(int));
+    idxbx0[0] = 0;
+    idxbx0[1] = 1;
+    idxbx0[2] = 2;
+    idxbx0[3] = 3;
+    idxbx0[4] = 4;
+
+    double* lubx0 = calloc(2*NBX0, sizeof(double));
+    double* lbx0 = lubx0;
+    double* ubx0 = lubx0 + NBX0;
+    // change only the non-zero elements:
+
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubx", ubx0);
+    free(idxbx0);
+    free(lubx0);
+    // idxbxe_0
+    int* idxbxe_0 = malloc(5 * sizeof(int));
+    idxbxe_0[0] = 0;
+    idxbxe_0[1] = 1;
+    idxbxe_0[2] = 2;
+    idxbxe_0[3] = 3;
+    idxbxe_0[4] = 4;
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbxe", idxbxe_0);
+    free(idxbxe_0);
 
 
 
@@ -573,8 +566,8 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     double* ubu = lubu + NBU;
     lbu[0] = -0.5235987755982988;
     ubu[0] = 0.5235987755982988;
-    lbu[1] = -4;
-    ubu[1] = 4;
+    lbu[1] = -2;
+    ubu[1] = 2;
 
     for (int i = 0; i < N; i++)
     {
@@ -598,6 +591,7 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     idxbx[1] = 1;
     idxbx[2] = 2;
     idxbx[3] = 3;
+    idxbx[4] = 4;
     double* lubx = calloc(2*NBX, sizeof(double));
     double* lbx = lubx;
     double* ubx = lubx + NBX;
@@ -607,8 +601,9 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     ubx[1] = 10000000000;
     lbx[2] = -10000000000;
     ubx[2] = 10000000000;
-    lbx[3] = -4;
-    ubx[3] = 4;
+    lbx[3] = -2;
+    ubx[3] = 2;
+    ubx[4] = 10000000000;
 
     for (int i = 1; i < N; i++)
     {
@@ -735,19 +730,19 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
 
 
     // set SQP specific options
-    double nlp_solver_tol_stat = 0.000001;
+    double nlp_solver_tol_stat = 0.001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_stat", &nlp_solver_tol_stat);
 
-    double nlp_solver_tol_eq = 0.000001;
+    double nlp_solver_tol_eq = 0.001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_eq", &nlp_solver_tol_eq);
 
-    double nlp_solver_tol_ineq = 0.000001;
+    double nlp_solver_tol_ineq = 0.001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_ineq", &nlp_solver_tol_ineq);
 
-    double nlp_solver_tol_comp = 0.000001;
+    double nlp_solver_tol_comp = 0.001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_comp", &nlp_solver_tol_comp);
 
-    int nlp_solver_max_iter = 200;
+    int nlp_solver_max_iter = 50;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "max_iter", &nlp_solver_max_iter);
 
     // set options for adaptive Levenberg-Marquardt Update
@@ -766,10 +761,18 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
     bool eval_residual_at_max_iter = false;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "eval_residual_at_max_iter", &eval_residual_at_max_iter);
 
-    int qp_solver_iter_max = 50;
+    int qp_solver_iter_max = 100;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_iter_max", &qp_solver_iter_max);
 
 
+    double qp_solver_tol_stat = 0.001;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_stat", &qp_solver_tol_stat);
+    double qp_solver_tol_eq = 0.001;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_eq", &qp_solver_tol_eq);
+    double qp_solver_tol_ineq = 0.001;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_ineq", &qp_solver_tol_ineq);
+    double qp_solver_tol_comp = 0.001;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_comp", &qp_solver_tol_comp);
 
     int print_level = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "print_level", &print_level);
@@ -781,6 +784,11 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
 
 
     int ext_cost_num_hess = 0;
+    for (int i = 0; i < N; i++)
+    {
+        ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "cost_numerical_hessian", &ext_cost_num_hess);
+    }
+    ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, N, "cost_numerical_hessian", &ext_cost_num_hess);
 }
 
 
@@ -798,7 +806,8 @@ void bicycle_model_acados_set_nlp_out(bicycle_model_solver_capsule* capsule)
     double* xu0 = calloc(NX+NU, sizeof(double));
     double* x0 = xu0;
 
-    // initialize with zeros
+    // initialize with x0
+
 
     double* u0 = xu0 + NX;
 
@@ -950,7 +959,7 @@ int bicycle_model_acados_update_params(bicycle_model_solver_capsule* capsule, in
 {
     int solver_status = 0;
 
-    int casadi_np = 0;
+    int casadi_np = 34;
     if (casadi_np != np) {
         printf("acados_update_params: trying to set %i parameters for external functions."
             " External function has %i parameters. Exiting.\n", np, casadi_np);
@@ -1029,6 +1038,27 @@ int bicycle_model_acados_free(bicycle_model_solver_capsule* capsule)
     free(capsule->expl_ode_fun);
 
     // cost
+    external_function_external_param_casadi_free(&capsule->ext_cost_0_fun);
+    external_function_external_param_casadi_free(&capsule->ext_cost_0_fun_jac);
+    external_function_external_param_casadi_free(&capsule->ext_cost_0_fun_jac_hess);
+    
+    
+    for (int i = 0; i < N - 1; i++)
+    {
+        external_function_external_param_casadi_free(&capsule->ext_cost_fun[i]);
+        external_function_external_param_casadi_free(&capsule->ext_cost_fun_jac[i]);
+        external_function_external_param_casadi_free(&capsule->ext_cost_fun_jac_hess[i]);
+        
+        
+    }
+    free(capsule->ext_cost_fun);
+    free(capsule->ext_cost_fun_jac);
+    free(capsule->ext_cost_fun_jac_hess);
+    external_function_external_param_casadi_free(&capsule->ext_cost_e_fun);
+    external_function_external_param_casadi_free(&capsule->ext_cost_e_fun_jac);
+    external_function_external_param_casadi_free(&capsule->ext_cost_e_fun_jac_hess);
+    
+    
 
     // constraints
 
@@ -1046,7 +1076,7 @@ void bicycle_model_acados_print_stats(bicycle_model_solver_capsule* capsule)
     ocp_nlp_get(capsule->nlp_solver, "stat_m", &stat_m);
 
 
-    double stat[2400];
+    double stat[600];
     ocp_nlp_get(capsule->nlp_solver, "statistics", stat);
 
     int nrow = nlp_iter+1 < stat_m ? nlp_iter+1 : stat_m;

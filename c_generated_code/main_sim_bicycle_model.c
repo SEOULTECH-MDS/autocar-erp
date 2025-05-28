@@ -67,15 +67,61 @@ int main()
     x_current[1] = 0.0;
     x_current[2] = 0.0;
     x_current[3] = 0.0;
+    x_current[4] = 0.0;
 
   
-    printf("main_sim: initial state not defined, should be in lbx_0, using zero vector.");
+    x_current[0] = 0;
+    x_current[1] = 0;
+    x_current[2] = 0;
+    x_current[3] = 0;
+    x_current[4] = 0;
+    
+  
 
 
     // initial value for control input
     double u0[NU];
     u0[0] = 0.0;
     u0[1] = 0.0;
+    // set parameters
+    double p[NP];
+    p[0] = 0;
+    p[1] = 0;
+    p[2] = 0;
+    p[3] = 0;
+    p[4] = 0;
+    p[5] = 0;
+    p[6] = 0;
+    p[7] = 0;
+    p[8] = 0;
+    p[9] = 0;
+    p[10] = 0;
+    p[11] = 0;
+    p[12] = 0;
+    p[13] = 0;
+    p[14] = 0;
+    p[15] = 0;
+    p[16] = 0;
+    p[17] = 0;
+    p[18] = 0;
+    p[19] = 0;
+    p[20] = 0;
+    p[21] = 0;
+    p[22] = 0;
+    p[23] = 0;
+    p[24] = 0;
+    p[25] = 0;
+    p[26] = 0;
+    p[27] = 0;
+    p[28] = 0;
+    p[29] = 0;
+    p[30] = 0;
+    p[31] = 0;
+    p[32] = 0;
+    p[33] = 0;
+
+    bicycle_model_acados_sim_update_params(capsule, p, NP);
+  
 
   
 
