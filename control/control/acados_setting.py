@@ -28,7 +28,7 @@ def acados_solver():
     # 상태 및 제어 입력 크기
     NX = model.x.size()[0]  # 상태 변수 크기
     NU = model.u.size()[0]  # 제어 입력 크기
-    O = 2
+    O = 2 # 장애물 정보 크기 (x, y)
     
     # 예측 시간 및 구간 설정
     T = 2.0  # 예측 시간 [s]
