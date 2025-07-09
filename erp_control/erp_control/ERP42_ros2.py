@@ -41,7 +41,8 @@ class erp42(Node):
     self.ackermann_subscriber = self.create_subscription(AckermannDriveStamped, '/erp/cmd_vel', self.acker_callback, 10)
     self.state_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_callback, 10)
     # self.state_sub = self.create_subscription(Odometry, '/data/encoder_vel_two', self.vehicle_callback, 10)
-    self.ser = serial.Serial("/dev/ttyERP", baudrate=115200, timeout=1)
+    # self.ser = serial.Serial("/dev/ttyERP", baudrate=115200, timeout=1)
+    self.ser = serial.Serial("/dev/ttyUSB0", baudrate=115200, timeout=1)
     self.departure = time.time()
     self.target_speed = 0.0
     self.velocity = 0.0
