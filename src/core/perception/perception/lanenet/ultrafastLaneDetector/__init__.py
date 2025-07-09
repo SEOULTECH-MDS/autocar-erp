@@ -1,0 +1,1 @@
+from perception.lanenet.ultrafastLaneDetector.ultrafastLaneDetector import UltrafastLaneDetector, ModelType
