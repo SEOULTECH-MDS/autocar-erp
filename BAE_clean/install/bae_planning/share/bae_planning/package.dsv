@@ -1,0 +1,12 @@
+source;share/bae_planning/hook/path.ps1
+source;share/bae_planning/hook/path.dsv
+source;share/bae_planning/hook/path.sh
+source;share/bae_planning/hook/pythonpath.ps1
+source;share/bae_planning/hook/pythonpath.dsv
+source;share/bae_planning/hook/pythonpath.sh
+source;share/bae_planning/hook/pythonscriptspath.ps1
+source;share/bae_planning/hook/pythonscriptspath.dsv
+source;share/bae_planning/hook/pythonscriptspath.sh
+source;share/bae_planning/hook/ament_prefix_path.ps1
+source;share/bae_planning/hook/ament_prefix_path.dsv
+source;share/bae_planning/hook/ament_prefix_path.sh
