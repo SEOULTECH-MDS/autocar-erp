@@ -1,0 +1,35 @@
+running egg_info
+creating ../../build/mode_selector/mode_selector.egg-info
+writing ../../build/mode_selector/mode_selector.egg-info/PKG-INFO
+writing dependency_links to ../../build/mode_selector/mode_selector.egg-info/dependency_links.txt
+writing entry points to ../../build/mode_selector/mode_selector.egg-info/entry_points.txt
+writing requirements to ../../build/mode_selector/mode_selector.egg-info/requires.txt
+writing top-level names to ../../build/mode_selector/mode_selector.egg-info/top_level.txt
+writing manifest file '../../build/mode_selector/mode_selector.egg-info/SOURCES.txt'
+reading manifest file '../../build/mode_selector/mode_selector.egg-info/SOURCES.txt'
+writing manifest file '../../build/mode_selector/mode_selector.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/kmkm/ros2_ws/build/mode_selector/build
+creating /home/kmkm/ros2_ws/build/mode_selector/build/lib
+creating /home/kmkm/ros2_ws/build/mode_selector/build/lib/mode_selector
+copying mode_selector/__init__.py -> /home/kmkm/ros2_ws/build/mode_selector/build/lib/mode_selector
+copying mode_selector/mode_selector_node.py -> /home/kmkm/ros2_ws/build/mode_selector/build/lib/mode_selector
+running install
+running install_lib
+creating /home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector
+copying /home/kmkm/ros2_ws/build/mode_selector/build/lib/mode_selector/__init__.py -> /home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector
+copying /home/kmkm/ros2_ws/build/mode_selector/build/lib/mode_selector/mode_selector_node.py -> /home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector
+byte-compiling /home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector/mode_selector_node.py to mode_selector_node.cpython-310.pyc
+running install_data
+creating /home/kmkm/ros2_ws/install/mode_selector/share/ament_index
+creating /home/kmkm/ros2_ws/install/mode_selector/share/ament_index/resource_index
+creating /home/kmkm/ros2_ws/install/mode_selector/share/ament_index/resource_index/packages
+copying resource/mode_selector -> /home/kmkm/ros2_ws/install/mode_selector/share/ament_index/resource_index/packages
+copying package.xml -> /home/kmkm/ros2_ws/install/mode_selector/share/mode_selector
+running install_egg_info
+Copying ../../build/mode_selector/mode_selector.egg-info to /home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector-0.0.0-py3.10.egg-info
+running install_scripts
+Installing mode_selector_node script to /home/kmkm/ros2_ws/install/mode_selector/lib/mode_selector
+writing list of installed files to '/home/kmkm/ros2_ws/build/mode_selector/install.log'

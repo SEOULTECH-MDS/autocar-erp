@@ -1,0 +1,8 @@
+[0.000000] (-) TimerEvent: {}
+[0.000685] (-) JobUnselected: {'identifier': 'mode_selector'}
+[0.001187] (-) JobUnselected: {'identifier': 'planning_msgs'}
+[0.001279] (local_planner) JobQueued: {'identifier': 'local_planner', 'dependencies': OrderedDict([('planning_msgs', '/home/kmkm/ros2_ws/install/planning_msgs')])}
+[0.001319] (local_planner) JobStarted: {'identifier': 'local_planner'}
+[0.099478] (-) TimerEvent: {}
+[0.178288] (local_planner) JobEnded: {'identifier': 'local_planner', 'rc': 0}
+[0.188685] (-) EventReactorShutdown: {}

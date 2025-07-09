@@ -1,0 +1,30 @@
+[0.671s] Invoking command in '/home/kmkm/ros2_ws/src/local_planner': PYTHONPATH=/home/kmkm/ros2_ws/build/local_planner/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/local_planner build --build-base /home/kmkm/ros2_ws/build/local_planner/build install --record /home/kmkm/ros2_ws/build/local_planner/install.log --single-version-externally-managed install_data
+[0.836s] running egg_info
+[0.837s] writing ../../build/local_planner/local_planner.egg-info/PKG-INFO
+[0.837s] writing dependency_links to ../../build/local_planner/local_planner.egg-info/dependency_links.txt
+[0.837s] writing entry points to ../../build/local_planner/local_planner.egg-info/entry_points.txt
+[0.837s] writing requirements to ../../build/local_planner/local_planner.egg-info/requires.txt
+[0.837s] writing top-level names to ../../build/local_planner/local_planner.egg-info/top_level.txt
+[0.839s] reading manifest file '../../build/local_planner/local_planner.egg-info/SOURCES.txt'
+[0.839s] writing manifest file '../../build/local_planner/local_planner.egg-info/SOURCES.txt'
+[0.840s] running build
+[0.840s] running build_py
+[0.840s] copying local_planner/plot_node.py -> /home/kmkm/ros2_ws/build/local_planner/build/lib/local_planner
+[0.840s] copying local_planner/dummy_input_node.py -> /home/kmkm/ros2_ws/build/local_planner/build/lib/local_planner
+[0.841s] running install
+[0.841s] running install_lib
+[0.843s] copying /home/kmkm/ros2_ws/build/local_planner/build/lib/local_planner/plot_node.py -> /home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages/local_planner
+[0.844s] copying /home/kmkm/ros2_ws/build/local_planner/build/lib/local_planner/dummy_input_node.py -> /home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages/local_planner
+[0.844s] byte-compiling /home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages/local_planner/plot_node.py to plot_node.cpython-310.pyc
+[0.846s] byte-compiling /home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages/local_planner/dummy_input_node.py to dummy_input_node.cpython-310.pyc
+[0.848s] running install_data
+[0.849s] running install_egg_info
+[0.851s] removing '/home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages/local_planner-0.0.0-py3.10.egg-info' (and everything under it)
+[0.852s] Copying ../../build/local_planner/local_planner.egg-info to /home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages/local_planner-0.0.0-py3.10.egg-info
+[0.853s] running install_scripts
+[0.875s] Installing dummy_input_node script to /home/kmkm/ros2_ws/install/local_planner/lib/local_planner
+[0.875s] Installing local_planner_node script to /home/kmkm/ros2_ws/install/local_planner/lib/local_planner
+[0.876s] Installing mode_selector_node script to /home/kmkm/ros2_ws/install/local_planner/lib/local_planner
+[0.876s] Installing plot_node script to /home/kmkm/ros2_ws/install/local_planner/lib/local_planner
+[0.876s] writing list of installed files to '/home/kmkm/ros2_ws/build/local_planner/install.log'
+[0.908s] Invoked command in '/home/kmkm/ros2_ws/src/local_planner' returned '0': PYTHONPATH=/home/kmkm/ros2_ws/build/local_planner/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/kmkm/ros2_ws/install/local_planner/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/local_planner build --build-base /home/kmkm/ros2_ws/build/local_planner/build install --record /home/kmkm/ros2_ws/build/local_planner/install.log --single-version-externally-managed install_data

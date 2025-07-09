@@ -1,0 +1,21 @@
+[0.691s] Invoking command in '/home/kmkm/ros2_ws/src/mode_selector': PYTHONPATH=/home/kmkm/ros2_ws/build/mode_selector/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/mode_selector build --build-base /home/kmkm/ros2_ws/build/mode_selector/build install --record /home/kmkm/ros2_ws/build/mode_selector/install.log --single-version-externally-managed install_data
+[0.876s] running egg_info
+[0.877s] writing ../../build/mode_selector/mode_selector.egg-info/PKG-INFO
+[0.877s] writing dependency_links to ../../build/mode_selector/mode_selector.egg-info/dependency_links.txt
+[0.877s] writing entry points to ../../build/mode_selector/mode_selector.egg-info/entry_points.txt
+[0.877s] writing requirements to ../../build/mode_selector/mode_selector.egg-info/requires.txt
+[0.877s] writing top-level names to ../../build/mode_selector/mode_selector.egg-info/top_level.txt
+[0.879s] reading manifest file '../../build/mode_selector/mode_selector.egg-info/SOURCES.txt'
+[0.879s] writing manifest file '../../build/mode_selector/mode_selector.egg-info/SOURCES.txt'
+[0.879s] running build
+[0.879s] running build_py
+[0.879s] running install
+[0.880s] running install_lib
+[0.881s] running install_data
+[0.881s] running install_egg_info
+[0.883s] removing '/home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector-0.0.0-py3.10.egg-info' (and everything under it)
+[0.883s] Copying ../../build/mode_selector/mode_selector.egg-info to /home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages/mode_selector-0.0.0-py3.10.egg-info
+[0.884s] running install_scripts
+[0.900s] Installing mode_selector_node script to /home/kmkm/ros2_ws/install/mode_selector/lib/mode_selector
+[0.901s] writing list of installed files to '/home/kmkm/ros2_ws/build/mode_selector/install.log'
+[0.925s] Invoked command in '/home/kmkm/ros2_ws/src/mode_selector' returned '0': PYTHONPATH=/home/kmkm/ros2_ws/build/mode_selector/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/kmkm/ros2_ws/install/mode_selector/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/mode_selector build --build-base /home/kmkm/ros2_ws/build/mode_selector/build install --record /home/kmkm/ros2_ws/build/mode_selector/install.log --single-version-externally-managed install_data
