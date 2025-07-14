@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="perception_visualizer" name="perception_visualizer" type="perception_visualizer.py">
+  </node>
+  
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find perception_visualizer)/launch/sensor_fusion_result.rviz"/>
+</launch>
