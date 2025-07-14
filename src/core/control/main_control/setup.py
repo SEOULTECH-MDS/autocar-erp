@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'autocar_utils'],
     zip_safe=True,
     maintainer='ysl',
     maintainer_email='dldbstjd5566@gmail.com',
