@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
-from .bicycle_model import export_bicycle_modle
+from bicycle_model import export_bicycle_modle
 import numpy as np
 from casadi import vertcat, SX, exp
 
