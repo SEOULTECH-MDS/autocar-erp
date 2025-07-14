@@ -7,9 +7,9 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2
 
-class CameraExample(Node):
+class CameraLeft(Node):
     def __init__(self):
-        super().__init__('video_publisher')
+        super().__init__('video_left')
         self.bridge = CvBridge()
 
         # Set the desired resolution
@@ -69,7 +69,7 @@ class CameraExample(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = CameraExample()
+    node = CameraLeft()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
