@@ -18,7 +18,6 @@ setup(
     maintainer_email='user@todo.todo',
     description='Utility scripts for Autocar ERP',
     license='Apache License 2.0',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [],
     },

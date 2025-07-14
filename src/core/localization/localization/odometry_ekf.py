@@ -8,9 +8,9 @@ from sensor_msgs.msg import NavSatFix, Imu
 from geometry_msgs.msg import PoseWithCovarianceStamped, QuaternionStamped, PoseArray,TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64
-from autocar_nav.euler_from_quaternion import euler_from_quaternion
-from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
-from autocar_nav.normalise_angle import normalise_angle
+from autocar_utils.euler_from_quaternion import euler_from_quaternion
+from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
+from autocar_utils.normalise_angle import normalise_angle
 from geometry_msgs.msg import PolygonStamped, Point32
 
 from tf2_ros import TransformListener, Buffer

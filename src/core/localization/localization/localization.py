@@ -20,8 +20,8 @@ from geometry_msgs.msg import PolygonStamped, Point32
 
 # from carla_msgs.msg import CarlaEgoVehicleControl
 
-from autocar_nav.euler_from_quaternion import euler_from_quaternion
-from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
+from autocar_utils.euler_from_quaternion import euler_from_quaternion
+from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
 
 SPEED = 2.5
 

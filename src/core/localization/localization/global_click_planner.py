@@ -7,11 +7,11 @@ from rclpy.node import Node
 import numpy as np
 from scipy.spatial import KDTree
 
-from autocar_nav.stopwatch import StopWatch
-from autocar_nav.osm_handler import OSMHandler
-from autocar_nav.keyboard_input import KeyboardInput
-from autocar_nav.way_selector import WaySelector
-from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
+from autocar_utils.stopwatch import StopWatch
+from .osm_handler import OSMHandler
+from autocar_utils.keyboard_input import KeyboardInput
+from .way_selector import WaySelector
+from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
 
 from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Vector3
 from visualization_msgs.msg import MarkerArray, Marker
@@ -55,7 +55,7 @@ Backspace: 모든 선택한 경로 취소
 ======================================
 """
 osmhandler = OSMHandler()
-OSM_FILE_PATH = os.path.join(get_package_share_directory('autocar_nav'), 'data')
+OSM_FILE_PATH = os.path.join(get_package_share_directory('localization'), 'data')
 # OSM_FILE_LIST = ["hitech2_LINK.osm", "hitech2_INTERSECTION_LINK.osm", "hitech2_STOPLINE.osm"]
 # OSM_FILE_LIST = ["boong_LINK.osm"]
 # OSM_FILE_LIST = ["KCITY_MAIN.osm","KCITY_INTERSECTION_LINK_MAIN.osm"]
