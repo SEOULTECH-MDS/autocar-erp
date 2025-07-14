@@ -16,7 +16,7 @@ class RubberVisualizer(Node):
 
         self.image_sub = message_filters.Subscriber(self, Image, '/image_combined', 10)
         self.cluster_2d_sub = message_filters.Subscriber(self, PoseArray, '/clusters_2d', 10)
-        self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes', 10)
+        self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber', 10)
         self.bbox_tracked_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/tracked', 10)
 
         self.img_result_pub = self.create_publisher(Image, '/image_rubber_result', 10)

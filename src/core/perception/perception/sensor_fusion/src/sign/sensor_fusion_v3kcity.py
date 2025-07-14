@@ -6,15 +6,7 @@ import time
 # from motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
 # from motrackers.utils import draw_tracks
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-from perception.sensor_fusion.src.backup.sensor_fusion_handler_v2 import *
-=======
-from sensor_fusion_handler_v2 import *
->>>>>>> d19642e (sensor fusion ros2)
-=======
-from perception.sensor_fusion.src.backup.sensor_fusion_handler_v2 import *
->>>>>>> e77db1c (setup.py 및 경로 수정)
+from perception.sensor_fusion.src.sign.sensor_fusion_handler import *
 
 # ROS
 import rclpy
@@ -106,7 +98,7 @@ class SensorFusion(Node):
 
         self.sync = message_filters.ApproximateTimeSynchronizer([self.cluster_sub, self.bbox_sub], queue_size=10, slop=0.5, allow_headerless=True)
         self.sync.registerCallback(self.callback_fusion)
-        
+    
         self.image_sub = self.create_subscription(Image, '/yolo/sign', self.callback_img, 10)
         self.target_sign_sub = self.create_subscription(Int32, '/target_sign', self.callback_targetsign, 10)
 
