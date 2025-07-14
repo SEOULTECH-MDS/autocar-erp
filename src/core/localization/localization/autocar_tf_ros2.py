@@ -8,7 +8,7 @@ from geometry_msgs.msg import PoseStamped, TransformStamped, Quaternion, Vector3
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster, TransformListener, Buffer
-from autocar_nav.euler_from_quaternion import euler_from_quaternion
+from autocar_utils.euler_from_quaternion import euler_from_quaternion
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 # 위도, 경도를 UTM 좌표로 변환하는 함수

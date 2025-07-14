@@ -12,7 +12,7 @@ from nav_msgs.msg import Odometry, Path
 from autocar_utils.euler_from_quaternion import euler_from_quaternion
 from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
 from autocar_utils.normalise_angle import normalise_angle
-from acados_setting import acados_solver
+from .acados_setting import acados_solver
 from autocar_utils.utils import generate_target_course
 
 from rviz_2d_overlay_msgs.msg import OverlayText

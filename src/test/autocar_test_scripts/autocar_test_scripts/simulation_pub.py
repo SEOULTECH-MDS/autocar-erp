@@ -10,8 +10,8 @@ from std_msgs.msg import ColorRGBA
 
 import numpy as np
 import math
-from autocar_nav.euler_from_quaternion import euler_from_quaternion
-from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
+from autocar_utils.euler_from_quaternion import euler_from_quaternion
+from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
 from geometry_msgs.msg import Quaternion
 from ackermann_msgs.msg import AckermannDriveStamped
 from pyproj import Proj, Transformer
