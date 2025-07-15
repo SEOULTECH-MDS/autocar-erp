@@ -1,0 +1,7 @@
+nmea_udp:
+  ros__parameters:
+    address: "192.168.30.10"              # Destination IPAdress()
+    port: 62002                           # Destination Port()
+    nmea_topic: nmea_sentence              # Publish NMEA topic name
+    frame_id: sentence                     # NMEA topic frame_id
+    rate: 0.0                              # watch receive buffer rat
