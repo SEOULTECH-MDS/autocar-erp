@@ -3,10 +3,17 @@
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
 from .bicycle_model import export_bicycle_modle
 import numpy as np
-from casadi import vertcat, SX, exp
+from casadi import vertcat, SX, exp, transpose
+import os
 
 def acados_solver():
     ocp = AcadosOcp()
+
+    # 코드 생성 경로 설정
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    acados_path = os.path.join(script_dir, '..') # main_control 폴더
+    ocp.code_export_directory = os.path.join(acados_path, 'c_generated_code')
+    ocp.json_file = os.path.join(acados_path, 'acados_ocp.json')
 
     # 모델 가져오기
     model = export_bicycle_modle()
@@ -26,8 +33,8 @@ def acados_solver():
     MIN_SPEED = -2.0  # 최소 속도 [m/s]
     
     # 상태 및 제어 입력 크기
-    NX = model.x.size()[0]  # 상태 변수 크기
-    NU = model.u.size()[0]  # 제어 입력 크기
+    NX = 4  # 상태 변수 크기 (x, y, yaw, v)
+    NU = 2  # 제어 입력 크기 (delta, v_cmd)
     O = 2 # 장애물 정보 크기 (x, y)
     
     # 예측 시간 및 구간 설정
@@ -50,7 +57,7 @@ def acados_solver():
     barrier_gain = 1.0  # exponential barrier 게인
     
     # cost function 설정
-    p = SX.sym('p', NX + NU + O)  # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
+    p = SX.sym('p', NX + NU + O)  # type: ignore # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
     ocp.model.p = p
     ocp.parameter_values = np.zeros(NX + NU + O)
 
@@ -80,16 +87,16 @@ def acados_solver():
     #             obstacle_cost
 
     # stage cost (장애물 회피 X)
-    stage_cost = (x_err.T @ Q @ x_err) + \
-                (ocp.model.u.T @ R @ ocp.model.u) + \
-                (u_diff.T @ Rd @ u_diff) 
+    stage_cost = (transpose(x_err) @ Q @ x_err) + \
+                (transpose(ocp.model.u) @ R @ ocp.model.u) + \
+                (transpose(u_diff) @ Rd @ u_diff) 
     ocp.model.cost_expr_ext_cost = stage_cost
 
     # terminal cost (장애물 회피 비용 포함)
     # terminal_cost = (x_err.T @ Qe @ x_err) + obstacle_cost
 
     # terminal cost (장애물 회피 X)
-    terminal_cost = (x_err.T @ Qe @ x_err)
+    terminal_cost = (transpose(x_err) @ Qe @ x_err)
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # 제어 입력 제약 조건 (delta, v_cmd)

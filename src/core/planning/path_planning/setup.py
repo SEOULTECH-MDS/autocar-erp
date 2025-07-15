@@ -1,11 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 package_name = 'path_planning'
 
 setup(
     name=package_name,
     version='0.0.1',
-    packages=find_packages(where='src'),
+    packages=['bae_planning', 'mode_selector', 'scenario_planner'],
+    package_dir={'': 'src'},
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
