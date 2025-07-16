@@ -14,16 +14,9 @@ def export_bicycle_modle() -> AcadosModel:
     Tf = 2.0  # 예측 시간 [s]
     N = 20 
     DT = Tf / N  # [s] time tick
-
     WB = 1.566  # [m] default : 2.5, ERP42 : 1.566
 
-    MAX_STEER = np.deg2rad(30.0)  # maximum steering angle [rad]  default: 45
-    MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-    MAX_SPEED = 1.5  # maximum speed [m/s]
-    MIN_SPEED = -1.5  # minimum speed [m/s]
-    MAX_ACCEL = 0.614  # maximum accel [m/ss] defualt: 1.0
-
-    # states & controls
+    # states
     x = SX.sym("x")  # [m] x position
     y = SX.sym("y")  # [m] y position
     yaw = SX.sym("yaw")  # [rad] yaw angle
@@ -31,6 +24,7 @@ def export_bicycle_modle() -> AcadosModel:
 
     states = vertcat(x, y, yaw, v)
 
+    # controls
     delta = SX.sym("delta")  # [rad] steering angle
     v_cmd = SX.sym("v_cmd")  # [m/s] velocity command
 
