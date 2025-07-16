@@ -34,10 +34,12 @@ class AutocarTF(Node):
         
         # 파라미터 설정
         self.declare_parameter('map_origin_lat', 37.630117)
-        self.declare_parameter('map_origin_lon', 127.081431)  # 미래관 주차장
+        self.declare_parameter('map_origin_lon', 127.081431)  
+        self.get_logger().info('TF Node Started \n map_origin -> mirae_parking_lot')  # 미래관 주차장
 
         # self.declare_parameter('map_origin_lat', 37.632010)
-        # self.declare_parameter('map_origin_lon', 127.0760080)  # 하이테크 뒤
+        # self.declare_parameter('map_origin_lon', 127.0760080)  
+        # self.get_logger().info('TF Node Started \n map_origin -> hitech_back') # 하이테크 뒤
 
         
         # 구독
