@@ -36,13 +36,13 @@
 #include "acados_c/ocp_nlp_interface.h"
 #include "acados_c/external_function_interface.h"
 
-#define BICYCLE_MODEL_NX     5
+#define BICYCLE_MODEL_NX     4
 #define BICYCLE_MODEL_NZ     0
 #define BICYCLE_MODEL_NU     2
-#define BICYCLE_MODEL_NP     34
+#define BICYCLE_MODEL_NP     8
 #define BICYCLE_MODEL_NP_GLOBAL     0
-#define BICYCLE_MODEL_NBX    5
-#define BICYCLE_MODEL_NBX0   5
+#define BICYCLE_MODEL_NBX    4
+#define BICYCLE_MODEL_NBX0   4
 #define BICYCLE_MODEL_NBU    2
 #define BICYCLE_MODEL_NSBX   0
 #define BICYCLE_MODEL_NSBU   0

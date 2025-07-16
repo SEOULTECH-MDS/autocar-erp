@@ -15,8 +15,6 @@
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
-  <depend>bicycle_model</depend>
-  <depend>acados_setting</depend>
   <depend>autocar_utils</depend>
 
   
