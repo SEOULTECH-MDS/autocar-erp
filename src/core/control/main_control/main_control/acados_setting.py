@@ -127,10 +127,10 @@ def acados_solver():
     ocp.solver_options.levenberg_marquardt = 1e-4  
 
     # 코드 생성 경로 설정
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    acados_path = os.path.join(script_dir, '..') # main_control 폴더
-    ocp.code_export_directory = os.path.join(acados_path, 'c_generated_code')
-    ocp.json_file = os.path.join(acados_path, 'acados_ocp.json')
+    # script_dir = os.path.dirname(os.path.abspath(__file__))
+    # acados_path = os.path.join(script_dir, '..') # main_control 폴더
+    # ocp.code_export_directory = os.path.join(acados_path)
+    # ocp.json_file = os.path.join(acados_path)
 
     solver = AcadosOcpSolver(ocp)  # Solver 생성
 
