@@ -55,3 +55,8 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+
+# Control module generated files
+src/core/control/*/c_generated_code/
+src/core/control/*/acados_*.json
+
