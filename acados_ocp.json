@@ -1,7 +1,7 @@
 {
     "acados_include_path": "/home/ysl/acados/include",
     "acados_lib_path": "/home/ysl/acados/lib",
-    "code_export_directory": "/home/ysl/autocar/build/main_control/c_generated_code",
+    "code_export_directory": "/home/ysl/autocar/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],
@@ -219,7 +219,7 @@
         "bicycle_model_cost/bicycle_model_cost_ext_cost_e_fun_jac_hess.c",
         "bicycle_model_cost/bicycle_model_cost_ext_cost_e_fun_jac.c"
     ],
-    "json_file": "/home/ysl/autocar/build/main_control/main_control/../acados_ocp.json",
+    "json_file": "acados_ocp.json",
     "model": {
         "con_h_expr": [],
         "con_h_expr_0": [],
