@@ -17,6 +17,7 @@ from autocar_utils.utils import generate_target_course
 
 from rviz_2d_overlay_msgs.msg import OverlayText
 from visualization_msgs.msg import Marker, MarkerArray
+from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
 
 NX = 4
@@ -28,7 +29,7 @@ class Control(Node):
     def __init__(self):
         super().__init__('control')
 
-        # Publisher 생성
+        # Publisher
         self.tracker_pub = self.create_publisher(Twist, '/autocar/cmd_vel', 10)
         self.erp_pub = self.create_publisher(AckermannDriveStamped, '/erp/cmd_vel', 10)
         self.ct_error_pub = self.create_publisher(Float64, '/autocar/cte', 10)
@@ -41,14 +42,15 @@ class Control(Node):
         self.mpc_predict_pub = self.create_publisher(MarkerArray, '/autocar/mpc_predict', 10)
 
 
-        # Subscriber 생성
+        # Subscriber
         self.localization_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/global_waypoints', self.global_waypoints_cb, 10)
+
+        self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
 
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)
 
         # 변수 초기화
-
         self.x = None
         self.y = None
         self.yaw = None
@@ -72,14 +74,14 @@ class Control(Node):
         self.steering_angle = 0.0
         self.velocity = 0.0
 
+        self.mode = None
+        self.mode_description = None
+
         # MPC Solver 초기화
-        self.solver = acados_solver()  # 초기 상태 및 제어 입력 참조값
+        self.solver = acados_solver() 
 
         # 주기적인 제어 실행을 위한 타이머 설정
-        self.timer = self.create_timer(self.dt, self.timer_cb)
-
-    def timer_cb(self):
-        self.mpc_control()
+        self.timer = self.create_timer(self.dt, self.mpc_control)
 
     def vehicle_state_cb(self, msg):
         self.lock.acquire()
@@ -96,6 +98,10 @@ class Control(Node):
         if self.cyaw:
             self.calc_nearest_index()
         self.lock.release()
+
+    def mode_cb(self, msg):
+        self.mode = msg.current_mode
+        self.mode_description = msg.description
 
 
     def global_waypoints_cb(self, path_msg):

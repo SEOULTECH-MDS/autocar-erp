@@ -3,17 +3,11 @@
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
 from .bicycle_model import export_bicycle_modle
 import numpy as np
-from casadi import vertcat, SX, exp, transpose
+from casadi import SX, exp, transpose
 import os
 
 def acados_solver():
     ocp = AcadosOcp()
-
-    # 코드 생성 경로 설정
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    acados_path = os.path.join(script_dir, '..') # main_control 폴더
-    ocp.code_export_directory = os.path.join(acados_path, 'c_generated_code')
-    ocp.json_file = os.path.join(acados_path, 'acados_ocp.json')
 
     # 모델 가져오기
     model = export_bicycle_modle()
@@ -31,6 +25,9 @@ def acados_solver():
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
     MAX_SPEED = 2.0  # 최대 속도 [m/s]
     MIN_SPEED = -2.0  # 최소 속도 [m/s]
+
+    MAX_DSTEER = np.deg2rad(30.0)  # 최대 조향 각속도 [rad/s]
+    MAX_ACCEL = 0.614  # 최대 가속도 [m/ss] defualt: 0.614
     
     # 상태 및 제어 입력 크기
     NX = 4  # 상태 변수 크기 (x, y, yaw, v)
@@ -128,6 +125,12 @@ def acados_solver():
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.nlp_solver_step_length = 0.05  
     ocp.solver_options.levenberg_marquardt = 1e-4  
+
+    # 코드 생성 경로 설정
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    acados_path = os.path.join(script_dir, '..') # main_control 폴더
+    ocp.code_export_directory = os.path.join(acados_path, 'c_generated_code')
+    ocp.json_file = os.path.join(acados_path, 'acados_ocp.json')
 
     solver = AcadosOcpSolver(ocp)  # Solver 생성
 

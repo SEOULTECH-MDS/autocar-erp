@@ -156,13 +156,6 @@ void bicycle_model_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const
 
     nlp_solver_plan->ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
     nlp_solver_plan->relaxed_ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
-<<<<<<< HEAD
-=======
-
-    nlp_solver_plan->nlp_cost[0] = LINEAR_LS;
-    for (int i = 1; i < N; i++)
-        nlp_solver_plan->nlp_cost[i] = LINEAR_LS;
->>>>>>> 6832e04 (0515)
 
     nlp_solver_plan->nlp_cost[0] = EXTERNAL;
     for (int i = 1; i < N; i++)
@@ -184,9 +177,9 @@ void bicycle_model_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const
     }
     nlp_solver_plan->nlp_constraints[N] = BGH;
 
-    nlp_solver_plan->regularization = PROJECT_REDUC_HESS;
+    nlp_solver_plan->regularization = CONVEXIFY;
 
-    nlp_solver_plan->globalization = FIXED_STEP;
+    nlp_solver_plan->globalization = MERIT_BACKTRACKING;
 }
 
 
@@ -250,11 +243,7 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     nbx[0] = NBX0;
     nsbx[0] = 0;
     ns[0] = NS0;
-<<<<<<< HEAD
-    nbxe[0] = 5;
-=======
-    nbxe[0] = 0;
->>>>>>> 6832e04 (0515)
+    nbxe[0] = 4;
     ny[0] = NY0;
     nh[0] = NH0;
     nsh[0] = NSH0;
@@ -314,10 +303,6 @@ static ocp_nlp_dims* bicycle_model_acados_create_setup_dimensions(bicycle_model_
     }
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nh", &nh[N]);
     ocp_nlp_dims_set_constraints(nlp_config, nlp_dims, N, "nsh", &nsh[N]);
-<<<<<<< HEAD
-=======
-    ocp_nlp_dims_set_cost(nlp_config, nlp_dims, N, "ny", &ny[N]);
->>>>>>> 6832e04 (0515)
 
     free(intNp1mem);
 
@@ -532,6 +517,7 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
 
 
 
+
     /**** Constraints ****/
 
     // bounds for initial stage
@@ -541,7 +527,6 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     idxbx0[1] = 1;
     idxbx0[2] = 2;
     idxbx0[3] = 3;
-    idxbx0[4] = 4;
 
     double* lubx0 = calloc(2*NBX0, sizeof(double));
     double* lbx0 = lubx0;
@@ -554,12 +539,11 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     free(idxbx0);
     free(lubx0);
     // idxbxe_0
-    int* idxbxe_0 = malloc(5 * sizeof(int));
+    int* idxbxe_0 = malloc(4 * sizeof(int));
     idxbxe_0[0] = 0;
     idxbxe_0[1] = 1;
     idxbxe_0[2] = 2;
     idxbxe_0[3] = 3;
-    idxbxe_0[4] = 4;
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbxe", idxbxe_0);
     free(idxbxe_0);
 
@@ -605,7 +589,6 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     idxbx[1] = 1;
     idxbx[2] = 2;
     idxbx[3] = 3;
-    idxbx[4] = 4;
     double* lubx = calloc(2*NBX, sizeof(double));
     double* lbx = lubx;
     double* ubx = lubx + NBX;
@@ -617,7 +600,6 @@ void bicycle_model_acados_setup_nlp_in(bicycle_model_solver_capsule* capsule, co
     ubx[2] = 10000000000;
     lbx[3] = -2;
     ubx[3] = 2;
-    ubx[4] = 10000000000;
 
     for (int i = 1; i < N; i++)
     {
@@ -665,12 +647,22 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
 
     int fixed_hess = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "fixed_hess", &fixed_hess);
+    double globalization_alpha_min = 0.05;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "globalization_alpha_min", &globalization_alpha_min);
 
-    double globalization_fixed_step_length = 1;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "globalization_fixed_step_length", &globalization_fixed_step_length);
+    double globalization_alpha_reduction = 0.7;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "globalization_alpha_reduction", &globalization_alpha_reduction);
 
 
 
+    int globalization_line_search_use_sufficient_descent = 0;
+    ocp_nlp_solver_opts_set(nlp_config, capsule->nlp_opts, "globalization_line_search_use_sufficient_descent", &globalization_line_search_use_sufficient_descent);
+
+    int globalization_use_SOC = 0;
+    ocp_nlp_solver_opts_set(nlp_config, capsule->nlp_opts, "globalization_use_SOC", &globalization_use_SOC);
+
+    double globalization_eps_sufficient_descent = 0.0001;
+    ocp_nlp_solver_opts_set(nlp_config, capsule->nlp_opts, "globalization_eps_sufficient_descent", &globalization_eps_sufficient_descent);
 
     int with_solution_sens_wrt_params = false;
     ocp_nlp_solver_opts_set(nlp_config, capsule->nlp_opts, "with_solution_sens_wrt_params", &with_solution_sens_wrt_params);
@@ -714,13 +706,15 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
     for (int i = 0; i < N; i++)
         ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_jac_reuse", &tmp_bool);
 
-    double levenberg_marquardt = 0;
+    double levenberg_marquardt = 0.0001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "levenberg_marquardt", &levenberg_marquardt);
 
     /* options QP solver */
-    int qp_solver_cond_N;const int qp_solver_cond_N_ori = 20;
+    int qp_solver_cond_N;const int qp_solver_cond_N_ori = 5;
     qp_solver_cond_N = N < qp_solver_cond_N_ori ? N : qp_solver_cond_N_ori; // use the minimum value here
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_N", &qp_solver_cond_N);
+    double reg_epsilon = 0.0001;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "reg_epsilon", &reg_epsilon);
 
     int nlp_solver_ext_qp_res = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "ext_qp_res", &nlp_solver_ext_qp_res);
@@ -744,19 +738,19 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
 
 
     // set SQP specific options
-    double nlp_solver_tol_stat = 0.001;
+    double nlp_solver_tol_stat = 0.0001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_stat", &nlp_solver_tol_stat);
 
-    double nlp_solver_tol_eq = 0.001;
+    double nlp_solver_tol_eq = 0.0001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_eq", &nlp_solver_tol_eq);
 
-    double nlp_solver_tol_ineq = 0.001;
+    double nlp_solver_tol_ineq = 0.0001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_ineq", &nlp_solver_tol_ineq);
 
-    double nlp_solver_tol_comp = 0.001;
+    double nlp_solver_tol_comp = 0.0001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_comp", &nlp_solver_tol_comp);
 
-    int nlp_solver_max_iter = 50;
+    int nlp_solver_max_iter = 200;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "max_iter", &nlp_solver_max_iter);
 
     // set options for adaptive Levenberg-Marquardt Update
@@ -779,14 +773,6 @@ static void bicycle_model_acados_create_set_opts(bicycle_model_solver_capsule* c
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_iter_max", &qp_solver_iter_max);
 
 
-    double qp_solver_tol_stat = 0.001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_stat", &qp_solver_tol_stat);
-    double qp_solver_tol_eq = 0.001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_eq", &qp_solver_tol_eq);
-    double qp_solver_tol_ineq = 0.001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_ineq", &qp_solver_tol_ineq);
-    double qp_solver_tol_comp = 0.001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_tol_comp", &qp_solver_tol_comp);
 
     int print_level = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "print_level", &print_level);
@@ -973,7 +959,7 @@ int bicycle_model_acados_update_params(bicycle_model_solver_capsule* capsule, in
 {
     int solver_status = 0;
 
-    int casadi_np = 34;
+    int casadi_np = 8;
     if (casadi_np != np) {
         printf("acados_update_params: trying to set %i parameters for external functions."
             " External function has %i parameters. Exiting.\n", np, casadi_np);
@@ -1090,7 +1076,7 @@ void bicycle_model_acados_print_stats(bicycle_model_solver_capsule* capsule)
     ocp_nlp_get(capsule->nlp_solver, "stat_m", &stat_m);
 
 
-    double stat[600];
+    double stat[2400];
     ocp_nlp_get(capsule->nlp_solver, "statistics", stat);
 
     int nrow = nlp_iter+1 < stat_m ? nlp_iter+1 : stat_m;
