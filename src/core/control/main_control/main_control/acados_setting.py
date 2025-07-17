@@ -127,6 +127,7 @@ def acados_solver():
     ocp.solver_options.levenberg_marquardt = 1e-4  
 
     # 코드 생성 경로 설정
+    # 경로 꼬여서 노드 실행 안돼서 일단 주석처리
     # script_dir = os.path.dirname(os.path.abspath(__file__))
     # acados_path = os.path.join(script_dir, '..') # main_control 폴더
     # ocp.code_export_directory = os.path.join(acados_path)
