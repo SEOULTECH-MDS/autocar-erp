@@ -4,6 +4,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
 
@@ -16,8 +17,8 @@ def generate_launch_description():
     # URDF(XACRO) 파일 경로 설정
     xacro_file = os.path.join(pkg_path, 'urdf', 'erp42.urdf.xacro')
 
-    # XACRO를 사용하여 URDF 로봇 설명을 생성
-    robot_description_content = Command(['xacro ', xacro_file])
+    # XACRO를 사용하여 URDF 로봇 설명을 생성하고 ParameterValue로 감싸기
+    robot_description_content = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
     params = {'robot_description': robot_description_content, 'use_sim_time': use_sim_time}
 
     # robot_state_publisher 노드 설정
