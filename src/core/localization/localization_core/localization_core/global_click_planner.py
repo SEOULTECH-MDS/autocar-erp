@@ -55,7 +55,7 @@ Backspace: 모든 선택한 경로 취소
 ======================================
 """
 osmhandler = OSMHandler()
-OSM_FILE_PATH = os.path.join(get_package_share_directory('localization'), 'data')
+OSM_FILE_PATH = os.path.join(get_package_share_directory('localization_core'), 'data')
 # OSM_FILE_LIST = ["hitech2_LINK.osm", "hitech2_INTERSECTION_LINK.osm", "hitech2_STOPLINE.osm"]
 # OSM_FILE_LIST = ["boong_LINK.osm"]
 # OSM_FILE_LIST = ["KCITY_MAIN.osm","KCITY_INTERSECTION_LINK_MAIN.osm"]
