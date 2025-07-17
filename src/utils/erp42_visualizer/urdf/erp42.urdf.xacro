@@ -47,11 +47,8 @@
   <xacro:disk_back_wheel prefix="right" suffix="back" roll="0" pitch="0" yall="1.5707"/>
   <xacro:disk_back_wheel prefix="left" suffix="back" roll="0" pitch="0" yall="-1.5707"/>
 
-  <xacro:my_camera prefix="middle" />
-  <xacro:my_camera prefix="right" />
-  <xacro:my_camera prefix="left" />
-  <xacro:my_camera prefix="back" />
-
+  <xacro:back_disk_wheel_joint prefix="right" suffix="back" x="-0.49" y="0.51" z="0"/>
+  <xacro:back_disk_wheel_joint prefix="left" suffix="back" x="-0.49" y="-0.51" z="0"/>
 
   <!-- ================== JOINTS ================== -->
   <!-- Fixed joint connecting base_link to the main structure -->
@@ -71,27 +68,20 @@
 
   <xacro:front_disk_wheel_joint prefix="right" suffix="front" x="0.53" y="0.51" z="0"/>
   <xacro:front_disk_wheel_joint prefix="left"  suffix="front" x="0.53" y="-0.51" z="0"/>
-
-  <xacro:back_disk_wheel_joint prefix="right" suffix="back" x="-0.49" y="0.51" z="0"/>
-  <xacro:back_disk_wheel_joint prefix="left" suffix="back" x="-0.49" y="-0.51" z="0"/>
-
-  <xacro:camera_joint prefix="middle" x="0.05" y="0" z="0.3" roll="0" pitch="0" yall="0"/>
-  <xacro:camera_joint prefix="left" x="0.05" y="0.10" z="0.3" roll="0" pitch="0" yall="0.785"/>
-  <xacro:camera_joint prefix="right" x="0.05" y="-0.10" z="0.3" roll="0" pitch="0" yall="-0.785"/>
-  <xacro:camera_joint prefix="back" x="-0.05" y="0" z="0.4" roll="0" pitch="0" yall="3.1414"/>
-
+  
   <!-- =================================================================== -->
   <!--                      CUSTOM SENSORS                                 -->
   <!-- =================================================================== -->
 
-  <!-- 1. IMU SENSOR (BLUE BOX) -->
+  <!-- 1. IMU SENSOR -->
   <link name="imu_link">
     <visual>
+      <!-- Shape: <box>, <cylinder>, or <sphere> -->
       <geometry>
         <box size="0.05 0.05 0.02"/>
       </geometry>
-      <material name="blue">
-        <color rgba="0.0 0.0 1.0 1.0"/>
+      <material name="red">
+        <color rgba="1.0 0.0 0.0 1.0"/>
       </material>
     </visual>
   </link>
@@ -99,15 +89,15 @@
   <joint name="imu_joint" type="fixed">
     <parent link="base_link"/>
     <child link="imu_link"/>
-    <!-- Position and orientation relative to base_link. Modify as needed. -->
-    <origin xyz="0.3 0 0.4" rpy="0 0 0"/>
+    <!-- Position (xyz) and Orientation (rpy) -->
+    <origin xyz="0.0 0.0 1.12" rpy="0 0 0"/>
   </joint>
 
-  <!-- 2. GPS SENSOR (GREEN BOX) -->
+  <!-- 2. GPS SENSOR -->
   <link name="gps_link">
     <visual>
       <geometry>
-        <box size="0.1 0.1 0.05"/>
+        <box size="0.05 0.05 0.02"/>
       </geometry>
       <material name="green">
         <color rgba="0.0 1.0 0.0 1.0"/>
@@ -118,17 +108,18 @@
   <joint name="gps_joint" type="fixed">
     <parent link="base_link"/>
     <child link="gps_link"/>
-    <origin xyz="-0.5 0 0.8" rpy="0 0 0"/>
+    <!-- Positioned on the rear of the roof -->
+    <origin xyz="0.2 0.0 1.27" rpy="0 0 0"/>
   </joint>
 
-  <!-- 3. LIDAR SENSOR (RED CYLINDER) -->
+  <!-- 3. LIDAR SENSOR -->
   <link name="lidar_link">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="0.08"/>
+        <cylinder radius="0.06" length="0.08"/>
       </geometry>
-      <material name="red">
-        <color rgba="1.0 0.0 0.0 1.0"/>
+      <material name="blue">
+        <color rgba="0.0 0.0 1.0 1.0"/>
       </material>
     </visual>
   </link>
@@ -136,7 +127,8 @@
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
     <child link="lidar_link"/>
-    <origin xyz="0.0 0 0.9" rpy="0 0 0"/>
+    <!-- Positioned on the center of the roof -->
+    <origin xyz="1.3 0.0 0.42" rpy="0 0 0"/>
   </joint>
 
 </robot>
