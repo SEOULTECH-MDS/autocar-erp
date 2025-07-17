@@ -74,7 +74,7 @@ TFConvertedIMU::TFConvertedIMU() : Node("eagleye_tf_converted_imu"),
     tflistener_(tfbuffer_),
     logger_(get_logger())
 {
-  std::string subscribe_imu_topic_name = "/imu/data_raw";
+  std::string subscribe_imu_topic_name = "/imu/data";
   std::string publish_imu_topic_name = "imu/data_tf_converted";
 
   declare_parameter("imu_topic", subscribe_imu_topic_name);

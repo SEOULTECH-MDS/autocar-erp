@@ -119,6 +119,7 @@ class SimulationPub(Node):
         # IMU 메시지 퍼블리싱
         imu_msg = Imu()
         q = yaw_to_quaternion(self.yaw)
+        imu_msg.header.frame_id = "imu_link"
         imu_msg.orientation = Quaternion(x=q.x, y=q.y, z=q.z, w=q.w)
         
         # 각속도 계산 (yaw 축 회전)
