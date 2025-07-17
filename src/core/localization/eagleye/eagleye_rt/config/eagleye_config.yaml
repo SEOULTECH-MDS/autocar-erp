@@ -2,12 +2,12 @@
   ros__parameters:
     # Estimate mode
     use_gnss_mode: NMEA
-    use_can_less_mode: true # Set to true to estimate velocity from GNSS
+    use_can_less_mode: false # Set to true to estimate velocity from GNSS
 
     # Topic
-    # twist: # Not used in can_less_mode
-    #   twist_type: 0 # TwistStamped : 0, TwistWithCovarianceStamped: 1
-    #   twist_topic: /can_twist
+    twist: # Not used in can_less_mode
+      twist_type: 1 # TwistStamped : 0, TwistWithCovarianceStamped: 1
+      twist_topic: /ublox_gps_node/fix_velocity
     imu_topic: /imu/data # Set to your IMU topic
     gnss:
       # velocity_source_type: 0 # Not used in can_less_mode
