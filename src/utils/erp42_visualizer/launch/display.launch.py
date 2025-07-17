@@ -1,10 +1,11 @@
 import os
+import xacro
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, Command
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
+
 
 def generate_launch_description():
 
@@ -18,7 +19,9 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_path, 'urdf', 'erp42.urdf.xacro')
 
     # XACRO를 사용하여 URDF 로봇 설명을 생성하고 ParameterValue로 감싸기
-    robot_description_content = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
+    doc = xacro.parse(open(xacro_file))
+    xacro.process_doc(doc)
+    robot_description_content = doc.toxml()
     params = {'robot_description': robot_description_content, 'use_sim_time': use_sim_time}
 
     # robot_state_publisher 노드 설정
@@ -37,15 +40,6 @@ def generate_launch_description():
         name='ackermann_to_joint_state_publisher'
     )
 
-    # RViz2 노드 설정
-    rviz_config_file = os.path.join(pkg_path, 'rviz', 'display.rviz')
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', rviz_config_file],
-        output='screen'
-    )
     
     # 실행할 노드들을 포함하는 LaunchDescription 생성
     return LaunchDescription([
@@ -55,6 +49,5 @@ def generate_launch_description():
             description='Use simulation (Gazebo) clock if true'),
         
         robot_state_publisher_node,
-        ackermann_to_joint_state_node,
-        rviz_node
+        ackermann_to_joint_state_node
     ])
