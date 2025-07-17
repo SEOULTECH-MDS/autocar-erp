@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<robot name="erp42" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- ================== MACROS ================== -->
+  <!-- macros_erp42.xacro 파일의 내용을 여기에 직접 포함하거나,
+       xacro:include 경로가 올바른지 다시 한번 확인해야 합니다.
+       가장 확실한 방법은 include를 사용하는 것입니다. -->
+  <xacro:include filename="$(find erp42_visualizer)/urdf/macros_erp42.xacro"/>
+
+
+  <!-- ================== LINKS ================== -->
+  <!-- Base Link (차량의 기준이 되는 링크) -->
+  <link name="base_link">
+  </link>
+  
+  <!-- Structure (차량의 몸체) -->
+  <link name="structure">
+    <visual name="visual">
+      <origin xyz="0 0 -0.03" rpy="0 0 3.14" />
+      <geometry>
+        <!-- 메시 파일 경로를 현재 패키지 이름으로 수정 -->
+        <mesh filename="package://erp42_visualizer/meshes/erp42_structure.dae" scale="1 1 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.03" rpy=" 0 0 3.14" />
+      <geometry>
+        <mesh filename="package://erp42_visualizer/meshes/erp42_structure.dae" scale="1 1 1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="160"/>
+      <origin xyz="0 0 0" />
+      <inertia ixx="20.43" ixy="0.584" ixz="-0.191" iyy="54.197" iyz="-0.2449" izz="72.2588"/>
+    </inertial>
+  </link>
+
+  <!-- Macro-generated links (Wheels, Disks, Cameras) -->
+  <xacro:wheel prefix="right" suffix="front" x="0" y="0" z="0" pitch="0" yall="1.5707"/>
+  <xacro:wheel prefix="right" suffix="back" x="0" y="0" z="0" pitch="0" yall="1.5707"/>
+  <xacro:wheel prefix="left" suffix="front" x="0" y="0" z="0" pitch="3.1414" yall="1.5707"/>
+  <xacro:wheel prefix="left" suffix="back" x="0" y="0" z="0" pitch="3.1414" yall="1.5707"/>
+
+  <xacro:disk_wheel prefix="right" suffix="front" roll="0" pitch="0" yall="1.5707"/>
+  <xacro:disk_wheel prefix="left" suffix="front" roll="0" pitch="0" yall="-1.5707"/>
+
+  <xacro:disk_back_wheel prefix="right" suffix="back" roll="0" pitch="0" yall="1.5707"/>
+  <xacro:disk_back_wheel prefix="left" suffix="back" roll="0" pitch="0" yall="-1.5707"/>
+
+  <xacro:my_camera prefix="middle" />
+  <xacro:my_camera prefix="right" />
+  <xacro:my_camera prefix="left" />
+  <xacro:my_camera prefix="back" />
+
+
+  <!-- ================== JOINTS ================== -->
+  <!-- Fixed joint connecting base_link to the main structure -->
+  <joint name="structure_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="structure"/>
+      <!-- Move structure forward by 0.49m to place base_link at the rear axle center -->
+      <origin xyz="0.49 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Macro-generated joints (Wheel actuation and steering) -->
+  <xacro:wheel_front_joint prefix="right" suffix="front" x="0" y="0.08" z="0" />
+  <xacro:wheel_front_joint prefix="left" suffix="front" x="0" y="-0.08" z="0"/>
+
+  <xacro:wheel_back_joint prefix="right" suffix="back" x="0" y="0.08" z="0" />
+  <xacro:wheel_back_joint prefix="left" suffix="back" x="0" y="-0.08" z="0" />
+
+  <xacro:front_disk_wheel_joint prefix="right" suffix="front" x="0.53" y="0.51" z="0"/>
+  <xacro:front_disk_wheel_joint prefix="left"  suffix="front" x="0.53" y="-0.51" z="0"/>
+
+  <xacro:back_disk_wheel_joint prefix="right" suffix="back" x="-0.49" y="0.51" z="0"/>
+  <xacro:back_disk_wheel_joint prefix="left" suffix="back" x="-0.49" y="-0.51" z="0"/>
+
+  <xacro:camera_joint prefix="middle" x="0.05" y="0" z="0.3" roll="0" pitch="0" yall="0"/>
+  <xacro:camera_joint prefix="left" x="0.05" y="0.10" z="0.3" roll="0" pitch="0" yall="0.785"/>
+  <xacro:camera_joint prefix="right" x="0.05" y="-0.10" z="0.3" roll="0" pitch="0" yall="-0.785"/>
+  <xacro:camera_joint prefix="back" x="-0.05" y="0" z="0.4" roll="0" pitch="0" yall="3.1414"/>
+
+  <!-- =================================================================== -->
+  <!--                      CUSTOM SENSORS                                 -->
+  <!-- =================================================================== -->
+
+  <!-- 1. IMU SENSOR (BLUE BOX) -->
+  <link name="imu_link">
+    <visual>
+      <geometry>
+        <box size="0.05 0.05 0.02"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 1.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <!-- Position and orientation relative to base_link. Modify as needed. -->
+    <origin xyz="0.3 0 0.4" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 2. GPS SENSOR (GREEN BOX) -->
+  <link name="gps_link">
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.05"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0.0 1.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="gps_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="gps_link"/>
+    <origin xyz="-0.5 0 0.8" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 3. LIDAR SENSOR (RED CYLINDER) -->
+  <link name="lidar_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.08"/>
+      </geometry>
+      <material name="red">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0.0 0 0.9" rpy="0 0 0"/>
+  </joint>
+
+</robot>
