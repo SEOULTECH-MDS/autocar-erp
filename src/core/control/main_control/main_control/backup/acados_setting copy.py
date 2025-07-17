@@ -3,7 +3,8 @@
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
 from .bicycle_model import export_bicycle_modle
 import numpy as np
-from casadi import vertcat, SX, exp
+from casadi import SX, exp, transpose
+import os
 
 def acados_solver():
     ocp = AcadosOcp()
@@ -24,11 +25,14 @@ def acados_solver():
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
     MAX_SPEED = 2.0  # 최대 속도 [m/s]
     MIN_SPEED = -2.0  # 최소 속도 [m/s]
+
+    MAX_DSTEER = np.deg2rad(30.0)  # 최대 조향 각속도 [rad/s]
+    MAX_ACCEL = 0.614  # 최대 가속도 [m/ss] defualt: 0.614
     
     # 상태 및 제어 입력 크기
-    NX = model.x.size()[0]  # 상태 변수 크기
-    NU = model.u.size()[0]  # 제어 입력 크기
-    O = 2
+    NX = 4  # 상태 변수 크기 (x, y, yaw, v)
+    NU = 2  # 제어 입력 크기 (delta, v_cmd)
+    O = 2 # 장애물 정보 크기 (x, y)
     
     # 예측 시간 및 구간 설정
     T = 2.0  # 예측 시간 [s]
@@ -39,18 +43,18 @@ def acados_solver():
     ocp.cost.cost_type_e = 'EXTERNAL'
 
     # 비용 함수 가중치 설정 
-    Q = np.diag([2.0, 2.0, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v) 
-    R = np.diag([0.03, 0.1])  # 제어 입력 가중치 (delta, v_cmd) 
-    Rd = np.diag([0.5, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd)
-    Qe = np.diag([5.0, 5.0, 0.5, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 
+    Q = np.diag([1.0, 1.0, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v) 
+    R = np.diag([0.1, 0.1])  # 제어 입력 가중치 (delta, v_cmd) 
+    Rd = np.diag([1.0, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd)
+    Qe = np.diag([2.0, 2.0, 0.5, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 
     
-    # 장애물 회피 가중치 (더 부드럽게 설정)
-    W_obs = 50.0  # 장애물 회피 가중치 
-    safe_distance_sq = 0.5  # 안전 거리 제곱 [m^2]
-    barrier_gain = 2.0  # exponential barrier 게인
+    # 장애물 회피 가중치 
+    W_obs = 10.0  # 장애물 회피 가중치 
+    safe_distance_sq = 0.2  # 안전 거리 제곱 [m^2]
+    barrier_gain = 1.0  # exponential barrier 게인
     
     # cost function 설정
-    p = SX.sym('p', NX + NU + O)  # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
+    p = SX.sym('p', NX + NU + O)  # type: ignore # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
     ocp.model.p = p
     ocp.parameter_values = np.zeros(NX + NU + O)
 
@@ -74,14 +78,22 @@ def acados_solver():
     obstacle_cost = W_obs * exp(-barrier_gain * (distance_sq - safe_distance_sq))
 
     # stage cost (장애물 회피 비용 포함)
-    stage_cost = (x_err.T @ Q @ x_err) + \
-                (ocp.model.u.T @ R @ ocp.model.u) + \
-                (u_diff.T @ Rd @ u_diff) + \
-                obstacle_cost
+    # stage_cost = (x_err.T @ Q @ x_err) + \
+    #             (ocp.model.u.T @ R @ ocp.model.u) + \
+    #             (u_diff.T @ Rd @ u_diff) + \
+    #             obstacle_cost
+
+    # stage cost (장애물 회피 X)
+    stage_cost = (transpose(x_err) @ Q @ x_err) + \
+                (transpose(ocp.model.u) @ R @ ocp.model.u) + \
+                (transpose(u_diff) @ Rd @ u_diff) 
     ocp.model.cost_expr_ext_cost = stage_cost
 
     # terminal cost (장애물 회피 비용 포함)
-    terminal_cost = (x_err.T @ Qe @ x_err) + obstacle_cost
+    # terminal_cost = (x_err.T @ Qe @ x_err) + obstacle_cost
+
+    # terminal cost (장애물 회피 X)
+    terminal_cost = (transpose(x_err) @ Qe @ x_err)
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # 제어 입력 제약 조건 (delta, v_cmd)
@@ -113,6 +125,13 @@ def acados_solver():
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.nlp_solver_step_length = 0.05  
     ocp.solver_options.levenberg_marquardt = 1e-4  
+
+    # 코드 생성 경로 설정
+    # 경로 꼬여서 노드 실행 안돼서 일단 주석처리
+    # script_dir = os.path.dirname(os.path.abspath(__file__))
+    # acados_path = os.path.join(script_dir, '..') # main_control 폴더
+    # ocp.code_export_directory = os.path.join(acados_path)
+    # ocp.json_file = os.path.join(acados_path)
 
     solver = AcadosOcpSolver(ocp)  # Solver 생성
 
