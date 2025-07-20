@@ -6,8 +6,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix
 from sensor_msgs.msg import Imu
 import numpy as np
-from autocar_nav.euler_from_quaternion import euler_from_quaternion
-from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
+from autocar_utils.euler_from_quaternion import euler_from_quaternion
+from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
 from geometry_msgs.msg import Quaternion
 from ackermann_msgs.msg import AckermannDriveStamped
 

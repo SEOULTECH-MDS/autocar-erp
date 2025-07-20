@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<robot name="erp42" xmlns:xacro="http://ros.org/wiki/xacro">
+<!-- Constants for robot dimensions -->
+  <xacro:property name="wheel_radius" value="0.28" />
+  <xacro:property name="wheel_length" value="0.15" />
+  <xacro:property name="wheel_mass" value="5" />
+  <xacro:property name="disk_radius" value="0.1" />
+  <xacro:property name="disk_length" value="0.03" />
+  <xacro:property name="disk_mass" value="2" />
+  <xacro:property name="camera_size" value="0.05" />
+  <xacro:property name="camera_mass" value="1e-5" />
+
+<!-- Wheel link macro -->
+ <xacro:macro name="wheel" params="prefix suffix x y z pitch yall">
+  <link name="${prefix}_${suffix}_wheel">
+    <visual>
+    <origin xyz="${x} ${y} ${z}" rpy="1.5707 ${pitch} ${yall}" />
+      <geometry>
+       <mesh filename="package://erp42_visualizer/meshes/caucho.dae" scale="1 1 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+       <cylinder radius="${wheel_radius}" length="${wheel_length}"/> 
+      </geometry>
+        <origin xyz="0 0 0" rpy="1.5707 0 0" />
+    </collision>
+    <inertial>
+      <mass value="${wheel_mass}" />
+      <origin xyz="0 0 0" rpy="1.5707 0 0" />
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
+    </inertial>
+  </link>
+ </xacro:macro>
+
+ <!-- Wheel joint macros -->
+  <xacro:macro name="wheel_front_joint" params="prefix suffix x y z ">
+   <joint name="${prefix}_${suffix}_wheel_joint" type="continuous">
+      <axis xyz="0 1 0" />
+      <parent link="${prefix}_${suffix}_disk_wheel"/>
+      <child link="${prefix}_${suffix}_wheel"/>
+      <origin xyz="${x} ${y} ${z}" />
+   </joint>
+  </xacro:macro>
+  <xacro:macro name="wheel_back_joint" params="prefix suffix x y z ">
+   <joint name="${prefix}_${suffix}_wheel_joint" type="continuous">
+      <axis xyz="0 1 0" />
+      <parent link="${prefix}_${suffix}_disk_wheel"/>
+      <child link="${prefix}_${suffix}_wheel"/>
+      <origin xyz="${x} ${y} ${z}" />
+   </joint>
+  </xacro:macro>
+
+<!-- Disk link macros -->
+ <xacro:macro name="disk_wheel" params="prefix suffix roll pitch yall">  
+  <link name="${prefix}_${suffix}_disk_wheel">
+    <visual>
+    <origin xyz="0 0 0" rpy="${roll} ${pitch} ${yall}" />
+      <geometry>
+        <mesh filename="package://erp42_visualizer/meshes/disk.dae" scale="1 1 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+      <cylinder radius="${disk_radius}" length="${disk_length}"/> 
+      </geometry>
+        <origin xyz="0 0 0" rpy="1.5707 0 0"  />
+    </collision>
+    <inertial>
+      <mass value="${disk_mass}"/>
+      <origin xyz="0 0 0" rpy="${roll} ${pitch} ${yall}" />
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+  </link>
+ </xacro:macro>
+
+ <xacro:macro name="disk_back_wheel" params="prefix suffix roll pitch yall">  
+  <link name="${prefix}_${suffix}_disk_wheel">
+    <visual>
+    <origin xyz="0 0 0" rpy="${roll} ${pitch} ${yall}" />
+      <geometry>
+        <mesh filename="package://erp42_visualizer/meshes/disk.dae" scale="1 1 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+      <cylinder radius="${disk_radius}" length="${disk_length}"/> 
+      </geometry>
+        <origin xyz="0 0 0" rpy="1.5707 0 0"  />
+    </collision>
+    <inertial>
+      <mass value="${disk_mass}"/>
+      <origin xyz="0 0 0" rpy="${roll} ${pitch} ${yall}" />
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+  </link>
+</xacro:macro>
+
+<!-- Disk joint macros -->
+ <xacro:macro name="front_disk_wheel_joint" params=" prefix suffix x y z">
+  <joint name="${prefix}_${suffix}_disk_wheel_joint" type="revolute">
+      <axis xyz="0 0 1" />
+      <parent link="structure"/>
+      <child link="${prefix}_${suffix}_disk_wheel"/>
+      <origin xyz="${x} ${y} ${z}" />
+      <limit effort="1000.0" lower="-0.4" upper="0.4" velocity="0.5"/>
+  </joint>
+ </xacro:macro>
+
+ <xacro:macro name="back_disk_wheel_joint" params=" prefix suffix x y z">
+  <joint name="${prefix}_${suffix}_disk_wheel_joint" type="fixed">
+      <parent link="structure"/>
+      <child link="${prefix}_${suffix}_disk_wheel"/>
+      <origin xyz="${x} ${y} ${z}" />
+  </joint>
+ </xacro:macro>
+
+<!-- Camera link and joint macros -->
+  <xacro:macro name="my_camera" params="prefix">  
+   <link name="${prefix}_camera">
+    <visual>
+    <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="${camera_size} ${camera_size} ${camera_size}"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+      <box size="${camera_size} ${camera_size} ${camera_size}"/>
+      </geometry>
+        <origin xyz="0 0 0" rpy="0 0 0"  />
+    </collision>
+    <inertial>
+      <mass value="${camera_mass}" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001" />
+    </inertial>
+   </link>
+  </xacro:macro>
+
+  <xacro:macro name="camera_joint" params=" prefix x y z roll pitch yall">
+   <joint name="${prefix}_camera_joint" type="fixed">
+     <axis xyz="0 1 0" />
+     <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yall}"/>
+     <parent link="structure"/>
+     <child link="${prefix}_camera"/>
+   </joint>
+  </xacro:macro>
+
+</robot>

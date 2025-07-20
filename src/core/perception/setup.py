@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+import os
+from glob import glob
 
 package_name = 'perception'
 
@@ -7,9 +9,18 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-    ('share/ament_index/resource_index/packages', ['resource/perception']),
-    ('share/perception', ['package.xml']),
-    ('share/perception/models', ['perception/lanenet/models/culane_18.pth']),
+        ('share/ament_index/resource_index/packages', ['resource/perception']),
+        ('share/perception', ['package.xml']),
+
+        # lanenet 모델 파일
+        ('share/perception/models', ['perception/lanenet/models/culane_18.pth']),
+
+        # ==============================
+        # YOLO 가중치 파일 설치 부분 추가
+        # perception/yolov11/weights/*.pt 파일을 모두 설치
+        # ==============================
+        (os.path.join('share', package_name, 'yolov11', 'weights'),
+         glob('perception/yolov11/weights/*.pt')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -19,35 +30,32 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-        	'stopline_camera = perception.stopline_camera:main',
-        	'stopline_detection = perception.stopline_detection:main',
+            # 정지선
+            'stopline_camera = perception.stopline_camera:main',
+            'stopline_detection = perception.stopline_detection:main',
 
+            # 차선
             'camera_pub = perception.lanenet.camera_pub:main',
             'lanenet = perception.lanenet.lanenet:main',
-
-            # 'camera_traffic = perception.yolov7.camera_traffic:main',
-            # 'trafficlight = perception.yolov7.trafficlight:main',
-
-            # 'camera_obstacle = perception.yolov7.camera_obstacle:main',
-            # 'combined_camera = perception.yolov7.obstacle_camera.combined_camera:main',
-            # 'obstacle = perception.yolov7.obstacle:main',
-
-            # 'camera_sign = perception.yolov7.camera_sign:main',
-            # 'sign = perception.yolov7.sign:main',
             
-
+            # 신호등
             'camera_traffic = perception.yolov11.camera_traffic:main',
             'trafficlight = perception.yolov11.trafficlight:main',
 
-            # 'camera_obstacle = perception.yolov11.camera_obstacle:main',
+            # 장애물
+            'camera_obstacle = perception.yolov11.camera_obstacle:main',
             'combined_camera = perception.yolov11.obstacle_camera.combined_camera:main',
             'obstacle = perception.yolov11.obstacle:main',
+            "sensor_fusion_object = perception.sensor_fusion.src.object.sensor_fusion:main",
+            "rubber_visualizer = perception.rubber_visualizer.src.rubber_visualizer:main",
 
+            # 표지판
             'camera_sign = perception.yolov11.camera_sign:main',
             'sign = perception.yolov11.sign:main',
+            "sensor_fusion_sign = perception.sensor_fusion.src.sign.sensor_fusion:main",
+            #"sensor_fusion = perception.sensor_fusion.src.sensor_fusion_v3kcity:main",
 
-            "sensor_fusion = perception.sensor_fusion.src.sensor_fusion:main",
-            # "sensor_fusion = perception.sensor_fusion.src.sensor_fusion_v3kcity:maim",
+            
         ],
     },
 )
