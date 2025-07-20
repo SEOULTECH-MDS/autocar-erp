@@ -1,4 +1,39 @@
 #!/usr/bin/env python3
+"""
+Mode Selector Test Node - 고급 모드 셀렉터 테스트 노드
+
+이 파일은 모드 셀렉터의 고급 테스트 기능을 제공합니다.
+
+주요 기능:
+- 복잡한 센서 데이터 시뮬레이션
+- 동적 시나리오 생성
+- 모드 셀렉터의 경계 조건 테스트
+- 실시간 센서 데이터 조작
+- 테스트 결과 통계 제공
+
+발행 토픽:
+- /stop_line_distance (Float32): 정지선 거리
+- /obstacle_detected (Bool): 장애물 감지
+- /sign_detector (String): 배달 표지판
+- /cone_detector (String): 주차 라바콘
+
+구독 토픽:
+- /mode_state (UInt8): 현재 모드 상태
+- /mode_description (String): 모드 설명
+
+특별 기능:
+- 랜덤 시나리오 생성
+- 센서 노이즈 시뮬레이션
+- 모드 전환 지연 테스트
+- 복합 조건 테스트
+
+사용법:
+    ros2 run path_planning mode_selector_test
+
+참고:
+    이 노드는 simple_test_node.py보다 더 복잡한 테스트 시나리오를 제공합니다.
+    모드 셀렉터의 안정성과 경계 조건을 테스트하는 데 사용됩니다.
+"""
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32, Bool, String
