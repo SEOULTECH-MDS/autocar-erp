@@ -10,8 +10,8 @@ from std_msgs.msg import ColorRGBA
 
 import numpy as np
 import math
-from autocar_nav.euler_from_quaternion import euler_from_quaternion
-from autocar_nav.yaw_to_quaternion import yaw_to_quaternion
+from autocar_utils.euler_from_quaternion import euler_from_quaternion
+from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
 from geometry_msgs.msg import Quaternion
 from ackermann_msgs.msg import AckermannDriveStamped
 from pyproj import Proj, Transformer
@@ -119,6 +119,7 @@ class SimulationPub(Node):
         # IMU 메시지 퍼블리싱
         imu_msg = Imu()
         q = yaw_to_quaternion(self.yaw)
+        imu_msg.header.frame_id = "imu_link"
         imu_msg.orientation = Quaternion(x=q.x, y=q.y, z=q.z, w=q.w)
         
         # 각속도 계산 (yaw 축 회전)

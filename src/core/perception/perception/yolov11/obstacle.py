@@ -41,16 +41,16 @@ AGNOSTIC_NMS = False
 
 class YOLO(Node):
     def __init__(self):
-        super().__init__('obstacle_detector')
+        super().__init__('obstacle_rubber')
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
-        self.subscription = self.create_subscription(Image, '/image_combined', self.image_callback, 10)
-        # self.subscription = self.create_subscription(Image, '/camera_obstacle/image_raw', self.image_callback, 10)
+        #self.subscription = self.create_subscription(Image, '/image_combined', self.image_callback, 10)
+        self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성
-        self.pose_array_pub = self.create_publisher(PoseArray, '/bounding_boxes/obstacle', 10)
-        self.img_res_pub = self.create_publisher(Image, '/yolo/obstacle', 10)
+        self.pose_array_pub = self.create_publisher(PoseArray, '/bounding_boxes/rubber', 10)
+        self.img_res_pub = self.create_publisher(Image, '/yolo/rubber', 10)
         # self.obstacle_pub = self.create_publisher(String, '/obstacle_type', 10)
         
         # CvBridge 초기화 (ROS 이미지와 OpenCV 이미지 간 변환)
@@ -97,7 +97,7 @@ class YOLO(Node):
             rubbers = self.detect(cv_image)
             if rubbers is None:
                 # [✓] Modified: 검출 결과가 없을 때도 원본 이미지를 표시
-                cv2.imshow("YOLO Obstacle Detection", cv_image)
+                cv2.imshow("YOLO Rubber Detection", cv_image)
                 cv2.waitKey(1)
                 return
             
@@ -108,7 +108,7 @@ class YOLO(Node):
                 plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls], line_thickness=2)
             
             # [✓] Modified: 결과 이미지를 실시간으로 디스플레이
-            cv2.imshow("YOLO Obstacle Detection", cv_image)
+            cv2.imshow("YOLO Rubber Detection", cv_image)
             cv2.waitKey(1)
             
             # 결과 이미지를 ROS 이미지 메시지로 변환 후 퍼블리시
@@ -125,13 +125,19 @@ class YOLO(Node):
                 pose = Pose()
                 # 각 필드에 검출 결과 할당 (클래스, 바운딩 박스 좌표, 신뢰도)
                 # [✓] Modified: 각 필드에 float 형식으로 검출 결과 할당 (ROS msg 타입은 float이어야 함)
-                pose.position.x = float(rubber[0])  # 클래스 인덱스
+                pose.position.x = float(rubber[0])  # 클래스 인덱스 # 0 blue or 1 yellow
                 pose.position.y = float(rubber[5])  # 신뢰도
                 # pose.position.z 는 0으로 유지됨
                 pose.orientation.x = float(rubber[1])  # xmin
                 pose.orientation.y = float(rubber[2])  # ymin
                 pose.orientation.z = float(rubber[3])  # xmax
                 pose.orientation.w = float(rubber[4])  # ymax
+
+                self.get_logger().info(
+                    f"(color, reliability)=({pose.position.x:.1f}, {pose.position.y:.0f})"
+                    f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
+                    f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
+                )
                 
                 pose_array.poses.append(pose)
             

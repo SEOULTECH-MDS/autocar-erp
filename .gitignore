@@ -55,3 +55,8 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+
+c_generated_code/
+acados_ocp.json/
+
+

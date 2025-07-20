@@ -5,13 +5,13 @@ package_name = 'main_control'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[package_name],
+    packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'autocar_utils'],
     zip_safe=True,
     maintainer='ysl',
     maintainer_email='dldbstjd5566@gmail.com',
