@@ -8,7 +8,6 @@ Panels:
         - /Status1
         - /Mode Visualization1
         - /Mode Text1
-        - /Mode Text1/Status1
         - /Mode Text1/Topic1
         - /1
         - /1/Topic1
@@ -57,7 +56,10 @@ Visualization Manager:
       Enabled: true
       Name: Mode Visualization
       Namespaces:
-        {}
+        delivery_sign: true
+        obstacle: true
+        parking_cone: true
+        vehicle: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -93,7 +95,7 @@ Visualization Manager:
       Enabled: true
       Name: Mode Text
       Namespaces:
-        {}
+        mode_text: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -137,6 +139,47 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /performance_graph
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Mission Markers
+      Namespaces:
+        mission_labels: true
+        mission_points: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /mission_markers
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 255; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Vehicle Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /vehicle_path
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -212,25 +255,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 15.0
+      Distance: 31.637557983398438
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.0
-        Y: 0.0
-        Z: 0.5
+        X: -0.06422621011734009
+        Y: 1.6321407556533813
+        Z: 2.0462100505828857
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3
+      Pitch: 0.3699999749660492
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 0.0
+      Yaw: 3.4300010204315186
     Saved: ~
 Window Geometry:
   Displays:
@@ -248,5 +291,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 2548
-  X: 0
-  Y: 0
+  X: -32
+  Y: -32
