@@ -24,6 +24,8 @@ setup(
             'mode_selector = mode_selector.mode_selector_node:main',
             'local_planner = bae_planning.local_planner_node:main',
             'plot_node = bae_planning.plot_node:main',
+            'mode_selector_test = mode_selector_test.mode_selector_test_node:main',
+            'mode_selector_visualizer = mode_selector_test.mode_selector_visualizer:main',
         ],
     },
 ) 
