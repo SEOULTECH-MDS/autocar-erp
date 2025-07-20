@@ -42,6 +42,7 @@ setup(
             'mode_selector_simple = mode_selector.mode_selector_node_simple:main',
             'simple_test = test_utils.simple_test_node:main',
             'tf_broadcaster = test_utils.tf_broadcaster:main',
+            'mission_map = test_utils.mission_map:main',
         ],
     },
 ) 
