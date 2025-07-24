@@ -4,6 +4,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time
 import numpy as np
 from scipy.spatial import KDTree
 
@@ -114,6 +115,7 @@ class GlobalPathPlanning(Node):
         self.is_published_once = False
         self.selected_ways = None
         self.location = None
+        self.location_msg = None
         self.stopwatch = None
 
         # Driving에서 쓰이는 변수들
@@ -246,6 +248,7 @@ class GlobalPathPlanning(Node):
         return
     
     def callback_location(self, location_msg):
+        self.location_msg = location_msg
         self.location = (location_msg.pose.pose.position.x, location_msg.pose.pose.position.y)
         
         return
@@ -532,7 +535,7 @@ class GlobalPathPlanning(Node):
         #clicked_point = latlon_to_utm(clicked_point_msg.point.y, clicked_point_msg.point.x)
 
         # base_link → utm 변환 가져오기
-        transform = self.tf_buffer.lookup_transform('world', clicked_point_msg.header.frame_id, rclpy.time.Time())
+        transform = self.tf_buffer.lookup_transform('world', clicked_point_msg.header.frame_id, Time())
         # 좌표 변환
         clicked_point = tf2_geometry_msgs.do_transform_point(clicked_point_msg, transform)
         self.get_logger().info(f"Clicked point: {clicked_point.point.x}, {clicked_point.point.y}")
@@ -622,7 +625,7 @@ class GlobalPathPlanning(Node):
     # ROS
     def make_waypoints_msg(self, waypoints, possible_change_direction, path):
         waypoints_msg = PoseArray()
-        waypoints_msg.header.frame_id = possible_change_direction
+        waypoints_msg.header.frame_id = 'world'
 
         for i in range(len(waypoints)-1):
             pose = Pose()
@@ -651,7 +654,10 @@ class GlobalPathPlanning(Node):
     def make_way_msg(self, ways_for_visualize):
         ways = PoseArray()
         ways.header.frame_id = "world"
-        ways.header.stamp = self.get_clock().now().to_msg()
+        if self.location_msg:
+            ways.header.stamp = self.location_msg.header.stamp
+        else:
+            ways.header.stamp = self.get_clock().now().to_msg()
 
         for way_id in ways_for_visualize:
             position_prev = None
@@ -683,9 +689,15 @@ class GlobalPathPlanning(Node):
     def make_mission_msg(self, areas_for_visualize):
         mission = MarkerArray()
 
+        if self.location_msg:
+            stamp = self.location_msg.header.stamp
+        else:
+            stamp = self.get_clock().now().to_msg()
+
         for area_id in areas_for_visualize:
             polygon = Marker()
             polygon.header.frame_id = 'world'
+            polygon.header.stamp = stamp
             polygon.type = Marker.LINE_STRIP
             polygon.action = Marker.ADD
             polygon.id = area_id
@@ -721,6 +733,7 @@ class GlobalPathPlanning(Node):
             text_marker.type = Marker.TEXT_VIEW_FACING
             text_marker.action = Marker.ADD
             text_marker.id = area_id + 10000
+            text_marker.header.stamp = stamp
 
             text_marker.pose.position.x = x_center  # x 위치
             text_marker.pose.position.y = y_center  # y 위치
@@ -741,12 +754,18 @@ class GlobalPathPlanning(Node):
     def make_stopline_msg(self, stopline_for_visualize):
         stoplines = MarkerArray()
         
+        if self.location_msg:
+            stamp = self.location_msg.header.stamp
+        else:
+            stamp = self.get_clock().now().to_msg()
+
         for stopline_id, stopline_node in stopline_for_visualize.items():
             
             positions = [self.stopline_nodes[v] for v in stopline_node]
             
             stopline = Marker()
             stopline.header.frame_id = "world"
+            stopline.header.stamp = stamp
             stopline.type = Marker.LINE_STRIP
             stopline.action = Marker.ADD
             stopline.id = stopline_id

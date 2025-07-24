@@ -3,10 +3,12 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     return LaunchDescription([
+        # --- Nodes ---
+        # 1. TF Publisher Node
         Node(
-            package='autocar_nav',
-            executable='autocar_tf_ros2',
-            name='autocar_tf',
+            package='localization_core',
+            executable='autocar_tf_publisher',
+            name='autocar_tf_publisher',
             parameters=[{
                 # 'map_origin_lat': 37.632010,  
                 # 'map_origin_lon': 127.076008   # 하이테크 뒤

@@ -1,0 +1,9 @@
+/**:
+  ros__parameters:
+    map_origin:
+      latitude: 37.02491548827
+      longitude: 126.75163071944
+      elevation: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0

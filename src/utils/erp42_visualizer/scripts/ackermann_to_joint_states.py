@@ -20,7 +20,7 @@ class StatePublisherNode(Node):
 
         # --- ROS 2 Interfaces ---
         # Publisher for /joint_states
-        self.joint_state_pub = self.create_publisher(JointState, 'joint_states', 10)
+        self.joint_state_pub = self.create_publisher(JointState, '/joint_states', 10)
 
         # Subscriber for /ackermann_cmd
         self.ackermann_sub = self.create_subscription(
@@ -49,11 +49,12 @@ class StatePublisherNode(Node):
         """
         Timer callback to update wheel rotation and publish joint states.
         """
-        # Calculate wheel rotation increment based on speed and timer period
-        # Angular velocity (rad/s) = Linear velocity (m/s) / Wheel radius (m)
-        angular_velocity = self.target_speed / self.wheel_radius
-        rotation_increment = angular_velocity * self.timer_period
-        self.wheel_rotation += rotation_increment
+        # If the target speed is not zero, rotate the wheels at a constant speed.
+        # Otherwise, the wheels will remain stationary.
+        if self.target_speed != 0.0:
+            constant_rotation_increment = 0.1  # Constant value for visual rotation
+            self.wheel_rotation += constant_rotation_increment
+            self.wheel_rotation %= (2 * math.pi) # Normalize the angle to [0, 2*pi]
 
         # Create JointState message
         joint_state_msg = JointState()
