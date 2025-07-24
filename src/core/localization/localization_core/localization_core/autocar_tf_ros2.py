@@ -71,7 +71,7 @@ class AutocarTFPublisher(Node):
         vehicle_map_x = vehicle_utm_x - self.map_origin_x
         vehicle_map_y = vehicle_utm_y - self.map_origin_y
         
-        t.transform.translation = Vector3(x=vehicle_map_x, y=vehicle_map_y, z=msg.pose.pose.position.z)
+        t.transform.translation = Vector3(x=vehicle_map_x, y=vehicle_map_y, z=0.28)
         t.transform.rotation = msg.pose.pose.orientation
         
         self.dynamic_br.sendTransform(t)
