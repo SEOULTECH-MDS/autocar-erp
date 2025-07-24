@@ -40,6 +40,8 @@ def generate_launch_description():
         LaunchConfiguration('map_osm_file')
     ])
 
+    rviz_config_path = PathJoinSubstitution([FindPackageShare('autocar_utils'), 'rviz', 'map.rviz'])
+
     # Define paths for sample_map test
     xacro_file = os.path.join(erp42_visualizer_share_dir, 'urdf', 'erp42.urdf.xacro')
 
@@ -115,12 +117,12 @@ def generate_launch_description():
             name='ackermann_to_joint_state_publisher'
         ),
 
-        # 6. RViz2 Node (Fixed frame is 'world')
+        # 6. RViz2 Node
         Node(
             package='rviz2',
             executable='rviz2',
             name='rviz2',
-            arguments=['--fixed-frame', 'world'],
+            arguments=['-d', rviz_config_path],
             output='screen'
         )
     ]) 
