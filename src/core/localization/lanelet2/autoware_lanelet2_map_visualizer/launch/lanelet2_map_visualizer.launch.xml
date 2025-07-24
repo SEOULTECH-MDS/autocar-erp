@@ -1,0 +1,9 @@
+<launch>
+  <arg name="map_topic" default="/map/vector_map"/>
+  <arg name="viz_topic" default="/map/lanelet2_map_viz"/>
+
+  <node pkg="autoware_lanelet2_map_visualizer" exec="lanelet2_map_visualization" name="autoware_lanelet2_map_visualizer" output="screen">
+    <remap from="input/lanelet2_map" to="$(var map_topic)"/>
+    <remap from="output/lanelet2_map_viz" to="$(var viz_topic)"/>
+  </node>
+</launch>

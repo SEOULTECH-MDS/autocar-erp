@@ -1,107 +1,84 @@
 #! /usr/bin/env python3
 
-import numpy as np
 import pyproj
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped, TransformStamped, Quaternion, Vector3
-from sensor_msgs.msg import NavSatFix
+from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from nav_msgs.msg import Odometry
-from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster, TransformListener, Buffer
-from autocar_utils.euler_from_quaternion import euler_from_quaternion
+from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
-# 위도, 경도를 UTM 좌표로 변환하는 함수
-def latlon_to_utm(lat, lon):
-    proj = '+proj=utm +zone=52 +north +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
-    latlon_to_utm = pyproj.Proj(proj, preserve_units=True)
-    return latlon_to_utm(lon, lat)
-
-class AutocarTF(Node):
+class AutocarTFPublisher(Node):
     def __init__(self):
-        super().__init__('autocar_tf')
+        super().__init__('autocar_tf_publisher')
         
-        # QoS 설정
+        # QoS Profile
         qos = QoSProfile(
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
             history=QoSHistoryPolicy.KEEP_LAST,
             depth=1
         )
         
-        # TF 브로드캐스터 설정
-        self.tf_br_static = StaticTransformBroadcaster(self)
-        self.tf_br_dynamic = TransformBroadcaster(self)
+        # TF Broadcasters
+        self.static_br = StaticTransformBroadcaster(self)
+        self.dynamic_br = TransformBroadcaster(self)
         
-        # 파라미터 설정
+        # Parameters
         self.declare_parameter('map_origin_lat', 37.630117)
         self.declare_parameter('map_origin_lon', 127.081431)  
-        self.get_logger().info('TF Node Started \n map_origin -> mirae_parking_lot')  # 미래관 주차장
-
-        # self.declare_parameter('map_origin_lat', 37.632010)
-        # self.declare_parameter('map_origin_lon', 127.0760080)  
-        # self.get_logger().info('TF Node Started \n map_origin -> hitech_back') # 하이테크 뒤
-
         
-        # 구독
-        self.global_location_sub = self.create_subscription(
+        # Subscriber
+        self.location_sub = self.create_subscription(
             Odometry, 
             '/autocar/location', 
-            self.callback_global_location, 
-            qos)
+            self.location_callback, 
+            qos
+        )
         
-        # map 프레임 초기화
+        # Setup map frame
         self.setup_map_frame()
+        self.get_logger().info('TF Publisher Node has been started.')
         
     def setup_map_frame(self):
-        try:
-            # 설정된 map 원점 가져오기
-            lat = self.get_parameter('map_origin_lat').value
-            lon = self.get_parameter('map_origin_lon').value
-            
-            # UTM 변환
-            world_x, world_y = latlon_to_utm(lat, lon)
-            
-            # map 원점 좌표 저장
-            self.map_origin_x = world_x
-            self.map_origin_y = world_y
-            
-            # world -> map 변환 설정
-            t = TransformStamped()
-            t.header.stamp = self.get_clock().now().to_msg()
-            t.header.frame_id = "world"
-            t.child_frame_id = "map"
-            
-            t.transform.translation = Vector3(x=float(world_x), y=float(world_y), z=0.0)
-            t.transform.rotation = Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)
-            
-            self.tf_br_static.sendTransform(t)
-            
-        except Exception as e:
-            self.get_logger().error(f'Map frame setup failed: {str(e)}')
+        lat = self.get_parameter('map_origin_lat').value
+        lon = self.get_parameter('map_origin_lon').value
+        
+        # Lat/Lon to UTM conversion for map origin
+        proj_string = '+proj=utm +zone=52 +north +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
+        utm_proj = pyproj.Proj(proj_string)
+        self.map_origin_x, self.map_origin_y = utm_proj(lon, lat)
+        
+        # Publish static transform from 'world' to 'map'
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "world"
+        t.child_frame_id = "map"
+        t.transform.translation = Vector3(x=float(self.map_origin_x), y=float(self.map_origin_y), z=0.0)
+        t.transform.rotation = Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)
+        self.static_br.sendTransform(t)
+        self.get_logger().info(f"Published static TF: world -> map at {self.map_origin_x}, {self.map_origin_y}")
 
-    def callback_global_location(self, msg):
-        try:
-            # map -> base_link 변환
-            t = TransformStamped()
-            t.header.stamp = msg.header.stamp  # 메시지의 타임스탬프 사용
-            t.header.frame_id = "map"
-            t.child_frame_id = "base_link"
-            
-            # world 좌표를 map 좌표로 변환
-            map_x = msg.pose.pose.position.x - self.map_origin_x
-            map_y = msg.pose.pose.position.y - self.map_origin_y
-            
-            t.transform.translation = Vector3(x=map_x, y=map_y, z=0.0)
-            t.transform.rotation = msg.pose.pose.orientation
-            
-            self.tf_br_dynamic.sendTransform(t)
-            
-        except Exception as e:
-            self.get_logger().error(f'Transform broadcast failed: {str(e)}')
+    def location_callback(self, msg):
+        # Publish dynamic transform from 'map' to 'base_link'
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "map"
+        t.child_frame_id = "base_link"
+        
+        vehicle_utm_x = msg.pose.pose.position.x
+        vehicle_utm_y = msg.pose.pose.position.y
+        
+        vehicle_map_x = vehicle_utm_x - self.map_origin_x
+        vehicle_map_y = vehicle_utm_y - self.map_origin_y
+        
+        t.transform.translation = Vector3(x=vehicle_map_x, y=vehicle_map_y, z=msg.pose.pose.position.z)
+        t.transform.rotation = msg.pose.pose.orientation
+        
+        self.dynamic_br.sendTransform(t)
 
 def main(args=None):
     rclpy.init(args=args)
-    node = AutocarTF()
+    node = AutocarTFPublisher()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
