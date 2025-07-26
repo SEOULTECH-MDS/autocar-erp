@@ -117,7 +117,20 @@ def generate_launch_description():
             name='ackermann_to_joint_state_publisher'
         ),
 
-        # 6. RViz2 Node
+        # 6. Lanelet Click Planner
+        Node(
+            package='localization_core',
+            executable='global_click_planner',
+            name='lanelet_click_planner',
+            parameters=[{
+                'map_origin.lat': LaunchConfiguration('map_origin_lat'),
+                'map_origin.lon': LaunchConfiguration('map_origin_lon'),
+                'lanelet2_map_path': LaunchConfiguration('lanelet2_map_path')
+            }],
+            output='screen'
+        ),
+
+        # 7. RViz2 Node
         Node(
             package='rviz2',
             executable='rviz2',
