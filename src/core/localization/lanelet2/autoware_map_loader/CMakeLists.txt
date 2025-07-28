@@ -4,6 +4,7 @@ project(autoware_map_loader)
 find_package(autoware_cmake REQUIRED)
 autoware_package()
 
+find_package(ament_cmake_pytest REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters)
 
 ament_auto_add_library(pointcloud_map_loader_node SHARED
