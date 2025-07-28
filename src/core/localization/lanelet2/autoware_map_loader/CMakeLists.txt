@@ -5,6 +5,8 @@ find_package(autoware_cmake REQUIRED)
 autoware_package()
 
 find_package(ament_cmake_pytest REQUIRED)
+find_package(autoware_component_interface_specs REQUIRED)
+find_package(autoware_geography_utils REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters)
 
 ament_auto_add_library(pointcloud_map_loader_node SHARED
@@ -30,6 +32,11 @@ rclcpp_components_register_node(pointcloud_map_loader_node
 
 ament_auto_add_library(lanelet2_map_loader_node SHARED
   src/lanelet2_map_loader/lanelet2_map_loader_node.cpp
+)
+ament_target_dependencies(
+  lanelet2_map_loader_node
+  autoware_component_interface_specs
+  autoware_geography_utils
 )
 
 target_include_directories(lanelet2_map_loader_node
