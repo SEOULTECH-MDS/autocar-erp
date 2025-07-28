@@ -1,7 +1,7 @@
 {
     "acados_include_path": "/home/ysl/acados/include",
     "acados_lib_path": "/home/ysl/acados/lib",
-    "code_export_directory": "/home/ysl/autocar/src/c_generated_code",
+    "code_export_directory": "/home/ysl/autocar/src/core/control/main_control/main_control/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],
