@@ -4,7 +4,7 @@ import threading
 import numpy as np
 import math
 import rclpy
-from geometry_msgs.msg import PoseStamped, Twist, PoseArray
+from geometry_msgs.msg import PoseStamped, Twist, PoseArray, PointStamped
 from rclpy.node import Node
 from std_msgs.msg import Float64, Header
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -19,6 +19,7 @@ from rviz_2d_overlay_msgs.msg import OverlayText
 from visualization_msgs.msg import Marker, MarkerArray
 from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
+from rclpy.qos import QoSProfile, DurabilityPolicy
 
 NX = 4
 NU = 2
@@ -36,15 +37,20 @@ class Control(Node):
         self.h_error_pub = self.create_publisher(Float64, '/autocar/he', 10)
         
         # 시각화 Publisher
+        qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.overlay_pub = self.create_publisher(OverlayText, '/autocar/steering_angle', 10)
         self.ref_path_pub = self.create_publisher(Path, '/autocar/path', 10)
-        self.mpc_ref_pub = self.create_publisher(MarkerArray, '/autocar/mpc_ref', 10)  
-        self.mpc_predict_pub = self.create_publisher(MarkerArray, '/autocar/mpc_predict', 10)
+        self.mpc_ref_pub = self.create_publisher(MarkerArray, '/autocar/mpc_ref', qos_profile=qos_transient_local)
+        self.mpc_predict_pub = self.create_publisher(MarkerArray, '/autocar/mpc_predict', qos_profile=qos_transient_local)
 
 
         # Subscriber
         self.localization_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
-        self.global_waypoints_sub = self.create_subscription(PoseArray, '/global_waypoints', self.global_waypoints_cb, 10)
+        self.global_waypoints_sub = self.create_subscription(PoseArray, '/autocar/goals', self.global_waypoints_cb, 10)
+        
+        # New subscriber for the map origin
+        qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
         self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
 
@@ -73,6 +79,10 @@ class Control(Node):
         self.target_vel = 1.5  # 목표 속도 (m/s)
         self.steering_angle = 0.0
         self.velocity = 0.0
+        
+        # New variable for map origin
+        self.map_origin_x = None
+        self.map_origin_y = None
 
         self.mode = None
         self.mode_description = None
@@ -83,21 +93,36 @@ class Control(Node):
         # 주기적인 제어 실행을 위한 타이머 설정
         self.timer = self.create_timer(self.dt, self.mpc_control)
 
+    def map_origin_cb(self, msg):
+        self.map_origin_x = msg.point.x
+        self.map_origin_y = msg.point.y
+        self.get_logger().info(f"Received map origin (UTM): x={self.map_origin_x}, y={self.map_origin_y}")
+
     def vehicle_state_cb(self, msg):
+        # We assume the Odometry message is in the global UTM frame.
+        # We will convert it to the local map frame once we have the origin.
+        if self.map_origin_x is None or self.map_origin_y is None:
+            self.get_logger().warn("Map origin not yet received, cannot process vehicle location.")
+            return
+            
         self.lock.acquire()
-        self.x = msg.pose.pose.position.x
-        self.y = msg.pose.pose.position.y
+        
+        # Convert from global UTM to local map frame by subtracting the origin
+        self.x = msg.pose.pose.position.x - self.map_origin_x
+        self.y = msg.pose.pose.position.y - self.map_origin_y
+        
         q = msg.pose.pose.orientation
         self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
-        self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))  # 속도 계산
-        if abs(self.vel) < 1e-3:  # 임계값 설정 (1e-3 = 0.001 m/s)
+        
+        self.vel = np.sqrt((msg.twist.twist.linear.x**2.0) + (msg.twist.twist.linear.y**2.0))
+        if abs(self.vel) < 1e-3:
             self.vel = 0.1
-
         self.yawrate = msg.twist.twist.angular.z
-        # print(f'vel: {self.vel}')
+        
         if self.cyaw:
             self.calc_nearest_index()
         self.lock.release()
+
 
     def mode_cb(self, msg):
         self.mode = msg.current_mode
@@ -134,8 +159,8 @@ class Control(Node):
         return path, possible_change_direction
     
     def obstacle_cb(self, msg):
-        self.obs_x = msg.markers[0].pose.position.x
-        self.obs_y = msg.markers[0].pose.position.y
+        self.obs_x = msg.markers[0].pose.position.x 
+        self.obs_y = msg.markers[0].pose.position.y 
         self.obs_a = msg.markers[0].scale.x
         self.obs_b = msg.markers[0].scale.y
         print(f"obs_x: {self.obs_x}, obs_y: {self.obs_y}, obs_a: {self.obs_a}, obs_b: {self.obs_b}")
@@ -270,27 +295,59 @@ class Control(Node):
 
         # 상태 및 제어 입력 참조값 계산
         self.calc_nearest_index()
-        xref, uref = self.calc_ref_trajectory()
-        u_prev = np.zeros((NU, N))  # 이전 제어 입력 초기화
-        obs = np.array([self.obs_x, self.obs_y])
+        xref_global, uref = self.calc_ref_trajectory()
 
-        # 초기 상태 설정
-        x0 = np.array([self.x, self.y, self.yaw, self.vel])
-        print("x0:", x0)  # 디버깅용 출력
+        if self.target_ind is None:
+            self.get_logger().warn("Cannot find target index, skipping control loop.")
+            return
+
+        # "움직이는 지역 좌표계"의 원점을 경로상의 가장 가까운 점으로 설정
+        ref_x = self.cx[self.target_ind]
+        ref_y = self.cy[self.target_ind]
+        ref_yaw = self.cyaw[self.target_ind]
+        cos_ref_yaw = np.cos(ref_yaw)
+        sin_ref_yaw = np.sin(ref_yaw)
+
+        # 차량의 현재 상태(x,y,yaw)를 "움직이는 지역 좌표계"로 변환
+        dx_car = self.x - ref_x
+        dy_car = self.y - ref_y
+        local_x = dx_car * cos_ref_yaw + dy_car * sin_ref_yaw
+        local_y = -dx_car * sin_ref_yaw + dy_car * cos_ref_yaw
+        local_yaw = normalise_angle(self.yaw - ref_yaw)
+        x0 = np.array([local_x, local_y, local_yaw, self.vel])
+        
+        # MPC 예측 경로(xref) 전체를 동일한 "움직이는 지역 좌표계"로 변환
+        xref_local = np.zeros_like(xref_global)
+        for i in range(N):
+            dx_ref = xref_global[0, i] - ref_x
+            dy_ref = xref_global[1, i] - ref_y
+            xref_local[0, i] = dx_ref * cos_ref_yaw + dy_ref * sin_ref_yaw
+            xref_local[1, i] = -dx_ref * sin_ref_yaw + dy_ref * cos_ref_yaw
+            xref_local[2, i] = normalise_angle(xref_global[2, i] - ref_yaw)
+            xref_local[3, i] = xref_global[3, i]
+
+        u_prev = np.zeros((NU, N))
+        
+        # 장애물 위치도 동일한 "움직이는 지역 좌표계"로 변환
+        if self.obs_x is not None and self.obs_y is not None and self.map_origin_x is not None:
+             dx_obs = self.obs_x - self.map_origin_x - ref_x
+             dy_obs = self.obs_y - self.map_origin_y - ref_y
+             local_obs_x = dx_obs * cos_ref_yaw + dy_obs * sin_ref_yaw
+             local_obs_y = -dy_obs * sin_ref_yaw + dy_obs * cos_ref_yaw
+             obs = np.array([local_obs_x, local_obs_y])
+        else:
+            obs = np.array([0.0, 0.0])
+
+        # 초기 상태 설정 (지역 좌표계 기준)
+        print("x0 (relative to path):", x0)
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
 
-        # 장애물 정보 설정
-        if self.obs_x is not None and self.obs_y is not None:
-            obs = np.array([self.obs_x, self.obs_y])  # 장애물 
-        else:
-            obs = np.array([0.0, 0.0])  # 기본값 설정
-
-        # 참조값 설정 (EXTERNAL cost에서는 p로 넘김)
+        # 참조값 설정 (지역 좌표계 기준)
         for i in range(N):
-            self.solver.set(i, "p", np.hstack([xref[:, i], u_prev[:,i], obs]))
-        self.solver.set(N, "p", np.hstack([xref[:, -1], u_prev[:, -1], obs]))  
+            self.solver.set(i, "p", np.hstack([xref_local[:, i], u_prev[:,i], obs]))
+        self.solver.set(N, "p", np.hstack([xref_local[:, -1], u_prev[:, -1], obs]))
 
         # Solver 실행
         status = self.solver.solve()
@@ -308,7 +365,7 @@ class Control(Node):
         # Solver에서 예측된 상태값 가져오기
         x_opt = np.array([self.solver.get(i, "x") for i in range(N)])  # 예측된 상태값
         self.visualize_predicted_trajectory(x_opt)
-        print("x_opt:", x_opt)  # 디버깅용 출력
+        print("x_opt (relative to path):", x_opt)
 
         print(f"u_opt: {u_opt}")
 

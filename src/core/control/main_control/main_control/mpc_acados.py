@@ -159,8 +159,8 @@ class Control(Node):
         return path, possible_change_direction
     
     def obstacle_cb(self, msg):
-        self.obs_x = msg.markers[0].pose.position.x
-        self.obs_y = msg.markers[0].pose.position.y
+        self.obs_x = msg.markers[0].pose.position.x 
+        self.obs_y = msg.markers[0].pose.position.y 
         self.obs_a = msg.markers[0].scale.x
         self.obs_b = msg.markers[0].scale.y
         print(f"obs_x: {self.obs_x}, obs_y: {self.obs_y}, obs_a: {self.obs_a}, obs_b: {self.obs_b}")
@@ -279,8 +279,7 @@ class Control(Node):
 
         # self.target_ind 업데이트
         self.target_ind = ind
-
-
+    
     def mpc_control(self):
         """
         MPC 제어 수행
@@ -293,61 +292,26 @@ class Control(Node):
             print("경로 데이터가 없습니다.")
             return
 
-        # 상태 및 제어 입력 참조값 계산
         self.calc_nearest_index()
-        xref_global, uref = self.calc_ref_trajectory()
+        xref, uref = self.calc_ref_trajectory()
 
-        if self.target_ind is None:
-            self.get_logger().warn("Cannot find target index, skipping control loop.")
-            return
 
-        # "움직이는 지역 좌표계"의 원점을 경로상의 가장 가까운 점으로 설정
-        ref_x = self.cx[self.target_ind]
-        ref_y = self.cy[self.target_ind]
-        ref_yaw = self.cyaw[self.target_ind]
-        cos_ref_yaw = np.cos(ref_yaw)
-        sin_ref_yaw = np.sin(ref_yaw)
+        x0 = np.array([self.x, self.y, self.yaw, self.vel])
 
-        # 차량의 현재 상태(x,y,yaw)를 "움직이는 지역 좌표계"로 변환
-        dx_car = self.x - ref_x
-        dy_car = self.y - ref_y
-        local_x = dx_car * cos_ref_yaw + dy_car * sin_ref_yaw
-        local_y = -dx_car * sin_ref_yaw + dy_car * cos_ref_yaw
-        local_yaw = normalise_angle(self.yaw - ref_yaw)
-        x0 = np.array([local_x, local_y, local_yaw, self.vel])
-        
-        # MPC 예측 경로(xref) 전체를 동일한 "움직이는 지역 좌표계"로 변환
-        xref_local = np.zeros_like(xref_global)
-        for i in range(N):
-            dx_ref = xref_global[0, i] - ref_x
-            dy_ref = xref_global[1, i] - ref_y
-            xref_local[0, i] = dx_ref * cos_ref_yaw + dy_ref * sin_ref_yaw
-            xref_local[1, i] = -dx_ref * sin_ref_yaw + dy_ref * cos_ref_yaw
-            xref_local[2, i] = normalise_angle(xref_global[2, i] - ref_yaw)
-            xref_local[3, i] = xref_global[3, i]
+        u_prev = np.zeros((NU, N))  # 이전 제어 입력 초기화
 
-        u_prev = np.zeros((NU, N))
-        
-        # 장애물 위치도 동일한 "움직이는 지역 좌표계"로 변환
-        if self.obs_x is not None and self.obs_y is not None and self.map_origin_x is not None:
-             dx_obs = self.obs_x - self.map_origin_x - ref_x
-             dy_obs = self.obs_y - self.map_origin_y - ref_y
-             local_obs_x = dx_obs * cos_ref_yaw + dy_obs * sin_ref_yaw
-             local_obs_y = -dy_obs * sin_ref_yaw + dy_obs * cos_ref_yaw
-             obs = np.array([local_obs_x, local_obs_y])
-        else:
-            obs = np.array([0.0, 0.0])
+        # 장애물 위치를 UTM 좌표계에서 Local Map 좌표계로 변환
+        obs_x = self.obs_x - self.map_origin_x 
+        obs_y = self.obs_y - self.map_origin_y
+        obs = np.array([obs_x, obs_y])
 
-        # 초기 상태 설정 (지역 좌표계 기준)
-        print("x0 (relative to path):", x0)
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
 
-        # 참조값 설정 (지역 좌표계 기준)
         for i in range(N):
-            self.solver.set(i, "p", np.hstack([xref_local[:, i], u_prev[:,i], obs]))
-        self.solver.set(N, "p", np.hstack([xref_local[:, -1], u_prev[:, -1], obs]))
+            self.solver.set(i, "p", np.hstack([xref[:, i], u_prev[:, i], obs]))
+        self.solver.set(N, "p", np.hstack([xref[:, -1], u_prev[:, -1], obs]))
 
         # Solver 실행
         status = self.solver.solve()
@@ -371,7 +335,7 @@ class Control(Node):
 
         # 차량 명령 퍼블리시
         self.set_vehicle_command(self.steering_angle, self.velocity)
-        
+
     def set_vehicle_command(self, steering_angle, velocity):
         """
         차량 명령 퍼블리시
