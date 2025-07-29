@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
-from bicycle_model import export_bicycle_modle
+from .bicycle_model import export_bicycle_modle
 import numpy as np
 from casadi import SX, exp, transpose, vertcat
 import os
@@ -43,10 +43,10 @@ def acados_solver():
     ocp.cost.cost_type_e = 'EXTERNAL'
 
     # 비용 함수 가중치 설정 
-    Q = np.diag([1.0, 1.0, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v)  1.0 1.0 0.2 0.1
+    Q = np.diag([0.5, 0.5, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v)  1.0 1.0 0.2 0.1
     R = np.diag([0.1, 0.1])  # 제어 입력 가중치 (delta, v_cmd) 0.1 0.1
     Rd = np.diag([1.0, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd) 1.0 0.1
-    Qe = np.diag([1.0, 1.0, 0.5, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 1.0 1.0 0.5 0.1
+    Qe = np.diag([0.3, 0.3, 0.2, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 1.0 1.0 0.5 0.1
 
     # 장애물 회피 가중치 
     W_obs = 10.0  # 장애물 회피 가중치 
@@ -108,7 +108,7 @@ def acados_solver():
     ocp.constraints.idxbx = np.array([0, 1, 2, 3])  # 모든 상태 변수에 대해 제약 조건 적용
 
     # 장애물 제약 조건
-    r_safe = 0.5
+    r_safe = 0.3
     distance = (vehicle_x - obs_x)**2 + (vehicle_y - obs_y)**2
     ocp.model.con_h_expr = vertcat(distance)
     ocp.constraints.lh = np.array([r_safe**2])
