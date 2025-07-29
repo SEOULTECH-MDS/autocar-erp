@@ -26,12 +26,16 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/common/common.h>
 #include <pcl/common/centroid.h>
+#include "rclcpp_components/register_node_macro.hpp"
+
+namespace perception
+{
 
 class AdaptiveClusteringGroundRemoved : public rclcpp::Node
 {
 public:
-  AdaptiveClusteringGroundRemoved()
-  : Node("adaptive_clustering_ground_removed")
+  explicit AdaptiveClusteringGroundRemoved(const rclcpp::NodeOptions & options)
+  : Node("adaptive_clustering_ground_removed", options)
   {
     // Parameters
     this->declare_parameter<std::string>("sensor_model", "VLP-16");
@@ -284,9 +288,6 @@ private:
   bool reset_ = true;
 };
 
-int main(int argc, char **argv) {
-  rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<AdaptiveClusteringGroundRemoved>());
-  rclcpp::shutdown();
-  return 0;
-}
+} // namespace perception
+
+RCLCPP_COMPONENTS_REGISTER_NODE(perception::AdaptiveClusteringGroundRemoved)

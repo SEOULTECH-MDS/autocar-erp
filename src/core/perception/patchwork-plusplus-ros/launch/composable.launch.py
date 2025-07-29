@@ -11,8 +11,8 @@ def generate_launch_description():
         name='ground_segmentation',
         # namespace='lexus3/os_left',
         parameters=[
-            {'cloud_topic': '/lexus3/os_center/points'}, # Input pointcloud
-            {'frame_id': 'lexus3/os_center_a_laser_data_frame'},
+            {'cloud_topic': '/velodyne_points'}, # Input pointcloud
+            {'frame_id': 'velodyne'},
             {'sensor_height': 1.88},
             {'num_iter': 3},             # Number of iterations for ground plane estimation using PCA.
             {'num_lpr': 20},             # Maximum number of points to be selected as lowest points representative.

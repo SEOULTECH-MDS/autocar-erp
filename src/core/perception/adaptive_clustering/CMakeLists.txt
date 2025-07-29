@@ -18,14 +18,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES std_msgs sensor_msgs
 )
 
-# Create a library from the source file
-add_library(${PROJECT_NAME}_lib src/adaptive_clustering.cpp)
-target_include_directories(${PROJECT_NAME}_lib
-  PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:.>
+# Create a shared library containing both components
+add_library(${PROJECT_NAME}_lib SHARED
+  src/adaptive_clustering.cpp
+  src/adaptive_clustering_ground_removed.cpp
 )
-# Link against ROS dependencies using the ament macro
 ament_target_dependencies(${PROJECT_NAME}_lib
   "rclcpp"
   "rclcpp_components"
@@ -34,24 +31,32 @@ ament_target_dependencies(${PROJECT_NAME}_lib
   "visualization_msgs"
   "geometry_msgs"
   "pcl_conversions"
+  "PCL"
 )
-# Link against non-ament and generated message libraries directly
 target_link_libraries(${PROJECT_NAME}_lib
   ${PCL_LIBRARIES}
   ${PROJECT_NAME}__rosidl_typesupport_cpp
 )
 
-# Register the library as a composable node component
+# Register the plugins from the library
 rclcpp_components_register_node(
-  ${PROJECT_NAME}_lib PLUGIN "perception::AdaptiveClusteringNode" EXECUTABLE ${PROJECT_NAME}_node
+  ${PROJECT_NAME}_lib
+  PLUGIN "perception::AdaptiveClusteringNode"
+  EXECUTABLE adaptive_clustering_node
 )
+rclcpp_components_register_node(
+  ${PROJECT_NAME}_lib
+  PLUGIN "perception::AdaptiveClusteringGroundRemoved"
+  EXECUTABLE adaptive_clustering_ground_removed_node
+)
+
 
 # --- Installation Rules ---
 install(
-  TARGETS ${PROJECT_NAME}_lib ${PROJECT_NAME}_node
+  TARGETS ${PROJECT_NAME}_lib adaptive_clustering_node adaptive_clustering_ground_removed_node
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION bin
 )
 
 install(
@@ -59,7 +64,12 @@ install(
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# Export dependencies and targets for downstream packages
+install(
+    DIRECTORY msg
+    DESTINATION share/${PROJECT_NAME}/
+)
+
+# Export dependencies and targets
 ament_export_dependencies(
   "rclcpp"
   "rclcpp_components"
@@ -70,6 +80,5 @@ ament_export_dependencies(
   "pcl_conversions"
   "rosidl_default_runtime"
 )
-ament_export_libraries(${PROJECT_NAME}_lib)
 
 ament_package()

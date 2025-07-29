@@ -210,8 +210,8 @@ private:
     int num_min_pts_ = 15 ;
     int num_zones_ = 4;
     int num_rings_of_interest_;
-    std::string cloud_topic = "/kitti/point_cloud";
-    std::string frame_id_ = "test";
+    std::string cloud_topic = "/velodyne_points";
+    std::string frame_id_ = "velodyne";
     double sensor_height_ =  1.0;
     double th_seeds_ = 0.3;
     double th_dist_ = 0.4;

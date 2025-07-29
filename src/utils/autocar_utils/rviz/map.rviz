@@ -116,7 +116,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        lidar_link:
+        velodyne:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -201,7 +201,7 @@ Visualization Manager:
           Value: false
         left_front_wheel:
           Value: false
-        lidar_link:
+        velodyne:
           Value: true
         map:
           Value: true
@@ -230,7 +230,7 @@ Visualization Manager:
                 {}
               imu_link:
                 {}
-              lidar_link:
+              velodyne:
                 {}
               structure:
                 left_back_disk_wheel:
