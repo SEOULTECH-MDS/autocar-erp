@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>adaptive_clustering</name>
+  <version>0.0.1</version>
+  <description>Light-weight real-time high-accuracy point cloud clustering.</description>
+  <maintainer email="zhi.yan@utbm.fr">Zhi Yan</maintainer>
+  <maintainer email="lsun@lincoln.ac.uk">Li Sun</maintainer>
+  <license>BSD</license>
+  
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>libpcl-all-dev</depend>
+
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
