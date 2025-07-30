@@ -11,6 +11,8 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose, PoseArray
 from sensor_msgs.msg import Image
 
+import cv2
+
 
 class ObjectTracker(Node):
     def __init__(self):
@@ -20,7 +22,8 @@ class ObjectTracker(Node):
         self.tracker = IOUTracker(max_lost=3, iou_threshold=0.4, min_detection_confidence=0.4, max_detection_confidence=0.7,
                                   tracker_output_format='visdrone_challenge')
         
-        # self.img_sub = message_filters.Subscriber('/yolo_visualization', Image)
+        # self.img_sub = message_filters.Subscriber(self, Image, '/yolo_visualization')
+        # self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber')
         self.bbox_sub = self.create_subscription(PoseArray, '/bounding_boxes/rubber', self.callback_tracker, 10)
         
         # self.img_tracked_pub = self.create_publisher(Image, "/image_tracked", 10)
@@ -29,7 +32,7 @@ class ObjectTracker(Node):
         # self.sync = message_filters.ApproximateTimeSynchronizer([self.bbox_sub, self.img_sub], queue_size=100, slop=0.5, allow_headerless=True)
         # self.sync.registerCallback(self.callback_tracker)
     
-    def callback_tracker(self, bbox_msg):
+    def callback_tracker(self, bbox_msg): # self, bbox_msg, img_msg
         # Image
         # img = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding="bgr8")
         
@@ -53,6 +56,9 @@ class ObjectTracker(Node):
         # updated_img_msg = self.bridge.cv2_to_imgmsg(updated_image, encoding="bgr8")
         # updated_img_msg.header.stamp = self.get_clock().now().to_msg()
         # self.img_tracked_pub.publish(updated_img_msg)
+
+        # cv2.imshow("YOLO Rubber Detection", updated_image)
+        # cv2.waitKey(1)
         
         return
     

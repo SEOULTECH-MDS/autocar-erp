@@ -50,7 +50,7 @@ class YOLO(Node):
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성
         self.pose_array_pub = self.create_publisher(PoseArray, '/bounding_boxes/rubber', 10)
-        self.img_res_pub = self.create_publisher(Image, '/yolo/rubber', 10)
+        # self.img_res_pub = self.create_publisher(Image, '/yolo/rubber', 10)
         # self.obstacle_pub = self.create_publisher(String, '/obstacle_type', 10)
         
         # CvBridge 초기화 (ROS 이미지와 OpenCV 이미지 간 변환)
@@ -97,19 +97,19 @@ class YOLO(Node):
             rubbers = self.detect(cv_image)
             if rubbers is None:
                 # [✓] Modified: 검출 결과가 없을 때도 원본 이미지를 표시
-                cv2.imshow("YOLO Rubber Detection", cv_image)
-                cv2.waitKey(1)
+                #cv2.imshow("YOLO Rubber Detection", cv_image)
+                #cv2.waitKey(1)
                 return
             
             # [✓] Modified: 검출 결과를 바탕으로 원본 이미지에 바운딩 박스 그리기
-            for det in rubbers:
-                cls, xmin, ymin, xmax, ymax, conf = det
-                label = f'{self.names[cls]} {conf:.2f}'
-                plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls], line_thickness=2)
+            #for det in rubbers:
+            #    cls, xmin, ymin, xmax, ymax, conf = det
+            #    label = f'{self.names[cls]} {conf:.2f}'
+            #    plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls], line_thickness=2)
             
             # [✓] Modified: 결과 이미지를 실시간으로 디스플레이
-            cv2.imshow("YOLO Rubber Detection", cv_image)
-            cv2.waitKey(1)
+            #cv2.imshow("YOLO Rubber Detection", cv_image)
+            #cv2.waitKey(1)
             
             # 결과 이미지를 ROS 이미지 메시지로 변환 후 퍼블리시
             image_message = self.bridge.cv2_to_imgmsg(cv_image, encoding="bgr8")

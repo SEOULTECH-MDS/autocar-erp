@@ -1,6 +1,5 @@
 import numpy as np
-from perception.tracker.src.motrackers.kalman_tracker import KFTracker2D
-
+from perception.tracker.src.motrackers.kalman_tracker import KFTracker2D, KFTrackerSORT, KFTracker4D
 
 class Track:
     """
@@ -9,7 +8,7 @@ class Track:
     Args:
         frame_id (int): Camera frame id.
         track_id (int): Track Id
-        center (numpy.ndarray): Center point as (x_c,y_c) of the track.
+        bbox (numpy.ndarray): Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
         detection_confidence (float): Detection confidence of the object (probability).
         class_id (str or int): Class label id.
         lost (int): Number of times the object or track was not tracked by tracker in consecutive frames.
@@ -30,7 +29,7 @@ class Track:
         self,
         track_id,
         frame_id,
-        center,
+        bbox,
         detection_confidence,
         class_id=None,
         lost=0,
@@ -46,7 +45,7 @@ class Track:
         self.lost = 0
         self.age = 0
 
-        self.update(frame_id, center, detection_confidence, class_id=class_id, lost=lost, iou_score=iou_score, **kwargs)
+        self.update(frame_id, bbox, detection_confidence, class_id=class_id, lost=lost, iou_score=iou_score, **kwargs)
 
         if data_output_format == 'mot_challenge':
             self.output = self.get_mot_challenge_format
@@ -55,13 +54,13 @@ class Track:
         else:
             raise NotImplementedError
 
-    def update(self, frame_id, center, detection_confidence, class_id=None, lost=0, iou_score=0., **kwargs):
+    def update(self, frame_id, bbox, detection_confidence, class_id=None, lost=0, iou_score=0., **kwargs):
         """
         Update the track.
 
         Args:
             frame_id (int): Camera frame id.
-            center (numpy.ndarray): Center point as (x_c,y_c) of the track.
+            bbox (numpy.ndarray): Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
             detection_confidence (float): Detection confidence of the object (probability).
             class_id (int or str): Class label id.
             lost (int): Number of times the object or track was not tracked by tracker in consecutive frames.
@@ -69,7 +68,7 @@ class Track:
             kwargs (dict): Additional key word arguments.
         """
         self.class_id = class_id
-        self.center = np.array(center)
+        self.bbox = np.array(bbox)
         self.detection_confidence = detection_confidence
         self.frame_id = frame_id
         self.iou_score = iou_score
@@ -95,7 +94,7 @@ class Track:
             numpy.ndarray: Centroid (x, y) of bounding box.
 
         """
-        return np.array((self.center[0], self.center[1]))
+        return np.array((self.bbox[0]+0.5*self.bbox[2], self.bbox[1]+0.5*self.bbox[3]))
 
     def get_mot_challenge_format(self):
         """
@@ -110,7 +109,7 @@ class Track:
 
         """
         mot_tuple = (
-            self.frame_id, self.id, self.center[0], self.center[1], self.detection_confidence,
+            self.frame_id, self.id, self.bbox[0], self.bbox[1], self.bbox[2], self.bbox[3], self.detection_confidence,
             -1, -1, -1
         )
         return mot_tuple
@@ -118,7 +117,7 @@ class Track:
     def get_vis_drone_format(self):
         """
         Track data output in VISDRONE Challenge format with tuple as
-        `(frame_index, target_id, center_left, center_top, center_width, center_height, score, object_category,
+        `(frame_index, target_id, bbox_left, bbox_top, bbox_width, bbox_height, score, object_category,
         truncation, occlusion)`.
 
         References:
@@ -128,11 +127,11 @@ class Track:
             - GitHub : https://github.com/VisDrone/
 
         Returns:
-            tuple: Tuple containing the elements as `(frame_index, target_id, center_left, center_top, center_width, center_height,
+            tuple: Tuple containing the elements as `(frame_index, target_id, bbox_left, bbox_top, bbox_width, bbox_height,
             score, object_category, truncation, occlusion)`.
         """
         mot_tuple = (
-            self.frame_id, self.id, self.center[0], self.center[1],
+            self.frame_id, self.id, self.bbox[0], self.bbox[1], self.bbox[2], self.bbox[3],
             self.detection_confidence, self.class_id, -1, -1
         )
         return mot_tuple
@@ -147,14 +146,15 @@ class Track:
     def print_all_track_output_formats():
         print(Track.metadata['data_output_formats'])
 
-class KFTrackCentroid(Track):
+
+class KFTrackSORT(Track):
     """
-    Track based on Kalman filter used for Centroid Tracking of bounding box in MOT.
+    Track based on Kalman filter tracker used for SORT MOT-Algorithm.
 
     Args:
         track_id (int): Track Id
         frame_id (int): Camera frame id.
-        center (numpy.ndarray): Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
+        bbox (numpy.ndarray): Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
         detection_confidence (float): Detection confidence of the object (probability).
         class_id (str or int): Class label id.
         lost (int): Number of times the object or track was not tracked by tracker in consecutive frames.
@@ -165,11 +165,12 @@ class KFTrackCentroid(Track):
         measurement_noise_scale (float): Measurement noise covariance scale or covariance magnitude as scalar value.
         kwargs (dict): Additional key word arguments.
     """
-    def __init__(self, track_id, frame_id, center, detection_confidence, class_id=None, lost=0, iou_score=0.,
+    def __init__(self, track_id, frame_id, bbox, detection_confidence, class_id=None, lost=0, iou_score=0.,
                  data_output_format='mot_challenge', process_noise_scale=1.0, measurement_noise_scale=1.0, **kwargs):
-        c = np.array((center[0], center[1]))
-        self.kf = KFTracker2D(c, process_noise_scale=process_noise_scale, measurement_noise_scale=measurement_noise_scale)
-        super().__init__(track_id, frame_id, center, detection_confidence, class_id=class_id, lost=lost,
+        bbz = np.array([bbox[0]+0.5*bbox[2], bbox[1]+0.5*bbox[3], bbox[2]*bbox[3], bbox[2]/float(bbox[3])])
+        self.kf = KFTrackerSORT(
+            bbz, process_noise_scale=process_noise_scale, measurement_noise_scale=measurement_noise_scale)
+        super().__init__(track_id, frame_id, bbox, detection_confidence, class_id=class_id, lost=lost,
                          iou_score=iou_score, data_output_format=data_output_format, **kwargs)
 
     def predict(self):
@@ -177,14 +178,109 @@ class KFTrackCentroid(Track):
         Predicts the next estimate of the bounding box of the track.
 
         Returns:
-            numpy.ndarray: Center point as (x_c,y_c) of the track.
+            numpy.ndarray: Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
+
+        """
+        if (self.kf.x[6] + self.kf.x[2]) <= 0:
+            self.kf.x[6] *= 0.0
+
+        x = self.kf.predict()
+
+        if x[2] * x[3] < 0:
+            return np.array([np.nan, np.nan, np.nan, np.nan])
+
+        w = np.sqrt(x[2] * x[3])
+        h = x[2] / float(w)
+        bb = np.array([x[0]-0.5*w, x[1]-0.5*h, w, h])
+        return bb
+
+    def update(self, frame_id, bbox, detection_confidence, class_id=None, lost=0, iou_score=0., **kwargs):
+        super().update(
+            frame_id, bbox, detection_confidence, class_id=class_id, lost=lost, iou_score=iou_score, **kwargs)
+        z = np.array([bbox[0]+0.5*bbox[2], bbox[1]+0.5*bbox[3], bbox[2]*bbox[3], bbox[2]/float(bbox[3])])
+        self.kf.update(z)
+
+
+class KFTrack4DSORT(Track):
+    """
+    Track based on Kalman filter tracker used for SORT MOT-Algorithm.
+
+    Args:
+        track_id (int): Track Id
+        frame_id (int): Camera frame id.
+        bbox (numpy.ndarray): Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
+        detection_confidence (float): Detection confidence of the object (probability).
+        class_id (str or int): Class label id.
+        lost (int): Number of times the object or track was not tracked by tracker in consecutive frames.
+        iou_score (float): Intersection over union score.
+        data_output_format (str): Output format for data in tracker.
+            Options ``['mot_challenge', 'visdrone_challenge']``. Default is ``mot_challenge``.
+        process_noise_scale (float): Process noise covariance scale or covariance magnitude as scalar value.
+        measurement_noise_scale (float): Measurement noise covariance scale or covariance magnitude as scalar value.
+        kwargs (dict): Additional key word arguments.
+
+    """
+    def __init__(self, track_id, frame_id, bbox, detection_confidence, class_id=None, lost=0, iou_score=0.,
+                 data_output_format='mot_challenge', process_noise_scale=1.0, measurement_noise_scale=1.0,
+                 kf_time_step=1, **kwargs):
+        self.kf = KFTracker4D(
+            bbox.copy(), process_noise_scale=process_noise_scale, measurement_noise_scale=measurement_noise_scale,
+            time_step=kf_time_step)
+        super().__init__(track_id, frame_id, bbox, detection_confidence, class_id=class_id, lost=lost,
+                         iou_score=iou_score, data_output_format=data_output_format, **kwargs)
+
+    def predict(self):
+        x = self.kf.predict()
+        bb = np.array([x[0], x[3], x[6], x[9]])
+        return bb
+
+    def update(self, frame_id, bbox, detection_confidence, class_id=None, lost=0, iou_score=0., **kwargs):
+        super().update(
+            frame_id, bbox, detection_confidence, class_id=class_id, lost=lost, iou_score=iou_score, **kwargs)
+        self.kf.update(bbox.copy())
+
+
+class KFTrackCentroid(Track):
+    """
+    Track based on Kalman filter used for Centroid Tracking of bounding box in MOT.
+
+    Args:
+        track_id (int): Track Id
+        frame_id (int): Camera frame id.
+        bbox (numpy.ndarray): Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
+        detection_confidence (float): Detection confidence of the object (probability).
+        class_id (str or int): Class label id.
+        lost (int): Number of times the object or track was not tracked by tracker in consecutive frames.
+        iou_score (float): Intersection over union score.
+        data_output_format (str): Output format for data in tracker.
+            Options ``['mot_challenge', 'visdrone_challenge']``. Default is ``mot_challenge``.
+        process_noise_scale (float): Process noise covariance scale or covariance magnitude as scalar value.
+        measurement_noise_scale (float): Measurement noise covariance scale or covariance magnitude as scalar value.
+        kwargs (dict): Additional key word arguments.
+    """
+    def __init__(self, track_id, frame_id, bbox, detection_confidence, class_id=None, lost=0, iou_score=0.,
+                 data_output_format='mot_challenge', process_noise_scale=1.0, measurement_noise_scale=1.0, **kwargs):
+        c = np.array((bbox[0]+0.5*bbox[2], bbox[1]+0.5*bbox[3]))
+        self.kf = KFTracker2D(c, process_noise_scale=process_noise_scale, measurement_noise_scale=measurement_noise_scale)
+        super().__init__(track_id, frame_id, bbox, detection_confidence, class_id=class_id, lost=lost,
+                         iou_score=iou_score, data_output_format=data_output_format, **kwargs)
+
+    def predict(self):
+        """
+        Predicts the next estimate of the bounding box of the track.
+
+        Returns:
+            numpy.ndarray: Bounding box pixel coordinates as (xmin, ymin, width, height) of the track.
 
         """
         s = self.kf.predict()
         xmid, ymid = s[0], s[3]
-        return np.array([xmid, ymid])
+        w, h = self.bbox[2], self.bbox[3]
+        xmin = xmid - 0.5*w
+        ymin = ymid - 0.5*h
+        return np.array([xmin, ymin, w, h]).astype(int)
 
-    def update(self, frame_id, center, detection_confidence, class_id=None, lost=0, iou_score=0., **kwargs):
+    def update(self, frame_id, bbox, detection_confidence, class_id=None, lost=0, iou_score=0., **kwargs):
         super().update(
-            frame_id, center, detection_confidence, class_id=class_id, lost=lost, iou_score=iou_score, **kwargs)
+            frame_id, bbox, detection_confidence, class_id=class_id, lost=lost, iou_score=iou_score, **kwargs)
         self.kf.update(self.centroid)
