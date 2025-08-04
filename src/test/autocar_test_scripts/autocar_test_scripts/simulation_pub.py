@@ -27,11 +27,15 @@ class SimulationPub(Node):
 
         self.obstacle_marker_pub = self.create_publisher(MarkerArray, '/obstacles/markers', 10)
         # 장애물 정보 설정
-        self.obstacle_lat = 37.62999526
-        self.obstacle_lon = 127.08136022
-        self.obstacle_a = 0.5  # 장축 길이 (meter)
-        self.obstacle_b = 0.5  # 단축 길이 (meter)
-
+        # self.obstacle_lat = 37.62999526
+        # self.obstacle_lon = 127.08136022
+        # self.obstacle_a = 0.5  # 장축 길이 (meter)
+        # self.obstacle_b = 0.5  # 단축 길이 (meter)
+        
+        self.obstacle1_lat = 37.63004349
+        self.obstacle1_lon = 127.08137807
+        self.obstacle2_lat = 37.62999185
+        self.obstacle2_lon = 127.08135382
 
         # UTM 변환 설정 (한국 지역에 맞는 설정)
         self.transformer = Transformer.from_proj(
@@ -40,12 +44,26 @@ class SimulationPub(Node):
             always_xy=True
         )
         # 장애물의 UTM 좌표 계산
-        self.obstacle_x, self.obstacle_y = self.transformer.transform(
-            self.obstacle_lon, 
-            self.obstacle_lat
-        )
+        self.obstacle1_x, self.obstacle1_y = self.transformer.transform(self.obstacle1_lon, self.obstacle1_lat)
+        self.obstacle2_x, self.obstacle2_y = self.transformer.transform(self.obstacle2_lon, self.obstacle2_lat)
+        
+        # 장애물 리스트 생성
+        self.obstacles = [
+            {
+                'x': self.obstacle1_x,
+                'y': self.obstacle1_y,
+                'color': ColorRGBA(r=1.0, g=0.0, b=0.0, a=0.5),  # 빨간색
+                'scale': {'x': 1.0, 'y': 1.0, 'z': 0.5}
+            },
+            {
+                'x': self.obstacle2_x,
+                'y': self.obstacle2_y,
+                'color': ColorRGBA(r=1.0, g=0.5, b=0.0, a=0.5),  # 주황색
+                'scale': {'x': 1.0, 'y': 1.0, 'z': 0.5}
+            }
+        ]
 
-        self.get_logger().info("HitechSimulationPub START")
+        self.get_logger().info("SimulationPub START")
 
         # 초기 차량 상태 파라미터 설정
         self.declare_parameter('initial_latitude', 37.630096)  # 미래관 주차장
@@ -138,36 +156,39 @@ class SimulationPub(Node):
     def publish_obstacle_marker(self):
         marker_array = MarkerArray()
         
-        # 장애물 마커 생성
-        marker = Marker()
-        marker.header.frame_id = "world"
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.ns = "obstacles"
-        marker.id = 0
-        marker.type = Marker.SPHERE
-        marker.action = Marker.ADD
+        # for문으로 장애물 마커들 생성
+        for i, obstacle in enumerate(self.obstacles):
+            marker = Marker()
+            marker.header.frame_id = "world"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "obstacles"
+            marker.id = i
+            marker.type = Marker.SPHERE
+            marker.action = Marker.ADD
+            
+            # 위치 설정
+            marker.pose.position.x = obstacle['x']
+            marker.pose.position.y = obstacle['y']
+            marker.pose.position.z = 0.0
+            
+            # 크기 설정
+            marker.scale.x = obstacle['scale']['x']
+            marker.scale.y = obstacle['scale']['y']
+            marker.scale.z = obstacle['scale']['z']
+            
+            # 색상 설정
+            marker.color = obstacle['color']
+            
+            marker_array.markers.append(marker)
         
-        # 위치 설정
-        marker.pose.position.x = self.obstacle_x
-        marker.pose.position.y = self.obstacle_y
-        marker.pose.position.z = 0.0
-        
-        # 크기 설정 (장축과 단축 반영)
-        marker.scale.x = self.obstacle_a * 2
-        marker.scale.y = self.obstacle_b * 2
-        marker.scale.z = 0.5
-        
-        # 색상 설정 (빨간색, 반투명)
-        marker.color = ColorRGBA(r=1.0, g=0.0, b=0.0, a=0.5)
-        
-        marker_array.markers.append(marker)
         self.obstacle_marker_pub.publish(marker_array)
         
         # 로그에 장애물 정보 추가
-        self.get_logger().info(
-            f"Obstacle UTM: x={self.obstacle_x:.2f}, y={self.obstacle_y:.2f}, "
-            f"a={self.obstacle_a:.2f}m, b={self.obstacle_b:.2f}m"
-        )
+        obstacle_info = " | ".join([
+            f"Obstacle{i+1} UTM: x={obs['x']:.2f}, y={obs['y']:.2f}"
+            for i, obs in enumerate(self.obstacles)
+        ])
+        self.get_logger().info(obstacle_info)
 
 
 def main(args=None):

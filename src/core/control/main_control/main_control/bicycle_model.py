@@ -11,8 +11,8 @@ def export_bicycle_modle() -> AcadosModel:
     model_name = "bicycle_model"
 
     # constasnts 
-    Tf = 2.0  # 예측 시간 [s]
-    N = 20 
+    Tf = 3.0  # 예측 시간 [s]
+    N = 30 
     DT = Tf / N  # [s] time tick
     WB = 1.566  # [m] default : 2.5, ERP42 : 1.566
 

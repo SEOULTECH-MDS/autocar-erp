@@ -32,29 +32,24 @@ def acados_solver():
     # 상태 및 제어 입력 크기
     NX = 4  # 상태 변수 크기 (x, y, yaw, v)
     NU = 2  # 제어 입력 크기 (delta, v_cmd)
-    O = 2 # 장애물 정보 크기 (x, y)
+    O = 4 # 장애물 정보 크기 (obs1_x, obs1y, obs2_x, obs2_y)
     
     # 예측 시간 및 구간 설정
-    T = 2.0  # 예측 시간 [s]
-    N = 20  # 예측 구간 [s]
+    T = 3.0  # 예측 시간 [s]
+    N = 30  # 예측 구간 [s]
     
     # cost type 변경
     ocp.cost.cost_type = 'EXTERNAL'
     ocp.cost.cost_type_e = 'EXTERNAL'
 
     # 비용 함수 가중치 설정 
-    Q = np.diag([0.5, 0.5, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v)  1.0 1.0 0.2 0.1
-    R = np.diag([0.1, 0.1])  # 제어 입력 가중치 (delta, v_cmd) 0.1 0.1
-    Rd = np.diag([1.0, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd) 1.0 0.1
-    Qe = np.diag([0.3, 0.3, 0.2, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 1.0 1.0 0.5 0.1
-
-    # 장애물 회피 가중치 
-    W_obs = 10.0  # 장애물 회피 가중치 
-    safe_distance_sq = 0.2  # 안전 거리 제곱 [m^2]
-    barrier_gain = 1.0  # exponential barrier 게인
+    Q = np.diag([0.5, 0.5, 0.2, 0.0])  # 상태 변수 가중치 (x, y, yaw, v)  1.0 1.0 0.2 0.1
+    R = np.diag([0.2, 0.2])  # 제어 입력 가중치 (delta, v_cmd) 0.1 0.1
+    Rd = np.diag([0.1, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd) 1.0 0.1
+    Qe = np.diag([0.8, 0.8, 0.2, 0.0])  # 최종 상태 가중치 (x, y, yaw, v) 1.0 1.0 0.5 0.1
     
     # cost function 설정
-    p = SX.sym('p', NX + NU + O)  # type: ignore # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
+    p = SX.sym('p', NX + NU + O)  # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
     ocp.model.p = p
     ocp.parameter_values = np.zeros(NX + NU + O)
 
@@ -62,38 +57,23 @@ def acados_solver():
     x_err = ocp.model.x - ocp.model.p[:NX]  # 상태 오차
     u_prev = ocp.model.p[NX:NX+NU]  # 이전 제어 입력
     u_diff = ocp.model.u - u_prev  # 제어 입력 변화량
-    obs_x = ocp.model.p[NX+NU]  # 장애물 x 좌표
-    obs_y = ocp.model.p[NX+NU+1]  # 장애물 y 좌표
+    obs1_x = ocp.model.p[NX+NU]  # 장애물1 x 좌표
+    obs1_y = ocp.model.p[NX+NU+1]  # 장애물1 y 좌표
+    obs2_x = ocp.model.p[NX+NU+2]  # 장애물2 x 좌표
+    obs2_y = ocp.model.p[NX+NU+3]  # 장애물2 y 좌표
 
     # 차량 위치
     vehicle_x = ocp.model.x[0]  # 차량의 x 좌표
     vehicle_y = ocp.model.x[1]  # 차량의 y 좌표
-    
-    # 장애물과의 거리 제곱 계산
-    distance_sq = (vehicle_x - obs_x)**2 + (vehicle_y - obs_y)**2
-    
-    # 부드러운 장애물 회피 비용 (exponential barrier function)
-    # exp(-barrier_gain * (distance_sq - safe_distance_sq)) 형태로 부드러운 penalty
-    # 거리가 가까울수록 exponentially 증가하는 비용
-    obstacle_cost = W_obs * exp(-barrier_gain * (distance_sq - safe_distance_sq))
 
-    # stage cost (장애물 회피 비용 포함)
-    # stage_cost = (x_err.T @ Q @ x_err) + \
-    #             (ocp.model.u.T @ R @ ocp.model.u) + \
-    #             (u_diff.T @ Rd @ u_diff) + \
-    #             obstacle_cost
-
-    # stage cost (장애물 회피 X)
-    stage_cost = (transpose(x_err) @ Q @ x_err) + \
-                (transpose(ocp.model.u) @ R @ ocp.model.u) + \
-                (transpose(u_diff) @ Rd @ u_diff) 
+    # stage cost 
+    stage_cost = (x_err.T @ Q @ x_err) + \
+                (ocp.model.u.T @ R @ ocp.model.u) + \
+                (u_diff.T @ Rd @ u_diff) 
     ocp.model.cost_expr_ext_cost = stage_cost
 
-    # terminal cost (장애물 회피 비용 포함)
-    # terminal_cost = (x_err.T @ Qe @ x_err) + obstacle_cost
-
-    # terminal cost (장애물 회피 X)
-    terminal_cost = (transpose(x_err) @ Qe @ x_err)
+    # terminal cost 
+    terminal_cost = (x_err.T @ Qe @ x_err)
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # 제어 입력 제약 조건 (delta, v_cmd)
@@ -108,18 +88,19 @@ def acados_solver():
     ocp.constraints.idxbx = np.array([0, 1, 2, 3])  # 모든 상태 변수에 대해 제약 조건 적용
 
     # 장애물 제약 조건
-    r_safe = 0.3
-    distance = (vehicle_x - obs_x)**2 + (vehicle_y - obs_y)**2
-    ocp.model.con_h_expr = vertcat(distance)
-    ocp.constraints.lh = np.array([r_safe**2])
-    ocp.constraints.uh = np.array([1e10]) 
+    r_safe = 1.5
+    distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
+    distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
+    ocp.model.con_h_expr = vertcat(distance1, distance2)
+    ocp.constraints.lh = np.array([r_safe**2, r_safe**2])  
+    ocp.constraints.uh = np.array([1e10, 1e10]) 
 
-    # Solver 옵션 설정 (최적화 문제 안정성 향상)
+    # Solver 옵션 설정 
     ocp.solver_options.tf = T  # 예측 시간
     ocp.solver_options.N_horizon = N
     ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  
     ocp.solver_options.qp_solver_cond_N = 5  
-    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
+    ocp.solver_options.hessian_approx = "EXACT"  
     ocp.solver_options.integrator_type = "ERK"
     ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.nlp_solver_max_iter = 200  
@@ -130,7 +111,7 @@ def acados_solver():
     ocp.solver_options.nlp_solver_tol_comp = 1e-4  
     ocp.solver_options.globalization = "MERIT_BACKTRACKING"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
-    ocp.solver_options.nlp_solver_step_length = 0.05  
+    ocp.solver_options.globalization_fixed_step_length = 0.05
     ocp.solver_options.levenberg_marquardt = 1e-4  
 
     # 코드 생성 경로 설정

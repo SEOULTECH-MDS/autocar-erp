@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
-from .bicycle_model_backup import export_bicycle_modle
+from .bicycle_model import export_bicycle_modle
 import numpy as np
 from casadi import SX, exp, transpose, vertcat
 import os
@@ -35,8 +35,8 @@ def acados_solver():
     O = 2 # 장애물 정보 크기 (x, y)
     
     # 예측 시간 및 구간 설정
-    T = 2.0  # 예측 시간 [s]
-    N = 20  # 예측 구간 [s]
+    T = 3.0  # 예측 시간 [s]
+    N = 30  # 예측 구간 [s]
     
     # cost type 변경
     ocp.cost.cost_type = 'EXTERNAL'
@@ -45,16 +45,16 @@ def acados_solver():
     # 비용 함수 가중치 설정 
     Q = np.diag([0.5, 0.5, 0.2, 0.1])  # 상태 변수 가중치 (x, y, yaw, v)  1.0 1.0 0.2 0.1
     R = np.diag([0.1, 0.1])  # 제어 입력 가중치 (delta, v_cmd) 0.1 0.1
-    Rd = np.diag([1.0, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd) 1.0 0.1
-    Qe = np.diag([0.5, 0.5, 0.5, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 1.0 1.0 0.5 0.1
+    Rd = np.diag([0.1, 0.1])  # 제어 입력 변화량 가중치 (delta, v_cmd) 1.0 0.1
+    Qe = np.diag([0.3, 0.3, 0.2, 0.1])  # 최종 상태 가중치 (x, y, yaw, v) 1.0 1.0 0.5 0.1
 
     # 장애물 회피 가중치 
-    W_obs = 10.0  # 장애물 회피 가중치 
-    safe_distance_sq = 0.2  # 안전 거리 제곱 [m^2]
-    barrier_gain = 1.0  # exponential barrier 게인
+    # W_obs = 10.0  # 장애물 회피 가중치 
+    # safe_distance_sq = 0.2  # 안전 거리 제곱 [m^2]
+    # barrier_gain = 1.0  # exponential barrier 게인
     
     # cost function 설정
-    p = SX.sym('p', NX + NU + O)  # type: ignore # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
+    p = SX.sym('p', NX + NU + O)  # NX: 상태 변수 크기, NU: 제어 입력 크기, O: 장애물 정보 크기
     ocp.model.p = p
     ocp.parameter_values = np.zeros(NX + NU + O)
 
@@ -70,12 +70,12 @@ def acados_solver():
     vehicle_y = ocp.model.x[1]  # 차량의 y 좌표
     
     # 장애물과의 거리 제곱 계산
-    distance_sq = (vehicle_x - obs_x)**2 + (vehicle_y - obs_y)**2
+    # distance_sq = (vehicle_x - obs_x)**2 + (vehicle_y - obs_y)**2
     
     # 부드러운 장애물 회피 비용 (exponential barrier function)
     # exp(-barrier_gain * (distance_sq - safe_distance_sq)) 형태로 부드러운 penalty
     # 거리가 가까울수록 exponentially 증가하는 비용
-    obstacle_cost = W_obs * exp(-barrier_gain * (distance_sq - safe_distance_sq))
+    # obstacle_cost = W_obs * exp(-barrier_gain * (distance_sq - safe_distance_sq))
 
     # stage cost (장애물 회피 비용 포함)
     # stage_cost = (x_err.T @ Q @ x_err) + \
@@ -83,17 +83,17 @@ def acados_solver():
     #             (u_diff.T @ Rd @ u_diff) + \
     #             obstacle_cost
 
-    # stage cost (장애물 회피 X)
-    stage_cost = (transpose(x_err) @ Q @ x_err) + \
-                (transpose(ocp.model.u) @ R @ ocp.model.u) + \
-                (transpose(u_diff) @ Rd @ u_diff) 
-    ocp.model.cost_expr_ext_cost = stage_cost
-
     # terminal cost (장애물 회피 비용 포함)
     # terminal_cost = (x_err.T @ Qe @ x_err) + obstacle_cost
 
-    # terminal cost (장애물 회피 X)
-    terminal_cost = (transpose(x_err) @ Qe @ x_err)
+    # stage cost 
+    stage_cost = (x_err.T @ Q @ x_err) + \
+                (ocp.model.u.T @ R @ ocp.model.u) + \
+                (u_diff.T @ Rd @ u_diff) 
+    ocp.model.cost_expr_ext_cost = stage_cost
+
+    # terminal cost 
+    terminal_cost = (x_err.T @ Qe @ x_err)
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # 제어 입력 제약 조건 (delta, v_cmd)
@@ -108,18 +108,18 @@ def acados_solver():
     ocp.constraints.idxbx = np.array([0, 1, 2, 3])  # 모든 상태 변수에 대해 제약 조건 적용
 
     # 장애물 제약 조건
-    r_safe = 0.5
+    r_safe = 1.5
     distance = (vehicle_x - obs_x)**2 + (vehicle_y - obs_y)**2
     ocp.model.con_h_expr = vertcat(distance)
-    ocp.constraints.lh = np.array([r_safe**2])
+    ocp.constraints.lh = np.array([r_safe**2])  
     ocp.constraints.uh = np.array([1e10]) 
 
-    # Solver 옵션 설정 (최적화 문제 안정성 향상)
+    # Solver 옵션 설정 
     ocp.solver_options.tf = T  # 예측 시간
     ocp.solver_options.N_horizon = N
     ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  
     ocp.solver_options.qp_solver_cond_N = 5  
-    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
+    ocp.solver_options.hessian_approx = "EXACT"  
     ocp.solver_options.integrator_type = "ERK"
     ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.nlp_solver_max_iter = 200  

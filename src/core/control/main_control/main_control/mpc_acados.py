@@ -23,8 +23,8 @@ from rclpy.qos import QoSProfile, DurabilityPolicy
 
 NX = 4
 NU = 2
-T = 2.0
-N = 20
+T = 3.0
+N = 30
         
 class Control(Node):
     def __init__(self):
@@ -71,16 +71,23 @@ class Control(Node):
         self.lock = threading.Lock()
         self.dt = T / N  # 제어 주기 계산
 
-        self.obs_x = None
-        self.obs_y = None
-        self.obs_a = None
-        self.obs_b = None
+        self.obs1_x = None
+        self.obs1_y = None
+        self.obs2_x = None
+        self.obs2_y = None
 
         self.target_vel = 1.5  # 목표 속도 (m/s)
         self.steering_angle = 0.0
         self.velocity = 0.0
         
-        # New variable for map origin
+        # 이전 제어 입력 저장용 변수 (solver 실패 시 fallback용)
+        self.prev_steering_angle = 0.0
+        self.prev_velocity = 0.0
+        self.fail_count = 0  # 실패 횟수 카운트
+
+        self.avg_predicted_curvature = 0.0  # solver에서 예측된 궤적의 평균 곡률
+        
+        # map 원점
         self.map_origin_x = None
         self.map_origin_y = None
 
@@ -159,13 +166,12 @@ class Control(Node):
         return path, possible_change_direction
     
     def obstacle_cb(self, msg):
-        self.obs_x = msg.markers[0].pose.position.x 
-        self.obs_y = msg.markers[0].pose.position.y 
-        self.obs_a = msg.markers[0].scale.x
-        self.obs_b = msg.markers[0].scale.y
-        print(f"obs_x: {self.obs_x}, obs_y: {self.obs_y}, obs_a: {self.obs_a}, obs_b: {self.obs_b}")
-        
+        self.obs1_x = msg.markers[0].pose.position.x
+        self.obs1_y = msg.markers[0].pose.position.y
+        self.obs2_x = msg.markers[1].pose.position.x
+        self.obs2_y = msg.markers[1].pose.position.y
 
+        print(f"obs1: ({self.obs1_x}, {self.obs1_y}), obs2: ({self.obs2_x}, {self.obs2_y})")
 
     def calc_ref_trajectory(self):
         """
@@ -177,38 +183,9 @@ class Control(Node):
         if self.cx and self.cy and self.cyaw and self.ck:
             current_index = self.target_ind
             
-            # 디버깅을 위한 참조 경로 시각화 추가
-            self.visualize_ref_trajectory(np.array([
-                self.cx[current_index:current_index+N] if current_index+N < len(self.cx) else self.cx[current_index:],
-                self.cy[current_index:current_index+N] if current_index+N < len(self.cy) else self.cy[current_index:],
-                self.cyaw[current_index:current_index+N] if current_index+N < len(self.cyaw) else self.cyaw[current_index:],
-                [self.target_vel] * min(N, len(self.cx) - current_index)
-            ]))
-            
             for i in range(N):
-                # 곡률에 따른 동적 스텝 크기 계산
-                curvature = abs(self.ck[current_index]) if current_index < len(self.ck) else 0
-                
-                # 곡률 기반 스텝 크기 계산
-                # 곡률이 클수록 더 작은 스텝 (더 조밀한 포인트)
-                base_step = 1.0
-                # 곡률에 더 민감하게 반응하도록 계수 조정
-                curvature_factor = 1.0 / (1.0 + 15.0 * curvature)  # 곡률이 클수록 작아짐 (8.0 -> 15.0)
-                
-                # 최종 스텝 크기 계산 (최소 0.5, 최대 2.0으로 제한)
-                step = base_step * curvature_factor
-                step = max(0.5, min(2.0, step))
-                
-                # 실제 인덱스 증가량 계산 (정수로 반올림)
-                index_increment = max(1, round(step))
-                
-                # 다음 참조 인덱스 계산
-                next_index = min(current_index + index_increment, len(self.cx) - 1)
-                xref[:, i] = [self.cx[next_index], self.cy[next_index], self.cyaw[next_index], self.target_vel]                
-                uref[:, i] = [0.0, self.target_vel]  # 초기 제어 입력 참조값
-
-                # 현재 인덱스를 업데이트
-                current_index = next_index
+                xref[:, i] = [self.cx[current_index+i], self.cy[current_index+i], self.cyaw[current_index+i], self.target_vel]
+                uref[:, i] = [0.0, self.target_vel]  
 
         # 디버깅: xref와 uref 출력
         print("xref:", xref)
@@ -217,27 +194,6 @@ class Control(Node):
         self.visualize_ref_trajectory(xref)  
 
         return xref, uref
-    
-    # def calc_ref_trajectory(self):
-    #     """
-    #     목표 궤적과 상태 참조값 계산
-    #     """
-    #     xref = np.zeros((NX, N))  # 상태 참조값 (x, y, yaw, v)
-    #     uref = np.zeros((NU, N))  # 제어 입력 참조값 (steering, velocity)
-
-    #     if self.cx and self.cy and self.cyaw:
-    #         for i in range(N):
-    #             ind = min(self.target_ind + i, len(self.cx) - 1)
-    #             xref[:, i] = [self.cx[ind], self.cy[ind], self.cyaw[ind], self.target_vel]
-    #             uref[:, i] = [0.0, self.target_vel]  # 초기 제어 입력 참조값
-
-    #     # 디버깅: xref와 uref 출력
-    #     print("xref:", xref)
-    #     print("uref:", uref)
-
-    #     self.visualize_ref_trajectory(xref)  
-
-    #     return xref, uref    
 
     def calc_nearest_index(self):
         """
@@ -280,6 +236,55 @@ class Control(Node):
         # self.target_ind 업데이트
         self.target_ind = ind
     
+    def calc_curvature_from_trajectory(self, x_traj, y_traj):
+        """
+        궤적의 x, y 좌표로부터 곡률을 계산합니다.
+        곡률 k = |dx*ddy - dy*ddx| / (dx^2 + dy^2)^(3/2)
+        """
+        if len(x_traj) < 3 or len(y_traj) < 3:
+            return np.array([0.0])
+        
+        curvatures = []
+        
+        for i in range(1, len(x_traj) - 1):
+            # 1차 미분 (중앙차분법)
+            dx = (x_traj[i+1] - x_traj[i-1]) / 2.0
+            dy = (y_traj[i+1] - y_traj[i-1]) / 2.0
+            
+            # 2차 미분 (중앙차분법)
+            ddx = x_traj[i+1] - 2*x_traj[i] + x_traj[i-1]
+            ddy = y_traj[i+1] - 2*y_traj[i] + y_traj[i-1]
+
+            # 곡률 계산
+            numerator = abs(dx * ddy - dy * ddx)
+            denominator = (dx**2 + dy**2)**(3/2)
+            
+            if denominator > 1e-6:  # 분모가 0에 가까우면 곡률은 0으로 설정
+                curvature = numerator / denominator
+            else:
+                curvature = 0.0
+            
+            curvatures.append(curvature)
+        
+        return np.array(curvatures)
+    
+    def calc_velocity_scaling_factor(self, avg_curvature):
+        """
+        평균 곡률을 기반으로 속도 스케일링 팩터를 계산
+        곡률이 클수록 속도를 감소
+        """
+        # 곡률 기반 스케일링 팩터 계산
+        
+        max_curvature = 0.5  # 최대 고려할 곡률 값
+        
+        # 곡률을 0~1 범위로 정규화
+        normalized_curvature = min(avg_curvature / max_curvature, 1.0)
+        
+        alpha = 1.0     # 곡률 민감도 조정 파라미터
+        scaling_factor = np.exp(-alpha * normalized_curvature)
+
+        return scaling_factor
+    
     def mpc_control(self):
         """
         MPC 제어 수행
@@ -295,15 +300,17 @@ class Control(Node):
         self.calc_nearest_index()
         xref, uref = self.calc_ref_trajectory()
 
-
         x0 = np.array([self.x, self.y, self.yaw, self.vel])
 
         u_prev = np.zeros((NU, N))  # 이전 제어 입력 초기화
 
         # 장애물 위치를 UTM 좌표계에서 Local Map 좌표계로 변환
-        obs_x = self.obs_x - self.map_origin_x 
-        obs_y = self.obs_y - self.map_origin_y
-        obs = np.array([obs_x, obs_y])
+        obs1_x = self.obs1_x - self.map_origin_x 
+        obs1_y = self.obs1_y - self.map_origin_y
+        obs2_x = self.obs2_x - self.map_origin_x
+        obs2_y = self.obs2_y - self.map_origin_y
+
+        obs = np.array([obs1_x, obs1_y, obs2_x, obs2_y])
 
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
@@ -316,21 +323,45 @@ class Control(Node):
         # Solver 실행
         status = self.solver.solve()
         if status != 0:
+            self.fail_count += 1
             self.get_logger().error(f"MPC Solver failed with status {status}")
+            # Solver 실패 시 이전 제어 입력 사용
+            self.get_logger().warn(f"Using previous control input: steering={self.prev_steering_angle:.3f}, velocity={self.prev_velocity:.3f}")
+            # 이전 제어 입력으로 차량 명령 퍼블리시
+            self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity)
             return
 
         # 최적화된 제어 입력 가져오기
         u_opt = self.solver.get(0, "u")
-        for i in range(N):
-            u_prev = np.array([self.solver.get(i, "u") for i in range(N)])  # 예측된 제어 입력
-        self.steering_angle = u_opt[0]
-        self.velocity = u_opt[1]
-
+        u_prev = np.array([self.solver.get(i, "u") for i in range(N)])  # 예측된 제어 입력
+        
         # Solver에서 예측된 상태값 가져오기
         x_opt = np.array([self.solver.get(i, "x") for i in range(N)])  # 예측된 상태값
+        
+        # 예측된 궤적의 곡률 계산
+        predicted_x = x_opt[:, 0]  # x 좌표
+        predicted_y = x_opt[:, 1]  # y 좌표
+        curvatures = self.calc_curvature_from_trajectory(predicted_x, predicted_y)
+        
+        # 평균 곡률 계산 및 업데이트
+        if len(curvatures) > 0:
+            self.avg_predicted_curvature = np.mean(curvatures)
+        else:
+            self.avg_predicted_curvature = 0.0
+        
+        # 곡률 기반 속도 스케일링 팩터 계산
+        velocity_scaling_factor = self.calc_velocity_scaling_factor(self.avg_predicted_curvature)
+        
+        # 제어 입력에 스케일링 적용
+        self.steering_angle = u_opt[0]
+        self.velocity = u_opt[1] * velocity_scaling_factor  # 곡률 기반 속도 조정
+        
+        # 이전 제어 입력 저장 (solver 실패 시 fallback용)
+        self.prev_steering_angle = self.steering_angle
+        self.prev_velocity = self.velocity
+        
         self.visualize_predicted_trajectory(x_opt)
-        print("x_opt (relative to path):", x_opt)
-
+        print("x_opt :", x_opt)
         print(f"u_opt: {u_opt}")
 
         # 차량 명령 퍼블리시
@@ -370,7 +401,10 @@ class Control(Node):
 
         # 표시할 텍스트 설정
         text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
-            \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg \n Mode: {self.mode_description}"
+            \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg \n Mode: {self.mode_description}\
+            \n Fail Count: {self.fail_count}\
+            \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s\
+            \n Avg Cur: {self.avg_predicted_curvature:.4f}"
 
         self.overlay_pub.publish(text_msg)
 
@@ -455,7 +489,7 @@ class Control(Node):
 
         for i in range(x_opt.shape[0]):  # x_opt의 각 점에 대해 반복
             marker = Marker()
-            marker.header.frame_id = "world"
+            marker.header.frame_id = "map"
             marker.header.stamp = self.get_clock().now().to_msg()
             marker.ns = "predicted_points"
             marker.id = i
@@ -481,8 +515,8 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = 1.0  # 빨간색
-            marker.color.g = 0.0
+            marker.color.r = 0.0  
+            marker.color.g = 1.0
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
 

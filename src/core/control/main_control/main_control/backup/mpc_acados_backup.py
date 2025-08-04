@@ -23,8 +23,8 @@ from rclpy.qos import QoSProfile, DurabilityPolicy
 
 NX = 4
 NU = 2
-T = 2.0
-N = 20
+T = 3.0
+N = 30
         
 class Control(Node):
     def __init__(self):
@@ -80,7 +80,12 @@ class Control(Node):
         self.steering_angle = 0.0
         self.velocity = 0.0
         
-        # New variable for map origin
+        # 이전 제어 입력 저장용 변수 (solver 실패 시 fallback용)
+        self.prev_steering_angle = 0.0
+        self.prev_velocity = 0.0
+        self.fail_count = 0  # 실패 횟수 카운트
+        
+        # map 원점
         self.map_origin_x = None
         self.map_origin_y = None
 
@@ -217,27 +222,6 @@ class Control(Node):
         self.visualize_ref_trajectory(xref)  
 
         return xref, uref
-    
-    # def calc_ref_trajectory(self):
-    #     """
-    #     목표 궤적과 상태 참조값 계산
-    #     """
-    #     xref = np.zeros((NX, N))  # 상태 참조값 (x, y, yaw, v)
-    #     uref = np.zeros((NU, N))  # 제어 입력 참조값 (steering, velocity)
-
-    #     if self.cx and self.cy and self.cyaw:
-    #         for i in range(N):
-    #             ind = min(self.target_ind + i, len(self.cx) - 1)
-    #             xref[:, i] = [self.cx[ind], self.cy[ind], self.cyaw[ind], self.target_vel]
-    #             uref[:, i] = [0.0, self.target_vel]  # 초기 제어 입력 참조값
-
-    #     # 디버깅: xref와 uref 출력
-    #     print("xref:", xref)
-    #     print("uref:", uref)
-
-    #     self.visualize_ref_trajectory(xref)  
-
-    #     return xref, uref    
 
     def calc_nearest_index(self):
         """
@@ -279,8 +263,7 @@ class Control(Node):
 
         # self.target_ind 업데이트
         self.target_ind = ind
-
-
+    
     def mpc_control(self):
         """
         MPC 제어 수행
@@ -293,85 +276,59 @@ class Control(Node):
             print("경로 데이터가 없습니다.")
             return
 
-        # 상태 및 제어 입력 참조값 계산
         self.calc_nearest_index()
-        xref_global, uref = self.calc_ref_trajectory()
+        xref, uref = self.calc_ref_trajectory()
 
-        if self.target_ind is None:
-            self.get_logger().warn("Cannot find target index, skipping control loop.")
-            return
 
-        # "움직이는 지역 좌표계"의 원점을 경로상의 가장 가까운 점으로 설정
-        ref_x = self.cx[self.target_ind]
-        ref_y = self.cy[self.target_ind]
-        ref_yaw = self.cyaw[self.target_ind]
-        cos_ref_yaw = np.cos(ref_yaw)
-        sin_ref_yaw = np.sin(ref_yaw)
+        x0 = np.array([self.x, self.y, self.yaw, self.vel])
 
-        # 차량의 현재 상태(x,y,yaw)를 "움직이는 지역 좌표계"로 변환
-        dx_car = self.x - ref_x
-        dy_car = self.y - ref_y
-        local_x = dx_car * cos_ref_yaw + dy_car * sin_ref_yaw
-        local_y = -dx_car * sin_ref_yaw + dy_car * cos_ref_yaw
-        local_yaw = normalise_angle(self.yaw - ref_yaw)
-        x0 = np.array([local_x, local_y, local_yaw, self.vel])
-        
-        # MPC 예측 경로(xref) 전체를 동일한 "움직이는 지역 좌표계"로 변환
-        xref_local = np.zeros_like(xref_global)
-        for i in range(N):
-            dx_ref = xref_global[0, i] - ref_x
-            dy_ref = xref_global[1, i] - ref_y
-            xref_local[0, i] = dx_ref * cos_ref_yaw + dy_ref * sin_ref_yaw
-            xref_local[1, i] = -dx_ref * sin_ref_yaw + dy_ref * cos_ref_yaw
-            xref_local[2, i] = normalise_angle(xref_global[2, i] - ref_yaw)
-            xref_local[3, i] = xref_global[3, i]
+        u_prev = np.zeros((NU, N))  # 이전 제어 입력 초기화
 
-        u_prev = np.zeros((NU, N))
-        
-        # 장애물 위치도 동일한 "움직이는 지역 좌표계"로 변환
-        if self.obs_x is not None and self.obs_y is not None and self.map_origin_x is not None:
-             dx_obs = self.obs_x - self.map_origin_x - ref_x
-             dy_obs = self.obs_y - self.map_origin_y - ref_y
-             local_obs_x = dx_obs * cos_ref_yaw + dy_obs * sin_ref_yaw
-             local_obs_y = -dy_obs * sin_ref_yaw + dy_obs * cos_ref_yaw
-             obs = np.array([local_obs_x, local_obs_y])
-        else:
-            obs = np.array([0.0, 0.0])
+        # 장애물 위치를 UTM 좌표계에서 Local Map 좌표계로 변환
+        obs_x = self.obs_x - self.map_origin_x 
+        obs_y = self.obs_y - self.map_origin_y
+        obs = np.array([obs_x, obs_y])
 
-        # 초기 상태 설정 (지역 좌표계 기준)
-        print("x0 (relative to path):", x0)
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
 
-        # 참조값 설정 (지역 좌표계 기준)
         for i in range(N):
-            self.solver.set(i, "p", np.hstack([xref_local[:, i], u_prev[:,i], obs]))
-        self.solver.set(N, "p", np.hstack([xref_local[:, -1], u_prev[:, -1], obs]))
+            self.solver.set(i, "p", np.hstack([xref[:, i], u_prev[:, i], obs]))
+        self.solver.set(N, "p", np.hstack([xref[:, -1], u_prev[:, -1], obs]))
 
         # Solver 실행
         status = self.solver.solve()
         if status != 0:
+            self.fail_count += 1
             self.get_logger().error(f"MPC Solver failed with status {status}")
+            # Solver 실패 시 이전 제어 입력 사용
+            self.get_logger().warn(f"Using previous control input: steering={self.prev_steering_angle:.3f}, velocity={self.prev_velocity:.3f}")
+            # 이전 제어 입력으로 차량 명령 퍼블리시
+            self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity)
             return
 
         # 최적화된 제어 입력 가져오기
         u_opt = self.solver.get(0, "u")
         for i in range(N):
             u_prev = np.array([self.solver.get(i, "u") for i in range(N)])  # 예측된 제어 입력
+        
+        # 새로운 제어 입력 저장
+        self.prev_steering_angle = self.steering_angle
+        self.prev_velocity = self.velocity
+        
         self.steering_angle = u_opt[0]
         self.velocity = u_opt[1]
 
         # Solver에서 예측된 상태값 가져오기
         x_opt = np.array([self.solver.get(i, "x") for i in range(N)])  # 예측된 상태값
         self.visualize_predicted_trajectory(x_opt)
-        print("x_opt (relative to path):", x_opt)
-
+        print("x_opt :", x_opt)
         print(f"u_opt: {u_opt}")
 
         # 차량 명령 퍼블리시
         self.set_vehicle_command(self.steering_angle, self.velocity)
-        
+
     def set_vehicle_command(self, steering_angle, velocity):
         """
         차량 명령 퍼블리시
@@ -406,7 +363,9 @@ class Control(Node):
 
         # 표시할 텍스트 설정
         text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
-            \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg \n Mode: {self.mode_description}"
+            \n CTE: {self.crosstrack_error:.2f} m \n HE: {self.heading_error * 180.0 / np.pi:.2f} deg \n Mode: {self.mode_description}\
+            \n Fail Count: {self.fail_count}\
+            \n Prev input: Steer={self.prev_steering_angle * 180.0 / np.pi:.2f} deg, Vel={self.prev_velocity:.2f} m/s"
 
         self.overlay_pub.publish(text_msg)
 
@@ -491,7 +450,7 @@ class Control(Node):
 
         for i in range(x_opt.shape[0]):  # x_opt의 각 점에 대해 반복
             marker = Marker()
-            marker.header.frame_id = "world"
+            marker.header.frame_id = "map"
             marker.header.stamp = self.get_clock().now().to_msg()
             marker.ns = "predicted_points"
             marker.id = i
@@ -517,8 +476,8 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = 1.0  # 빨간색
-            marker.color.g = 0.0
+            marker.color.r = 0.0  
+            marker.color.g = 1.0
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
 
