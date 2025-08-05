@@ -20,10 +20,6 @@ class CombineCamera(Node):
         # (ROS 노드 초기화는 main()에서 rclpy.init()으로 수행합니다.)
         self.left_sub = message_filters.Subscriber(self, Image, "/image_left")
         self.right_sub = message_filters.Subscriber(self, Image, "/image_right")
-        # self.left_sub = message_filters.Subscriber(self, Image, "/left_image")
-        # self.right_sub = message_filters.Subscriber(self, Image, "/right_image")
-        # self.left_sub = message_filters.Subscriber(self, Image, "/camera_left/camera1/usb_cam/image_raw")
-        # self.right_sub = message_filters.Subscriber(self, Image, "/camera_right/camera2/usb_cam/image_raw")
         
         self.sync = message_filters.ApproximateTimeSynchronizer([self.left_sub, self.right_sub],
                                                                  queue_size=5,

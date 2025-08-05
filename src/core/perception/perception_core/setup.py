@@ -44,8 +44,8 @@ setup(
 
             # 장애물
             #'camera_obstacle = perception.yolov11.camera_obstacle:main',
-            "left_camera = perception.yolob11.obstacle_camera.left_camera:main",
-            "right_camera = perception.yolob11.obstacle_camera.right_camera:main",
+            "left_camera = perception.yolov11.obstacle_camera.left_camera:main",
+            "right_camera = perception.yolov11.obstacle_camera.right_camera:main",
             'combined_camera = perception.yolov11.obstacle_camera.combined_camera:main',
             'obstacle = perception.yolov11.obstacle:main',
             "sensor_fusion_object = perception.sensor_fusion.src.object.sensor_fusion:main",

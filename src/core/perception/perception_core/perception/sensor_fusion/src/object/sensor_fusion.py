@@ -6,7 +6,7 @@ import time
 #from motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
 #from motrackers.utils import draw_tracks
 
-from sensor_fusion_handler import *
+from perception.sensor_fusion.src.object.sensor_fusion_handler import *
 
 import rclpy
 from rclpy.node import Node
