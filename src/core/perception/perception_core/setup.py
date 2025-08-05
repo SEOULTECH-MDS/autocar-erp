@@ -19,8 +19,8 @@ setup(
         # YOLO 가중치 파일 설치 부분 추가
         # perception/yolov11/weights/*.pt 파일을 모두 설치
         # ==============================
-        (os.path.join('share', package_name, 'yolov11', 'weights'),
-         glob('perception/yolov11/weights/*.pt')),
+        (os.path.join('share', package_name, 'yolov11', 'weights'), glob('perception/yolov11/weights/*.pt')),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
