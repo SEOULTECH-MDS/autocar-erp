@@ -44,8 +44,8 @@ class YOLO(Node):
         super().__init__('obstacle_rubber')
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
-        #self.subscription = self.create_subscription(Image, '/image_combined', self.image_callback, 10)
-        self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
+        self.subscription = self.create_subscription(Image, '/image_combined', self.image_callback, 10)
+        # self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성

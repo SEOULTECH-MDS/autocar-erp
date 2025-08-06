@@ -79,69 +79,7 @@ def generate_launch_description():
             package = mappkg,
             name = 'bof',
             executable = 'bof',
-        ),
-
-        Node( # 정지선 카메라 연결
-        package='perception',
-        executable='stopline_camera',
-        name='stopline_camera'
-        ),
-
-        Node( # 정지선 인식
-        package='perception',
-        executable='stopline_detection',
-        name='stopline_detection'
-        ),
-
-        Node( # 차선 카메라 연결
-        package='perception',
-        executable='camera_pub',
-        name='camera_pub'
-        ),
-
-        Node( # 차선 인식
-        package='perception',
-        executable='lanenet',
-        name='lanenet'
-        ),
-
-        Node( # 신호등 카메라 연결
-        package='perception',
-        executable='camera_traffic',
-        name='camera_traffic'
-        ),
-
-        Node( # 신호등 인식
-            package='perception',
-            executable='trafficlight',
-            name='trafficlight'
-        ),
-
-        Node( # 라바콘 카메라 2대 combine
-        package='perception',
-        executable='combined_camera',
-        name='combined_camera'
-        ),
-        #Node(
-        #    package='perception',
-        #    executable='camera_obstacle',
-        #    name='camera_obstacle'
-        #),
-        Node( # 장애물 인식
-            package='perception',
-            executable='obstacle',
-            name='obstacle'
-        ),
-        Node( # 표지판 카메라
-            package='perception',
-            executable='camera_sign',
-            name='camera_sign'
-        ),
-        Node( # 표지판 인식
-            package='perception',
-            executable='sign',
-            name='sign'
-        ),
+        )
     ])
 
 def main():
