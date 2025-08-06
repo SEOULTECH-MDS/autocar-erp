@@ -21,11 +21,11 @@ from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
-NX = 4
-NU = 2
-T = 3.0
-N = 30
-        
+NX = 4  # 상태 변수 크기 (x, y, yaw, v)
+NU = 2  # 제어 입력 크기 (delta, v_cmd)
+T = 3.0  # 예측 시간 [s]
+N = 30  # 예측 step 수
+
 class Control(Node):
     def __init__(self):
         super().__init__('control')
@@ -40,6 +40,7 @@ class Control(Node):
         qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.overlay_pub = self.create_publisher(OverlayText, '/autocar/steering_angle', 10)
         self.ref_path_pub = self.create_publisher(Path, '/autocar/path', 10)
+        self.global_path_pub = self.create_publisher(MarkerArray, '/autocar/global_path', qos_profile=qos_transient_local)
         self.mpc_ref_pub = self.create_publisher(MarkerArray, '/autocar/mpc_ref', qos_profile=qos_transient_local)
         self.mpc_predict_pub = self.create_publisher(MarkerArray, '/autocar/mpc_predict', qos_profile=qos_transient_local)
 
@@ -69,14 +70,15 @@ class Control(Node):
         self.heading_error = 0.0
         self.crosstrack_error = 0.0
         self.lock = threading.Lock()
-        self.dt = T / N  # 제어 주기 계산
+        # self.dt = T / N  # 제어 주기 계산
+        self.control_frequency = 20.0 # HZ
 
         self.obs1_x = None
         self.obs1_y = None
         self.obs2_x = None
         self.obs2_y = None
 
-        self.target_vel = 1.5  # 목표 속도 (m/s)
+        self.target_vel = 4.0  # 목표 속도 (m/s)
         self.steering_angle = 0.0
         self.velocity = 0.0
         
@@ -98,7 +100,8 @@ class Control(Node):
         self.solver = acados_solver() 
 
         # 주기적인 제어 실행을 위한 타이머 설정
-        self.timer = self.create_timer(self.dt, self.mpc_control)
+        # self.timer = self.create_timer(self.dt, self.mpc_control)
+        self.timer_control = self.create_timer(1.0 / self.control_frequency, self.mpc_control)
 
     def map_origin_cb(self, msg):
         self.map_origin_x = msg.point.x
@@ -159,6 +162,9 @@ class Control(Node):
         self.cyaw = yaws
         self.ck = ks
         
+        # Global path 시각화
+        self.visualize_global_path(xs, ys, yaws)
+        
         path_msg = self.make_path_msg(path)
         self.ref_path_pub.publish(path_msg)
 
@@ -184,7 +190,11 @@ class Control(Node):
             current_index = self.target_ind
             
             for i in range(N):
-                xref[:, i] = [self.cx[current_index+i], self.cy[current_index+i], self.cyaw[current_index+i], self.target_vel]
+                target_index = current_index + i
+                if target_index >= len(self.cx):
+                    target_index = len(self.cx) - 1
+
+                xref[:, i] = [self.cx[target_index], self.cy[target_index], self.cyaw[target_index], self.target_vel]
                 uref[:, i] = [0.0, self.target_vel]  
 
         # 디버깅: xref와 uref 출력
@@ -341,6 +351,9 @@ class Control(Node):
         # 예측된 궤적의 곡률 계산
         predicted_x = x_opt[:, 0]  # x 좌표
         predicted_y = x_opt[:, 1]  # y 좌표
+
+        # predicted_v = x_opt[1, 3]
+
         curvatures = self.calc_curvature_from_trajectory(predicted_x, predicted_y)
         
         # 평균 곡률 계산 및 업데이트
@@ -355,7 +368,8 @@ class Control(Node):
         # 제어 입력에 스케일링 적용
         self.steering_angle = u_opt[0]
         self.velocity = u_opt[1] * velocity_scaling_factor  # 곡률 기반 속도 조정
-        
+        # self.velocity = predicted_v * velocity_scaling_factor
+
         # 이전 제어 입력 저장 (solver 실패 시 fallback용)
         self.prev_steering_angle = self.steering_angle
         self.prev_velocity = self.velocity
@@ -434,6 +448,51 @@ class Control(Node):
 
             ways.poses.append(pose)
         return ways
+    
+    def visualize_global_path(self, path_x, path_y, path_yaw):
+        """
+        Global path를 MarkerArray로 시각화
+        """
+        marker_array = MarkerArray()
+
+        for i in range(len(path_x)):
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "global_path_points"
+            marker.id = i
+            marker.type = Marker.ARROW  # 화살표로 표시
+            marker.action = Marker.ADD
+
+            # 위치 설정
+            marker.pose.position.x = path_x[i]
+            marker.pose.position.y = path_y[i]
+            marker.pose.position.z = 0.0
+
+            # 방향 설정 (yaw를 쿼터니언으로 변환)
+            yaw = path_yaw[i]
+            quaternion = yaw_to_quaternion(yaw)
+            marker.pose.orientation.x = quaternion.x
+            marker.pose.orientation.y = quaternion.y
+            marker.pose.orientation.z = quaternion.z
+            marker.pose.orientation.w = quaternion.w
+
+            # 크기 설정
+            marker.scale.x = 0.2  # 화살표 길이
+            marker.scale.y = 0.03  # 화살표 두께
+            marker.scale.z = 0.03  # 화살표 두께
+
+            # 색상 설정 
+            marker.color.r = 1.0
+            marker.color.g = 1.0  
+            marker.color.b = 0.0  
+            marker.color.a = 0.8  
+
+            # MarkerArray에 추가
+            marker_array.markers.append(marker)
+
+        # 퍼블리시
+        self.global_path_pub.publish(marker_array)
     
     
     def visualize_ref_trajectory(self, xref):

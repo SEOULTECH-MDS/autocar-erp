@@ -20,6 +20,7 @@ setup(
     entry_points={
         'console_scripts': [
             'mpc_acados_control = main_control.mpc_acados:main',
+            'mpc_acados_control_sp = main_control.mpc_acados_sp:main',
         ],
     },
 )

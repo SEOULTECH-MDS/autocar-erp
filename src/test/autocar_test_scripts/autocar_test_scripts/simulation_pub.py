@@ -93,8 +93,9 @@ class SimulationPub(Node):
         )
 
         # 타이머 설정
-        self.dt = 0.1  # 10Hz
-        self.create_timer(self.dt, self.publish_data)
+        self.dt = 0.05  # 20Hz
+        self.sensor_rate = 0.1
+        self.create_timer(self.sensor_rate, self.publish_data)
 
     # 사용자 입력(속도, 조향각) 콜백 함수
     def cmd_callback(self, msg):
@@ -104,8 +105,8 @@ class SimulationPub(Node):
     
     # 차량 상태 업데이트 (자전거 모델)
     def update_vehicle_state(self):
-        if abs(self.velocity) < 0.001:  # 정지 상태면 업데이트 안함
-            return
+        # if abs(self.velocity) < 0.001:  # 정지 상태면 업데이트 안함
+        #     return
             
         # 자전거 모델 (비선형)에 따른 위치 및 방향 업데이트
         self.yaw += self.velocity / self.wheel_base * math.tan(self.steering_angle) * self.dt

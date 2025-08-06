@@ -1,0 +1,60 @@
+#! /usr/bin/env python3
+
+# Bicycle Model Spline version
+
+from acados_template import AcadosModel
+from casadi import SX, vertcat, sin, cos, tan
+
+def export_spline_bicycle_model() -> AcadosModel:
+
+    model_name = "spline_bicycle_model"
+
+
+    # constants
+    WB = 1.566
+
+    # states
+    x = SX.sym("x")
+    y = SX.sym("y")
+    yaw = SX.sym("yaw")
+    v = SX.sym("v")
+    s = SX.sym("s")  # spline parameter
+
+    states = vertcat(x, y, yaw, v, s)
+
+    # controls
+    delta = SX.sym("delta") # steering angle
+    a = SX.sym("a") # acceleration
+
+    controls = vertcat(delta, a)
+
+    # dynamics
+    x_dot = SX.sym("x_dot")
+    y_dot = SX.sym("y_dot")
+    yaw_dot = SX.sym("yaw_dot")
+    v_dot = SX.sym("v_dot")
+    s_dot = SX.sym("s_dot")
+
+    xdot = vertcat(x_dot, y_dot, yaw_dot, v_dot, s_dot)
+
+    # bicycle model equations with spline parameter
+    f_expl = vertcat(
+        v * cos(yaw),         # x_dot
+        v * sin(yaw),         # y_dot
+        v / WB * tan(delta),  # yaw_dot
+        a,                    # v_dot
+        v  # s_dot (spline parameter changes with speed)
+    )
+
+    f_impl = xdot - f_expl
+
+    model = AcadosModel()
+
+    model.f_impl_expr = f_impl
+    model.f_expl_expr = f_expl
+    model.x = states
+    model.xdot = xdot
+    model.u = controls
+    model.name = model_name
+
+    return model

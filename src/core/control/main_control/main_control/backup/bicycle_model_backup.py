@@ -4,9 +4,8 @@
 
 from acados_template import AcadosModel
 from casadi import SX, vertcat, sin, cos, tan
-import numpy as np
 
-def export_bicycle_modle() -> AcadosModel:
+def export_bicycle_model() -> AcadosModel:
 
     model_name = "bicycle_model"
 

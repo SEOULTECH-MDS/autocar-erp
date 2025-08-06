@@ -96,8 +96,8 @@ class erp42(Node):
   def GetSPEED(self, speed):
     global count
     SPEED0 = 0x00
-    SPEED = int(speed*36) # float to integer
-    SPEED1 = abs(SPEED) # m/s to km/h*10
+    SPEED = int(speed*36) # float to integer,  m/s to km/h*10
+    SPEED1 = abs(SPEED) 
     return SPEED0, SPEED1
 
   def GetSTEER(self, steer): # steer은 rad/s 값으로 넣어줘야한다.

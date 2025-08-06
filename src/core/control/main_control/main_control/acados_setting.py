@@ -1,16 +1,16 @@
 #! /usr/bin/env python3
 
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
-from .bicycle_model import export_bicycle_modle
+from .bicycle_model import export_bicycle_model
 import numpy as np
-from casadi import SX, exp, transpose, vertcat
-import os
+from casadi import SX, vertcat
+
 
 def acados_solver():
     ocp = AcadosOcp()
 
     # 모델 가져오기
-    model = export_bicycle_modle()
+    model = export_bicycle_model()
 
     model_ac = AcadosModel()
     model_ac.f_impl_expr = model.f_impl_expr
