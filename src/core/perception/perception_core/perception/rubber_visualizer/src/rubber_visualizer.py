@@ -25,7 +25,7 @@ class RubberVisualizer(Node):
         self.sync = message_filters.ApproximateTimeSynchronizer(sub_list, queue_size=10, slop=0.5, allow_headerless=True)
         self.sync.registerCallback(self.callback_perception)
 
-        self.get_logger().info('RubberVisualizer node started.')
+        # self.get_logger().info('RubberVisualizer node started.')
 
     def callback_perception(self, img_msg, clusters_2d_msg, bboxes_msg, bboxes_tracked_msg):
 
@@ -47,7 +47,7 @@ class RubberVisualizer(Node):
         img_out.header.stamp = self.get_clock().now().to_msg()
         self.img_result_pub.publish(img_out)
 
-        cv2.imshow("YOLO Rubber Detection", img_out)
+        cv2.imshow("YOLO Rubber Detection", img)
         cv2.waitKey(1)
 
 def main() -> None:

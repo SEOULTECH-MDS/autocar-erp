@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 
-from perception.tracker.src.motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
+from perception.tracker.src.motrackers.iou_tracker import IOUTracker
 
 import rclpy
 from rclpy.node import Node
@@ -38,9 +38,9 @@ class BboxTracker(Node):
         confidences = []
         labels = []
         for bbox in bbox_msg.poses:
-            bboxes.append([int(bbox.orientation.x), int(bbox.orientation.y),
-                           int(bbox.orientation.z - bbox.orientation.x),
-                           int(bbox.orientation.w - bbox.orientation.y)])
+            bboxes.append([float(bbox.orientation.x), float(bbox.orientation.y),
+                           float(bbox.orientation.z - bbox.orientation.x),
+                           float(bbox.orientation.w - bbox.orientation.y)])
             # bboxes.append([bbox.orientation.x, bbox.orientation.y, bbox.orientation.z-bbox.orientation.x, bbox.orientation.w-bbox.orientation.y])
             confidences.append(bbox.position.y)
             labels.append(bbox.position.x)
@@ -52,12 +52,12 @@ class BboxTracker(Node):
         bounding_boxes.header.frame_id = 'yolo'
         for _, _, x_min, y_min, width, height, _, lbl, _, _ in tracks:
             bbox = Pose()
-            bbox.position.x = lbl  # 0 blue or 1 yellow
+            bbox.position.x = float(lbl)  # 0 blue or 1 yellow
 
-            bbox.orientation.x = x_min          # xmin
-            bbox.orientation.y = y_min          # ymin
-            bbox.orientation.z = x_min + width  # xmax
-            bbox.orientation.w = y_min + height # ymax
+            bbox.orientation.x = float(x_min)          # xmin
+            bbox.orientation.y = float(y_min)          # ymin
+            bbox.orientation.z = float(x_min + width)  # xmax
+            bbox.orientation.w = float(y_min + height) # ymax
 
             bounding_boxes.poses.append(bbox)
 

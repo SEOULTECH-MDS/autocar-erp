@@ -114,7 +114,7 @@ class YOLO(Node):
             # 결과 이미지를 ROS 이미지 메시지로 변환 후 퍼블리시
             image_message = self.bridge.cv2_to_imgmsg(cv_image, encoding="bgr8")
             image_message.header.stamp = self.get_clock().now().to_msg()
-            self.img_res_pub.publish(image_message)
+            # self.img_res_pub.publish(image_message)
             
             # 검출 결과를 PoseArray 메시지로 구성
             pose_array = PoseArray()

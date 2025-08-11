@@ -41,8 +41,8 @@ def generate_launch_description():
 
         Node(
             package='perception',
-            executable='object_tracker2D',
-            name='object_tracker2D',
+            executable='bbox_tracker',
+            name='bbox_tracker',
             output='screen'
         ),
 
