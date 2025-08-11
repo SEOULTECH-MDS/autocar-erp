@@ -444,7 +444,7 @@ class ParkingAreaNode(Node):
     def make_D_shaped_walls(self, area: ParkingArea) -> List[VirtualWall]:
         """ㄷ-자 가상 벽 생성 (열린 구역용)"""
         bp = area.boundary_points  # [좌하, 우하, 우상, 좌상]
-        seg = [(3, 2), (2, 1)]     # 위쪽·오른쪽만 (좌측 개방)
+        seg = [(3, 2), (2, 1), (1, 0)]
         walls = []
         
         for i, j in seg:

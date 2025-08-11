@@ -22,6 +22,8 @@ setup(
         'console_scripts': [
             'cones_node = cones_node:main',
             'parking_area_node = parking_area_node:main',
+            'initial_pose_node = initial_pose_node:main',
+            'odometry_node = odometry_node:main',
         ],
     },
 )

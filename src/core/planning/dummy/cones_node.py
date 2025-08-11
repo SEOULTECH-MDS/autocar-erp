@@ -18,7 +18,7 @@ class ConesNode(Node):
         super().__init__('cones_node')
         
         # ──── 패턴 선택 파라미터 ───────────────────────────────────────────────
-        self.declare_parameter('open_area_pattern', 2)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
+        self.declare_parameter('open_area_pattern', 0)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
         
         # 퍼블리셔 초기화
         self.marker_pub = self.create_publisher(
