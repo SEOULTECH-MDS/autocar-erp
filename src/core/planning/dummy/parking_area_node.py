@@ -450,8 +450,8 @@ class ParkingAreaNode(Node):
         for i, j in seg:
             start = bp[i]
             end = bp[j]
-            length = np.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
-            width = min(length * 0.1, 0.2)
+            # 가상 벽 폭을 얇게 고정 (충돌 모델 완화 목적)
+            width = 0.01
             walls.append(VirtualWall(start, end, width))
         
         return walls
@@ -466,9 +466,8 @@ class ParkingAreaNode(Node):
         for i in range(4):
             start = bp[i]
             end = bp[(i + 1) % 4]  # 다음 점 (마지막은 첫 번째로)
-            
-            length = np.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
-            width = min(length * 0.1, 0.2)
+            # 가상 벽 폭을 얇게 고정 (충돌 모델 완화 목적)
+            width = 0.01
             walls.append(VirtualWall(start, end, width))
         
         return walls
@@ -488,7 +487,7 @@ class ParkingAreaNode(Node):
         for i, wall in enumerate(self.virtual_walls):
             obstacle = Obstacle()
             obstacle.id = i + 1000  # 라바콘과 구분하기 위해 1000부터 시작
-            obstacle.type = "virtual_wall"
+            obstacle.type = "virtual_wall_segment"
             
             # 벽의 중점을 중심으로 설정
             center_x = (wall.start_point[0] + wall.end_point[0]) / 2
@@ -498,8 +497,11 @@ class ParkingAreaNode(Node):
             obstacle.center.y = center_y
             obstacle.center.z = 0.0
             
-            # 벽의 폭을 반지름으로 설정 (충돌 검사용)
-            obstacle.radius = wall.width / 2
+            # 원형 표현 사용 금지: 반지름 0으로 고정
+            obstacle.radius = 0.0
+
+            # 선형 장애물 정보 인코딩 (시작점, 끝점, 폭)
+            obstacle.description = f"seg:{wall.start_point[0]:.3f},{wall.start_point[1]:.3f},{wall.end_point[0]:.3f},{wall.end_point[1]:.3f},{wall.width:.3f}"
             
             virtual_walls_msg.obstacles.append(obstacle)
         

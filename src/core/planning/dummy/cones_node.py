@@ -18,7 +18,7 @@ class ConesNode(Node):
         super().__init__('cones_node')
         
         # ──── 패턴 선택 파라미터 ───────────────────────────────────────────────
-        self.declare_parameter('open_area_pattern', 0)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
+        self.declare_parameter('open_area_pattern', 2)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
         
         # 퍼블리셔 초기화
         self.marker_pub = self.create_publisher(
@@ -75,8 +75,8 @@ class ConesNode(Node):
             pattern_name = "Area 2 Open (위쪽 열림)"
         
         # 전체 라바콘 그룹의 기준점 (0,0) 위치 (절대 좌표)
-        self.group_reference_x = 0.0
-        self.group_reference_y = 0.0
+        self.group_reference_x = 3.0
+        self.group_reference_y = 7.5
         self.group_reference_z = 0.0  # 2D 충돌을 위해 0.0으로 설정
         
         # 라바콘의 기본 크기
