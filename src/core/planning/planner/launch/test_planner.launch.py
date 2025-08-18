@@ -40,6 +40,8 @@ def generate_launch_description():
                 {'yaw_offset_deg': 30.0},
                 {'s_overshoot': 0.6},
                 {'clear_lateral': 0.7},
+                {'stage2_guided': True},
+                {'stage2_k_yaw': 0.0},
             ],
         ),
     ])

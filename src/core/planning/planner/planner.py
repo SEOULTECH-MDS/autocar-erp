@@ -84,20 +84,21 @@ class PlannerNode(Node):
         self.declare_parameter('yaw_offset_deg', 30.0)      # 좌측 선회 각도
         self.declare_parameter('s_overshoot', 0.6)          # (구버전) 슬롯 중심을 얼마나 지나칠지 [m]
         self.declare_parameter('front_margin', 0.5)         # 위쪽(전방) 경계선에서 추가 전방 여유 [m]
-        self.declare_parameter('clear_lateral', 0.7)        # 도로쪽 여유 [m]
+        self.declare_parameter('clear_lateral', 0.1)        # 도로쪽 여유 [m]
         self.declare_parameter('default_slot_len', 5.0)     # 추정 실패 시 기본 L
         self.declare_parameter('default_slot_width', 2.5)   # 추정 실패 시 기본 W
-        self.declare_parameter('angle_eps_deg', 15.0)       # 평행/수직 분류 각 허용치
+        self.declare_parameter('angle_eps_deg', 5.0)       # 평행/수직 분류 각 허용치
         self.declare_parameter('prefer_near_open_slot', True)
         self.declare_parameter('near_radius', 8.0)
         # Road centerline based lateral placement
         self.declare_parameter('prefer_centerline_lateral', True)
-        self.declare_parameter('centerline_left_margin', 0.3)  # 도로 중심선 기준 왼쪽(+u_lat)으로 추가 여유
+        self.declare_parameter('centerline_left_margin', 0.1)  # 도로 중심선 기준 왼쪽(+u_lat)으로 추가 여유
         # Turning and path generation
-        self.declare_parameter('turn_radius', 1.0)            # 좌회전 원호 반경 [m]
-        self.declare_parameter('path_resolution', 0.1)        # 경로 샘플링 간격 [m]
+        self.declare_parameter('turn_radius', 0.5)            # 좌회전 원호 반경 [m]
+        self.declare_parameter('path_resolution', 0.01)        # 경로 샘플링 간격 [m]
         self.declare_parameter('vehicle_width', 1.16)         # [m]
-        self.declare_parameter('safety_margin', 0.2)          # [m]
+        self.declare_parameter('vehicle_length', 2.02)        # [m]
+        self.declare_parameter('safety_margin', 0.1)          # [m]
         self.declare_parameter('show_stage1_path', True)     # 시각화용: 기본 비활성
         # Stage-2 goal rule
         self.declare_parameter('stage2_use_map_y_offset', True)
@@ -129,6 +130,7 @@ class PlannerNode(Node):
         self._path_pub = self.create_publisher(Path, '/stage1_path', 10)
         self._stage2_path_pub = self.create_publisher(Path, '/stage2_path', 10)
         self._stage3_path_pub = self.create_publisher(Path, '/stage3_path', 10)
+        self._stage3_goal_pub = self.create_publisher(PoseStamped, '/stage3_goal', 10)
 
         # Subscribers
         self.create_subscription(PoseStamped, '/open_slot_pose', self._on_open_slot_pose, 10)
@@ -387,6 +389,13 @@ class PlannerNode(Node):
                 stage2_path = self._compute_stage2_path(self._last_stage1_goal, stage2_goal)
                 if stage2_path is not None:
                     self._stage2_path_pub.publish(stage2_path)
+                # Stage-3: define goal at slot center and plan from Stage-2 goal
+                stage3_goal = self._compute_stage3_goal(self._open_slot_pose)
+                if stage3_goal is not None:
+                    self._stage3_goal_pub.publish(stage3_goal)
+                    stage3_path = self._compute_stage3_path_from_stage2(stage2_goal, self._open_slot_pose)
+                    if stage3_path is not None and stage3_path.poses:
+                        self._stage3_path_pub.publish(stage3_path)
 
         # Stage-3 publish when inside slot and yaw mismatch (preview enabled)
         if bool(self.get_parameter('stage3_preview').value) and self._current_pose is not None and self._open_slot_pose is not None:
@@ -465,7 +474,9 @@ class PlannerNode(Node):
             path.poses.append(pose)
 
         # 3) Simple collision audit against virtual walls
-        eff_radius = 0.5 * vehicle_width + safety_margin
+        width = float(self.get_parameter('vehicle_width').value)
+        length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
+        eff_radius = 0.5 * math.hypot(width, length) + safety_margin
         collided = False
         for p in path.poses:
             d = self._min_distance_to_walls(p.pose.position.x, p.pose.position.y)
@@ -553,7 +564,9 @@ class PlannerNode(Node):
             y_new = y - ds * math.sin(yaw)
 
             # Collision guard
-            eff_radius = 0.5 * vehicle_width + safety_margin
+            width = float(self.get_parameter('vehicle_width').value)
+            length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
+            eff_radius = 0.5 * math.hypot(width, length) + safety_margin
             if self._min_distance_to_walls(x_new, y_new) < eff_radius:
                 self.get_logger().warn('Stage-2 guided step would collide with virtual wall. Stopping early.')
                 break
@@ -573,6 +586,19 @@ class PlannerNode(Node):
 
         path = Path(); path.header = start_pose.header
 
+        # Slot geometry and safety for in-slot and collision guard
+        center = None
+        L = None
+        W = None
+        if self._open_slot_pose is not None:
+            center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
+            L, W = self._estimate_slot_dimensions(yaw_slot, center)
+        margin = float(self.get_parameter('stage2_inside_margin').value) if self.has_parameter('stage2_inside_margin') else 0.2
+        width = float(self.get_parameter('vehicle_width').value)
+        length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
+        safety_margin = float(self.get_parameter('safety_margin').value)
+        eff_radius = 0.5 * math.hypot(width, length) + safety_margin
+
         if abs(dyaw) <= tol:
             x0 = start_pose.pose.position.x
             y0 = start_pose.pose.position.y
@@ -583,6 +609,13 @@ class PlannerNode(Node):
                 pose.pose.position.x = x0 + s * math.cos(yaw_s)
                 pose.pose.position.y = y0 + s * math.sin(yaw_s)
                 pose.pose.orientation = yaw_to_quaternion(yaw_s)
+                # Guards: stay inside slot and avoid virtual walls
+                if center is not None and L is not None and W is not None:
+                    if not self._inside_slot(pose.pose.position.x, pose.pose.position.y, center, yaw_slot, L, W, margin):
+                        break
+                if self._min_distance_to_walls(pose.pose.position.x, pose.pose.position.y) < eff_radius:
+                    self.get_logger().warn('Stage-3 forward preview would collide with virtual wall. Truncating path.')
+                    break
                 path.poses.append(pose)
             return path
 
@@ -611,6 +644,14 @@ class PlannerNode(Node):
             pose.pose.position.x = px
             pose.pose.position.y = py
             pose.pose.orientation = yaw_to_quaternion(th)
+            # Guards: stay inside slot and avoid virtual walls
+            if center is not None and L is not None and W is not None:
+                if not self._inside_slot(px, py, center, yaw_slot, L, W, margin):
+                    self.get_logger().warn('Stage-3 arc would exit slot bounds. Truncating path.')
+                    break
+            if self._min_distance_to_walls(px, py) < eff_radius:
+                self.get_logger().warn('Stage-3 arc would collide with virtual wall. Truncating path.')
+                break
             path.poses.append(pose)
 
         x_last = path.poses[-1].pose.position.x
@@ -623,6 +664,13 @@ class PlannerNode(Node):
             pose.pose.position.x = x_last + s * math.cos(yaw_last)
             pose.pose.position.y = y_last + s * math.sin(yaw_last)
             pose.pose.orientation = yaw_to_quaternion(yaw_last)
+            # Guards: stay inside slot and avoid virtual walls
+            if center is not None and L is not None and W is not None:
+                if not self._inside_slot(pose.pose.position.x, pose.pose.position.y, center, yaw_slot, L, W, margin):
+                    break
+            if self._min_distance_to_walls(pose.pose.position.x, pose.pose.position.y) < eff_radius:
+                self.get_logger().warn('Stage-3 forward extension would collide with virtual wall. Truncating path.')
+                break
             path.poses.append(pose)
 
         return path
@@ -646,8 +694,98 @@ class PlannerNode(Node):
             goal.pose.position.x = center[0] - back * u_long[0]
             goal.pose.position.y = center[1] - back * u_long[1]
         goal.pose.position.z = 0.0
+        # Stage-2 goal heading: match Stage-1 heading if available; otherwise fallback to slot yaw
+        if self._last_stage1_goal is not None:
+            goal.pose.orientation = self._last_stage1_goal.pose.orientation
+        else:
+            goal.pose.orientation = yaw_to_quaternion(yaw_slot)
+        return goal
+
+    def _compute_stage3_goal(self, open_slot_pose: Optional[PoseStamped]) -> Optional[PoseStamped]:
+        if open_slot_pose is None:
+            return None
+        yaw_slot = quaternion_to_yaw(open_slot_pose.pose.orientation)
+        goal = PoseStamped()
+        goal.header = open_slot_pose.header
+        goal.pose.position.x = open_slot_pose.pose.position.x
+        goal.pose.position.y = open_slot_pose.pose.position.y
+        goal.pose.position.z = 0.0
         goal.pose.orientation = yaw_to_quaternion(yaw_slot)
         return goal
+
+    def _compute_stage3_path_from_stage2(self, start_pose: PoseStamped, open_slot_pose: PoseStamped) -> Optional[Path]:
+        yaw_slot = quaternion_to_yaw(open_slot_pose.pose.orientation)
+        center = (open_slot_pose.pose.position.x, open_slot_pose.pose.position.y)
+        ds = float(self.get_parameter('path_resolution').value)
+        R = float(self.get_parameter('stage3_turn_radius').value) if self.has_parameter('stage3_turn_radius') else 2.0
+        width = float(self.get_parameter('vehicle_width').value)
+        length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
+        safety_margin = float(self.get_parameter('safety_margin').value)
+        eff_radius = 0.5 * math.hypot(width, length) + safety_margin
+        L, W = self._estimate_slot_dimensions(yaw_slot, center)
+        margin = float(self.get_parameter('stage2_inside_margin').value) if self.has_parameter('stage2_inside_margin') else 0.2
+
+        # 1) Align yaw from start to yaw_slot via arc
+        yaw_s = quaternion_to_yaw(start_pose.pose.orientation)
+        dyaw = wrap_to_pi(yaw_slot - yaw_s)
+        path = Path(); path.header = open_slot_pose.header
+        turn_left = dyaw > 0.0
+        n_left_s = (-math.sin(yaw_s), math.cos(yaw_s))
+        Sx = start_pose.pose.position.x
+        Sy = start_pose.pose.position.y
+        if turn_left:
+            Cx = Sx + R * n_left_s[0]
+            Cy = Sy + R * n_left_s[1]
+        else:
+            Cx = Sx - R * n_left_s[0]
+            Cy = Sy - R * n_left_s[1]
+        n_steps = max(1, int((abs(dyaw) * R) / max(ds, 1e-3)))
+        for j in range(n_steps + 1):
+            th = yaw_s + dyaw * (j / max(1, n_steps))
+            nL = (-math.sin(th), math.cos(th))
+            if turn_left:
+                px = Cx - R * nL[0]
+                py = Cy - R * nL[1]
+            else:
+                px = Cx + R * nL[0]
+                py = Cy + R * nL[1]
+            pose = PoseStamped(); pose.header = path.header
+            pose.pose.position.x = px
+            pose.pose.position.y = py
+            pose.pose.orientation = yaw_to_quaternion(th)
+            if not self._inside_slot(px, py, center, yaw_slot, L, W, margin):
+                break
+            if self._min_distance_to_walls(px, py) < eff_radius:
+                break
+            path.poses.append(pose)
+
+        # 2) Straight from last arc pose to slot center along yaw_slot
+        if not path.poses:
+            # no arc added; use start pose as last
+            last_x = Sx
+            last_y = Sy
+        else:
+            last_x = path.poses[-1].pose.position.x
+            last_y = path.poses[-1].pose.position.y
+        dx = center[0] - last_x
+        dy = center[1] - last_y
+        L_line = math.hypot(dx, dy)
+        n_line = max(1, int(L_line / max(ds, 1e-3)))
+        for i in range(1, n_line + 1):
+            t = i / max(1, n_line)
+            px = last_x + t * dx
+            py = last_y + t * dy
+            pose = PoseStamped(); pose.header = path.header
+            pose.pose.position.x = px
+            pose.pose.position.y = py
+            pose.pose.orientation = yaw_to_quaternion(yaw_slot)
+            if not self._inside_slot(px, py, center, yaw_slot, L, W, margin):
+                break
+            if self._min_distance_to_walls(px, py) < eff_radius:
+                break
+            path.poses.append(pose)
+
+        return path if path.poses else None
 
     def _compute_stage2_path(self, start_pose: Optional[PoseStamped], goal: PoseStamped) -> Optional[Path]:
         if start_pose is None:
@@ -750,7 +888,9 @@ class PlannerNode(Node):
             path.poses.append(pose)
 
         # 충돌 체크
-        eff_radius = 0.5 * vehicle_width + safety_margin
+        width = float(self.get_parameter('vehicle_width').value)
+        length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
+        eff_radius = 0.5 * math.hypot(width, length) + safety_margin
         for p in path.poses:
             if self._min_distance_to_walls(p.pose.position.x, p.pose.position.y) < eff_radius:
                 self.get_logger().warn('Stage-2 path may collide with virtual walls. Tune clearances/turn_radius.')
