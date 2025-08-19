@@ -43,9 +43,10 @@ class Control(Node):
         # Subscriber
         self.localization_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/autocar/goals', self.global_waypoints_cb, 10)
-        
-        # New subscriber for the map origin
-        qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
+
+        self.local_waypoints_sub = self.create_subscription(PoseArray, '/autocar/local_goals', self.local_waypoints_cb, 10)
+
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)
@@ -57,9 +58,13 @@ class Control(Node):
         self.v = None
         self.s = None
 
-        self.xs = []
-        self.ys = []
+        self.xs_global = []
+        self.ys_global = []
         self.cubic_spline = None  
+
+        self.xs_local = []
+        self.ys_local = []
+        self.cubic_spline_local = None
 
         self.lock = threading.Lock()
         self.control_frequency = 20.0 # HZ
@@ -83,7 +88,7 @@ class Control(Node):
         self.map_origin_x = None
         self.map_origin_y = None
 
-        self.mode = None
+        self.mode = 0
         self.mode_description = None
 
         # MPC Solver 초기화
@@ -121,10 +126,17 @@ class Control(Node):
             self.v = 0.1
         self.yawrate = msg.twist.twist.angular.z
 
-        if len(self.xs) > 0:
+        if len(self.xs_global) > 0 or len(self.xs_local) > 0:
             self.calc_current_s()
 
         self.lock.release()
+
+    def mode_cb(self, msg):
+        """
+        모드 상태 업데이트 콜백
+        """
+        self.mode = msg.current_mode
+        self.mode_description = msg.description    
 
     def calc_current_s(self):
         """
@@ -181,15 +193,37 @@ class Control(Node):
         global waypoints 콜백
         """
 
-        self.xs, self.ys = [], []  # waypoint 리스트
+        self.xs_global, self.ys_global = [], []  # waypoint 리스트
         for node in path_msg.poses:
-            self.xs.append(node.position.x)
-            self.ys.append(node.position.y)
+            self.xs_global.append(node.position.x)
+            self.ys_global.append(node.position.y)
 
-        self.cubic_spline = CubicSpline2D(self.xs, self.ys) # waypoint를 보간한 CubicSpline2D 객체 생성
+        # self.cubic_spline = CubicSpline2D(self.xs_global, self.ys_global) # waypoint를 보간한 CubicSpline2D 객체 생성
+        self.make_cubic_spline()
 
         return 
     
+    def local_waypoints_cb(self, path_msg):
+        """
+        local waypoints 콜백
+        """
+        self.xs_local, self.ys_local = [], []  # waypoint 리스트
+        for node in path_msg.poses:
+            self.xs_local.append(node.position.x)
+            self.ys_local.append(node.position.y)
+
+        # self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)  # waypoint를 보간한 CubicSpline2D 객체 생성
+        self.make_cubic_spline()
+
+        return
+    
+    def make_cubic_spline(self):
+        if self.mode == 0: # DRIVE 모드
+            self.cubic_spline = CubicSpline2D(self.xs_global, self.ys_global)
+        
+        else: # MISSION 모드
+            self.cubic_spline = CubicSpline2D(self.xs_local, self.ys_local)
+
     def obstacle_cb(self, msg):
         """ 
         장애물 위치 업데이트 
@@ -240,7 +274,7 @@ class Control(Node):
             self.get_logger().warn("차량 상태가 초기화되지 않았습니다.")
             return
 
-        if self.xs == [] or self.ys == []:
+        if self.xs_global == [] or self.ys_global == []:
             self.get_logger().warn("Global waypoints 데이터가 없습니다.")
             return
         
@@ -265,8 +299,8 @@ class Control(Node):
         if status != 0:
             self.fail_count += 1
             self.get_logger().error(f"MPC Solver failed with status {status}.")
-            self.prev_steering_angle *= 0.95
-            self.prev_velocity *= 0.95
+            self.prev_steering_angle *= 0.98
+            self.prev_velocity *= 0.98
             self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity)
             return
         
@@ -322,7 +356,9 @@ class Control(Node):
         # 표시할 텍스트 설정
         text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
             \n Fail Count: {self.fail_count}\
-            \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s"
+            \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
+            \n Mode: {self.mode} ({self.mode_description})"
+
 
         self.overlay_pub.publish(text_msg)
 
