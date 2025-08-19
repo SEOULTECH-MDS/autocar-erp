@@ -73,8 +73,14 @@ class PlannerNode(Node):
         /virtual_walls   (planning_msgs/ObstacleArray)
         /current_pose    (PoseStamped) [optional]
     - Publishes:
-        /stage1_goal           (PoseStamped)
-        /planner_debug_markers (MarkerArray)
+        /waypoints               (nav_msgs/Path)  [MAIN]  활성 스테이지의 최신 경로를 통합 퍼블리시
+        /stage1_path             (nav_msgs/Path)  [DEBUG] 스테이지1 경로 시각화/디버그용
+        /stage2_path             (nav_msgs/Path)  [DEBUG] 스테이지2 경로 시각화/디버그용
+        /stage3_path             (nav_msgs/Path)  [DEBUG] 스테이지3 경로 시각화/디버그용
+        /stage1_goal             (PoseStamped)    [DEBUG]
+        /stage2_goal             (PoseStamped)    [DEBUG]
+        /stage3_goal             (PoseStamped)    [DEBUG]
+        /planner_debug_markers   (MarkerArray)    [DEBUG]
     """
 
     def __init__(self) -> None:
@@ -124,6 +130,10 @@ class PlannerNode(Node):
         self._last_stage1_goal: Optional[PoseStamped] = None
 
         # Publishers
+        # MAIN topic: 컨트롤 파트가 구독할 표준 토픽 (활성 스테이지 최신 경로)
+        self._waypoints_pub = self.create_publisher(Path, '/waypoints', 10)
+
+        # DEBUG topics: 스테이지별 Path/Goal 및 시각화 마커
         self._goal_pub = self.create_publisher(PoseStamped, '/stage1_goal', 10)
         self._stage2_goal_pub = self.create_publisher(PoseStamped, '/stage2_goal', 10)
         self._vis_pub = self.create_publisher(MarkerArray, '/planner_debug_markers', 10)
@@ -186,6 +196,8 @@ class PlannerNode(Node):
                 # Ignore malformed segments
                 continue
         return segments
+
+    
 
     def _estimate_slot_dimensions(self, yaw_slot: float, center: Tuple[float, float]) -> Tuple[float, float]:
         """Estimate (L, W) using virtual wall segments oriented w.r.t yaw_slot.
@@ -376,12 +388,15 @@ class PlannerNode(Node):
             path_msg = self._compute_stage1_path(self._current_pose, goal)
             if path_msg is not None:
                 self._path_pub.publish(path_msg)
+                # Also publish unified waypoints topic (Path)
+                self._waypoints_pub.publish(path_msg)
         # Compute and publish stage-2 goal/path as well
         self._last_stage1_goal = goal
         if bool(self.get_parameter('stage2_guided').value):
             stage2_path = self._compute_stage2_path_guided(self._last_stage1_goal, self._open_slot_pose)
             if stage2_path is not None:
                 self._stage2_path_pub.publish(stage2_path)
+                self._waypoints_pub.publish(stage2_path)
         else:
             stage2_goal = self._compute_stage2_goal(self._open_slot_pose)
             if stage2_goal is not None:
@@ -389,6 +404,7 @@ class PlannerNode(Node):
                 stage2_path = self._compute_stage2_path(self._last_stage1_goal, stage2_goal)
                 if stage2_path is not None:
                     self._stage2_path_pub.publish(stage2_path)
+                    self._waypoints_pub.publish(stage2_path)
                 # Stage-3: define goal at slot center and plan from Stage-2 goal
                 stage3_goal = self._compute_stage3_goal(self._open_slot_pose)
                 if stage3_goal is not None:
@@ -396,6 +412,7 @@ class PlannerNode(Node):
                     stage3_path = self._compute_stage3_path_from_stage2(stage2_goal, self._open_slot_pose)
                     if stage3_path is not None and stage3_path.poses:
                         self._stage3_path_pub.publish(stage3_path)
+                        self._waypoints_pub.publish(stage3_path)
 
         # Stage-3 publish when inside slot and yaw mismatch (preview enabled)
         if bool(self.get_parameter('stage3_preview').value) and self._current_pose is not None and self._open_slot_pose is not None:
@@ -409,6 +426,7 @@ class PlannerNode(Node):
                 path3 = self._compute_stage3_path(self._current_pose, yaw_slot)
                 if path3 is not None and path3.poses:
                     self._stage3_path_pub.publish(path3)
+                    self._waypoints_pub.publish(path3)
 
     # ───────────────────────────── Utilities ─────────────────────────────
     def _min_distance_to_walls(self, x: float, y: float) -> float:
