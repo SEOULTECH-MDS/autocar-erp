@@ -22,9 +22,9 @@ def acados_solver():
 
     # 제약 조건 설정
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
-    MAX_SPEED = 5.0  # 최대 속도 [m/s]
-    MIN_SPEED = -5.0  # 최소 속도 [m/s]
-    MAX_ACCEL = 2.0  # 최대 가속도 [m/s^2]
+    MAX_SPEED = 2.0  # 최대 속도 [m/s]
+    MIN_SPEED = -2.0  # 최소 속도 [m/s]
+    MAX_ACCEL = 9.0  # 최대 가속도 [m/s^2]
 
     NX = 5  # reference size (x, y, yaw, v, s)
     NV = 2 # tangent vector size (tx, ty)
@@ -47,10 +47,10 @@ def acados_solver():
 
     # cost function weights
     W_acc = 0.1  # 가속도 입력 크기 가중치 0.1
-    W_steering = 0.2  # 조향각 입력 크기 가중치 0.2
+    W_steering = 0.5  # 조향각 입력 크기 가중치 0.2
     W_v = 0.1  # 속도 error 가중치 0.1
     W_lag = 1.0  # lag error 가중치 1.0
-    W_con = 0.5  # contour error 가중치 1.0
+    W_con = 0.2  # contour error 가중치 1.0
     W_yaw = 0.5  # heading error 가중치 (terminal cost) 0.5
 
     # parameter variables

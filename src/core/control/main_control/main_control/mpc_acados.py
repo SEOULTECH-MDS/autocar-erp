@@ -17,7 +17,7 @@ from autocar_utils.utils import generate_target_course
 
 from rviz_2d_overlay_msgs.msg import OverlayText
 from visualization_msgs.msg import Marker, MarkerArray
-from planning_msgs.msg import ModeState
+# from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
