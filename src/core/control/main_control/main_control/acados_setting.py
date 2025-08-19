@@ -87,13 +87,13 @@ def acados_solver():
     ocp.constraints.ubx = np.array([1e10, 1e10, 1e10, MAX_SPEED])    # 상태 변수 상한
     ocp.constraints.idxbx = np.array([0, 1, 2, 3])  # 모든 상태 변수에 대해 제약 조건 적용
 
-    # 장애물 제약 조건
-    r_safe = 1.5
-    distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
-    distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
-    ocp.model.con_h_expr = vertcat(distance1, distance2)
-    ocp.constraints.lh = np.array([r_safe**2, r_safe**2])  
-    ocp.constraints.uh = np.array([1e10, 1e10]) 
+    # # 장애물 제약 조건
+    # r_safe = 1.5
+    # distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
+    # distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
+    # ocp.model.con_h_expr = vertcat(distance1, distance2)
+    # ocp.constraints.lh = np.array([r_safe**2, r_safe**2])  
+    # ocp.constraints.uh = np.array([1e10, 1e10]) 
 
     # Solver 옵션 설정 
     ocp.solver_options.tf = T  # 예측 시간

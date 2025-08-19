@@ -32,11 +32,16 @@ class SimulationPub(Node):
         # self.obstacle_a = 0.5  # 장축 길이 (meter)
         # self.obstacle_b = 0.5  # 단축 길이 (meter)
         
-        self.obstacle1_lat = 37.63004349
-        self.obstacle1_lon = 127.08137807
-        self.obstacle2_lat = 37.62999185
-        self.obstacle2_lon = 127.08135382
+        # self.obstacle1_lat = 37.63004349
+        # self.obstacle1_lon = 127.08137807
+        # self.obstacle2_lat = 37.62999185
+        # self.obstacle2_lon = 127.08135382
 
+        self.obstacle1_lat = 37.62998188
+        self.obstacle1_lon = 127.08135814
+        self.obstacle2_lat = 37.62995006
+        self.obstacle2_lon = 127.08134290
+        
         # UTM 변환 설정 (한국 지역에 맞는 설정)
         self.transformer = Transformer.from_proj(
             Proj(proj='latlong', ellps='WGS84', datum='WGS84'),

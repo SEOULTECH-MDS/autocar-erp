@@ -39,19 +39,21 @@ def acados_solver():
 
     # cost function weights (TMPC weights)
     # W_acc = 0.34  # 가속도 입력 크기 가중치 0.1
-    # W_steering = 0.85  # 조향각 입력 크기 가중치 0.2
+    # W_steer = 0.85  # 조향각 입력 크기 가중치 0.2
     # W_v = 0.55  # 속도 error 가중치 0.1
     # W_lag = 0.75  # lag error 가중치 1.0
     # W_con = 0.05  # contour error 가중치 1.0
     # W_yaw = 0.5  # heading error 가중치 (terminal cost) 0.5
+    # m_term = -0.4  # terminal cost에서 stage cost 비율 감소시키는 가중치
 
     # cost function weights
     W_acc = 0.1  # 가속도 입력 크기 가중치 0.1
-    W_steering = 0.5  # 조향각 입력 크기 가중치 0.2
+    W_steer = 0.85  # 조향각 입력 크기 가중치 0.2
     W_v = 0.1  # 속도 error 가중치 0.1
     W_lag = 1.0  # lag error 가중치 1.0
-    W_con = 0.2  # contour error 가중치 1.0
-    W_yaw = 0.5  # heading error 가중치 (terminal cost) 0.5
+    W_con = 0.3  # contour error 가중치 1.0
+    W_yaw = 0.3  # heading error 가중치 (terminal cost) 0.5
+    m_term = -0.3 # terminal cost에서 stage cost 비율 감소시키는 가중치
 
     # parameter variables
     p = SX.sym('p', NX + NV + NO)  # NX: 참조 변수 크기, NV: 접선 벡터 크기, O: 장애물 정보 크기
@@ -62,7 +64,7 @@ def acados_solver():
     y_ref = ocp.model.p[1]  # ref y 좌표
     yaw_ref = ocp.model.p[2]  # ref yaw 각도
     v_ref = ocp.model.p[3]  # ref 속도
-    s_ref = ocp.model.p[4]  # ref spline parameter
+    s_ref = ocp.model.p[4]  # ref spline parameter (사용X)
     tx = ocp.model.p[5]  # 접선 벡터 x
     ty = ocp.model.p[6]  # 접선 벡터 y
     obs1_x = ocp.model.p[7]  # 장애물1 x 좌표
@@ -80,7 +82,7 @@ def acados_solver():
 
     # stage cost function
     stage_cost = W_acc * (acceleration ** 2) + \
-                 W_steering * (steering_angle ** 2) + \
+                 W_steer * (steering_angle ** 2) + \
                  W_v * ((vehicle_v - v_ref) ** 2) + \
                  W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                  W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2
@@ -90,7 +92,10 @@ def acados_solver():
     terminal_cost = W_v * ((vehicle_v - v_ref) ** 2) + \
                     W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                     W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
-                    W_yaw * ((vehicle_yaw - yaw_ref) ** 2)
+                    W_yaw * ((vehicle_yaw - yaw_ref) ** 2)+ \
+                    m_term * (W_v * ((vehicle_v - v_ref) ** 2) + \
+                              W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
+                              W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 )
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # constraints
@@ -103,7 +108,7 @@ def acados_solver():
     ocp.constraints.ubx = np.array([1e10, 1e10, 1e10, MAX_SPEED])  # 상태 변수 상한
     ocp.constraints.idxbx = np.array([0, 1, 2, 3])
 
-    # r_safe = 1.5
+    # r_safe = 1.0
     # distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
     # distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
     # ocp.model.con_h_expr = vertcat(distance1, distance2)
