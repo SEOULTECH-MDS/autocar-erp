@@ -22,7 +22,7 @@ class ObjectTracker(Node):
         self.tracker = IOUTracker(max_lost=3, iou_threshold=0.4, min_detection_confidence=0.4, max_detection_confidence=0.7,
                                   tracker_output_format='visdrone_challenge')
         
-        # self.img_sub = message_filters.Subscriber(self, Image, '/yolo_visualization')
+        # self.img_sub = message_filters.Subscriber(self, Image, '/yolo/rubber')
         # self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber')
         self.bbox_sub = self.create_subscription(PoseArray, '/bounding_boxes/rubber', self.callback_tracker, 10)
         
@@ -50,7 +50,8 @@ class ObjectTracker(Node):
         poses = PoseArray()
         poses.header.stamp = self.get_clock().now().to_msg()
         poses.header.frame_id = 'yolo'
-        #for _, _, x_min, y_min, width, height, _, lbl, _, _ in tracks:
+
+        # for _, _, x_min, y_min, width, height, _, lbl, _, _ in tracks:
             
                 
         # updated_img_msg = self.bridge.cv2_to_imgmsg(updated_image, encoding="bgr8")
