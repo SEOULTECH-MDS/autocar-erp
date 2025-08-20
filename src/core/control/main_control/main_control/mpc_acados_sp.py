@@ -17,7 +17,7 @@ from autocar_utils.utils import CubicSpline2D
 
 from rviz_2d_overlay_msgs.msg import OverlayText
 from visualization_msgs.msg import Marker, MarkerArray
-from planning_msgs.msg import ModeState
+#from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
@@ -43,7 +43,7 @@ class Control(Node):
         # Subscriber
         self.localization_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/autocar/goals', self.global_waypoints_cb, 10)
-        self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
+        # self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
 
         self.local_waypoints_sub = self.create_subscription(Path, '/waypoints', self.local_waypoints_cb, 10)
 

@@ -22,9 +22,9 @@ def acados_solver():
 
     # 제약 조건 설정
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
-    MAX_SPEED = 5.0  # 최대 속도 [m/s]
-    MIN_SPEED = -5.0  # 최소 속도 [m/s]
-    MAX_ACCEL = 2.0  # 최대 가속도 [m/s^2]
+    MAX_SPEED = 2.0  # 최대 속도 [m/s]
+    MIN_SPEED = -2.0  # 최소 속도 [m/s]
+    MAX_ACCEL = 9.0  # 최대 가속도 [m/s^2]
 
     NX = 5  # reference size (x, y, yaw, v, s)
     NV = 2 # tangent vector size (tx, ty)
@@ -48,12 +48,12 @@ def acados_solver():
 
     # cost function weights
     W_acc = 0.1  # 가속도 입력 크기 가중치 0.1
-    W_steer = 0.2  # 조향각 입력 크기 가중치 0.2
+    W_steer = 0.85  # 조향각 입력 크기 가중치 0.2
     W_v = 0.1  # 속도 error 가중치 0.1
     W_lag = 1.0  # lag error 가중치 1.0
-    W_con = 0.1  # contour error 가중치 1.0
+    W_con = 0.3  # contour error 가중치 1.0
     W_yaw = 0.3  # heading error 가중치 (terminal cost) 0.5
-    m_term = -0.5 # terminal cost에서 stage cost 비율 감소시키는 가중치
+    m_term = -0.3 # terminal cost에서 stage cost 비율 감소시키는 가중치
 
     # parameter variables
     p = SX.sym('p', NX + NV + NO)  # NX: 참조 변수 크기, NV: 접선 벡터 크기, O: 장애물 정보 크기
@@ -108,12 +108,12 @@ def acados_solver():
     ocp.constraints.ubx = np.array([1e10, 1e10, 1e10, MAX_SPEED])  # 상태 변수 상한
     ocp.constraints.idxbx = np.array([0, 1, 2, 3])
 
-    r_safe = 1.0
-    distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
-    distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
-    ocp.model.con_h_expr = vertcat(distance1, distance2)
-    ocp.constraints.lh = np.array([r_safe**2, r_safe**2])  
-    ocp.constraints.uh = np.array([1e10, 1e10]) 
+    # r_safe = 1.0
+    # distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
+    # distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
+    # ocp.model.con_h_expr = vertcat(distance1, distance2)
+    # ocp.constraints.lh = np.array([r_safe**2, r_safe**2])  
+    # ocp.constraints.uh = np.array([1e10, 1e10]) 
 
     # Solver 옵션 설정 
     ocp.solver_options.tf = T  # 예측 시간

@@ -17,7 +17,7 @@ from autocar_utils.utils import generate_target_course
 
 from rviz_2d_overlay_msgs.msg import OverlayText
 from visualization_msgs.msg import Marker, MarkerArray
-from planning_msgs.msg import ModeState
+# from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
@@ -53,7 +53,7 @@ class Control(Node):
         qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
-        self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
+        # self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
 
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)
 
@@ -73,10 +73,10 @@ class Control(Node):
         # self.dt = T / N  # 제어 주기 계산
         self.control_frequency = 20.0 # HZ
 
-        self.obs1_x = None
-        self.obs1_y = None
-        self.obs2_x = None
-        self.obs2_y = None
+        self.obs1_x = 0.0
+        self.obs1_y = 0.0
+        self.obs2_x = 0.0
+        self.obs2_y = 0.0
 
         self.target_vel = 4.0  # 목표 속도 (m/s)
         self.steering_angle = 0.0
