@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'PyQt5'],
     zip_safe=True,
     maintainer='ysl',
     maintainer_email='dldbstjd5566@gmail.com',
@@ -21,6 +21,7 @@ setup(
         'console_scripts': [
             'hitech_test_pub = autocar_test_scripts.hitech_test_pub:main',
             'simulation_pub = autocar_test_scripts.simulation_pub:main',
+            'mode_pub = autocar_test_scripts.mode_pub:main',
         ],
     },
 ) 

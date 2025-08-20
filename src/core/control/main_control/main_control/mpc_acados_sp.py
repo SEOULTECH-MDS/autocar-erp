@@ -43,13 +43,14 @@ class Control(Node):
         # Subscriber
         self.localization_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_state_cb, 10)
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/autocar/goals', self.global_waypoints_cb, 10)
-        # self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
+        self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
 
         self.local_waypoints_sub = self.create_subscription(Path, '/waypoints', self.local_waypoints_cb, 10)
 
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)
+        self.stopline_sub = self.create_subscription(MarkerArray, '/stoplines/markers', self.stopline_cb, 10)
 
         # 변수 초기화
         self.x = None
@@ -74,6 +75,8 @@ class Control(Node):
         self.obs1_y = None
         self.obs2_x = None
         self.obs2_y = None
+
+        self.stopline_distance = 1e6
 
         self.target_vel = 3.0  # 목표 속도 (m/s)
         self.steering_angle = 0.0
@@ -227,10 +230,10 @@ class Control(Node):
         return
     
     def make_cubic_spline(self):
-        if self.mode == 0: # DRIVE 모드
+        if self.mode == 0 or self.mode == 1: # DRIVE 모드 or PAUSE 모드
             self.cubic_spline_global = CubicSpline2D(self.xs_global, self.ys_global)
-        
-        else: # MISSION 모드
+
+        elif self.mode == 2 or self.mode == 3 or self.mode == 4 or self.mode == 5 or self.mode == 6:  # MISSION 모드
             self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)
 
     def obstacle_cb(self, msg):
@@ -243,6 +246,21 @@ class Control(Node):
         self.obs2_y = msg.markers[1].pose.position.y - self.map_origin_y
 
         # print(f"obs1: ({self.obs1_x}, {self.obs1_y}), obs2: ({self.obs2_x}, {self.obs2_y})")
+
+    def stopline_cb(self, msg):
+        """ 
+        정지선 위치 업데이트 
+        """
+        if len(msg.markers) > 0 and self.x is not None and self.y is not None:
+            stopline_x = msg.markers[0].pose.position.x - self.map_origin_x
+            stopline_y = msg.markers[0].pose.position.y - self.map_origin_y
+            self.stopline_distance = np.sqrt(
+                (stopline_x - self.x) ** 2 +
+                (stopline_y - self.y) ** 2
+            )
+            self.get_logger().info(f"Stopline distance: {self.stopline_distance:.2f} m")
+        else:
+            self.stopline_distance = 1e6
 
     def calc_ref_trajectory(self, _cubic_spline):
         """
@@ -260,6 +278,7 @@ class Control(Node):
                 s = current_s + self.dt * self.target_vel
                 if s > cubic_spline.s[-1]:
                     s = cubic_spline.s[-1] - 0.1
+                    xref[3, i] = 0.0
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 xref[2, i] = cubic_spline.calc_yaw(s)
@@ -288,34 +307,36 @@ class Control(Node):
             self.get_logger().warn("Global waypoints 데이터가 없습니다.")
             return
         
-        if self.mode == 0:
+        if self.mode == 0 or self.mode == 1:  # DRIVE 모드 or PAUSE 모드
             current_cubic_spline = self.cubic_spline_global
-        else:
+        else:  # MISSION 모드
             current_cubic_spline = self.cubic_spline_local
 
         if current_cubic_spline is None:
             self.get_logger().warn("Cubic spline이 초기화되지 않았습니다.")
             return
-        
+
+        # 현재 s 값 계산, reference trajectory 계산
         self.calc_current_s(current_cubic_spline)
         xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
-
         x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
-
         obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y])
 
         u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a)
+        x_opt = np.zeros((N, NX))  # 상태 변수 초기화 (x, y, yaw, v, s)
 
+        # Solver 초기 상태 변수 설정 
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
-
         self.get_logger().info(f"Current state: {x0}")
 
+        # MPC Solver에 파라미터 변수 전달
         for i in range(N):
             self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
         self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
 
+        # Solver 실행, status 확인
         status = self.solver.solve()
         if status != 0:
             self.fail_count += 1
@@ -328,7 +349,7 @@ class Control(Node):
         self.get_logger().info(f"tan_vec: {tan_vec}\
                                \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
         
-
+        # Solver에서 최적화된 제어 입력, 상태 변수 추출
         u_opt = np.array([self.solver.get(i, "u") for i in range(N)])
         x_opt = np.array([self.solver.get(i, "x") for i in range(N)])
         self.visualize_predicted_trajectory(x_opt)
@@ -355,11 +376,12 @@ class Control(Node):
         cmd.drive.speed = velocity
         cmd.drive.steering_angle = steering_angle
 
+        if self.mode == 1 and self.stopline_distance < 1.5:
+            cmd.drive.speed = 0.0  # 정지선 근처에서는 속도를 0으로 설정
+
         self.erp_pub.publish(cmd)
 
-
         self.publish_overlay_text()
-
         self.get_logger().info(f"속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg")
 
 
