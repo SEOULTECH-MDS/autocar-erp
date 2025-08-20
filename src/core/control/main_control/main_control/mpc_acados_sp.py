@@ -17,7 +17,7 @@ from autocar_utils.utils import CubicSpline2D
 
 from rviz_2d_overlay_msgs.msg import OverlayText
 from visualization_msgs.msg import Marker, MarkerArray
-#from planning_msgs.msg import ModeState
+from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
@@ -304,6 +304,8 @@ class Control(Node):
 
         obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y])
 
+        u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a)
+
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
@@ -311,27 +313,29 @@ class Control(Node):
         self.get_logger().info(f"Current state: {x0}")
 
         for i in range(N):
-            self.solver.set(i, "p", np.hstack([xref[:5, i], tan_vec[:, i], obs]))
-        self.solver.set(N, "p", np.hstack([xref[:5, -1], tan_vec[:, -1], obs]))
+            self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
+        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
 
         status = self.solver.solve()
         if status != 0:
             self.fail_count += 1
             self.get_logger().error(f"MPC Solver failed with status {status}.")
-            self.prev_steering_angle *= 0.98
-            self.prev_velocity *= 0.98
-            self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity)
+            # self.prev_steering_angle *= 0.98
+            self.prev_velocity *= 0.98  # solver failure 시 속도 감소
+            self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity) # 이전 제어 입력으로 차량에 입력
             return
         
         self.get_logger().info(f"tan_vec: {tan_vec}\
                                \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
         
-        u_opt = self.solver.get(0, "u")
+
+        u_opt = np.array([self.solver.get(i, "u") for i in range(N)])
         x_opt = np.array([self.solver.get(i, "x") for i in range(N)])
         self.visualize_predicted_trajectory(x_opt)
 
-        self.steering_angle = u_opt[0]
-        self.velocity = x_opt[1, 3]
+        # 제어 입력
+        self.steering_angle = u_opt[1, 0]  # 0번째 step의 조향각 (delta)
+        self.velocity = x_opt[1, 3]        # 0번째 step의 속도 (v)
 
         # 이전 제어 입력 저장 (다음 실패 시 fallback용)
         self.prev_steering_angle = self.steering_angle
