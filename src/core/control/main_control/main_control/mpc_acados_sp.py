@@ -87,6 +87,9 @@ class Control(Node):
         self.prev_velocity = 0.0
         self.fail_count = 0  # 실패 횟수 카운트
         
+        # 시각화 주기 조절용 카운터
+        self.viz_counter = 0
+        
         # map 원점
         self.map_origin_x = None
         self.map_origin_y = None
@@ -220,9 +223,17 @@ class Control(Node):
         local waypoints 콜백
         """
         self.xs_local, self.ys_local = [], []  # waypoint 리스트
-        for node in path_msg.poses:
-            self.xs_local.append(node.pose.position.x)
-            self.ys_local.append(node.pose.position.y)
+        if self.map_origin_x is not None and self.map_origin_y is not None:
+            for node in path_msg.poses:
+                self.xs_local.append(node.pose.position.x - self.map_origin_x)
+                self.ys_local.append(node.pose.position.y - self.map_origin_y)
+        else:
+            self.get_logger().warn("Map origin 정보가 설정되지 않았습니다. Local waypoints를 업데이트할 수 없습니다.")
+            return
+        
+        # for node in path_msg.poses:
+        #     self.xs_local.append(node.pose.position.x)
+        #     self.ys_local.append(node.pose.position.y)
 
         # self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)  # waypoint를 보간한 CubicSpline2D 객체 생성
         self.make_cubic_spline()
@@ -231,10 +242,14 @@ class Control(Node):
     
     def make_cubic_spline(self):
         if self.mode == 0 or self.mode == 1: # DRIVE 모드 or PAUSE 모드
-            self.cubic_spline_global = CubicSpline2D(self.xs_global, self.ys_global)
+            if len(self.xs_global) >= 2 and len(self.ys_global) >= 2:
+                self.cubic_spline_global = CubicSpline2D(self.xs_global, self.ys_global)
+            # global waypoints가 부족하면 스플라인 생성하지 않음
 
         elif self.mode == 2 or self.mode == 3 or self.mode == 4 or self.mode == 5 or self.mode == 6:  # MISSION 모드
-            self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)
+            if len(self.xs_local) >= 2 and len(self.ys_local) >= 2:
+                self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)
+            # local waypoints가 부족하면 스플라인 생성하지 않음
 
     def obstacle_cb(self, msg):
         """ 
@@ -290,7 +305,9 @@ class Control(Node):
 
                 current_s = s
 
-        self.visualize_ref_trajectory(xref)
+        # 시각화를 5Hz로 줄임 (viz_counter와 동기화)
+        if self.viz_counter == 0:
+            self.visualize_ref_trajectory(xref)
 
         return xref, tan_vec
 
@@ -329,7 +346,7 @@ class Control(Node):
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
-        self.get_logger().info(f"Current state: {x0}")
+        # self.get_logger().info(f"Current state: {x0}")  # 성능 향상을 위해 주석 처리
 
         # MPC Solver에 파라미터 변수 전달
         for i in range(N):
@@ -346,13 +363,18 @@ class Control(Node):
             self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity) # 이전 제어 입력으로 차량에 입력
             return
         
-        self.get_logger().info(f"tan_vec: {tan_vec}\
-                               \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
+        # self.get_logger().info(f"tan_vec: {tan_vec}\
+        #                        \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
         
         # Solver에서 최적화된 제어 입력, 상태 변수 추출
         u_opt = np.array([self.solver.get(i, "u") for i in range(N)])
         x_opt = np.array([self.solver.get(i, "x") for i in range(N)])
-        self.visualize_predicted_trajectory(x_opt)
+        
+        # 시각화를 5Hz (4번에 1번)로 줄임
+        self.viz_counter += 1
+        if self.viz_counter >= 4:
+            self.visualize_predicted_trajectory(x_opt)
+            self.viz_counter = 0
 
         # 제어 입력
         self.steering_angle = u_opt[1, 0]  # 0번째 step의 조향각 (delta)
@@ -365,7 +387,7 @@ class Control(Node):
         # 차량에 제어 명령 전송
         self.set_vehicle_command(self.steering_angle, self.velocity)
 
-        self.get_logger().info(f"cmd_steer: {self.steering_angle * 180.0 / np.pi:.2f} deg, cmd_vel: {self.velocity:.2f} m/s")
+        # self.get_logger().info(f"cmd_steer: {self.steering_angle * 180.0 / np.pi:.2f} deg, cmd_vel: {self.velocity:.2f} m/s")  # 성능 향상을 위해 주석 처리
 
     def set_vehicle_command(self, steering_angle, velocity):
         """
@@ -382,7 +404,7 @@ class Control(Node):
         self.erp_pub.publish(cmd)
 
         self.publish_overlay_text()
-        self.get_logger().info(f"속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg")
+        # self.get_logger().info(f"속도: {velocity:.2f} m/s | 조향각: {steering_angle * 180.0 / np.pi:.2f} deg")  # 성능 향상을 위해 주석 처리
 
 
 

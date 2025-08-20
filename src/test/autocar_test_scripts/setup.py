@@ -22,6 +22,7 @@ setup(
             'hitech_test_pub = autocar_test_scripts.hitech_test_pub:main',
             'simulation_pub = autocar_test_scripts.simulation_pub:main',
             'mode_pub = autocar_test_scripts.mode_pub:main',
+            'dummy_local_pub = autocar_test_scripts.dummpy_local_pub:main',
         ],
     },
 ) 
