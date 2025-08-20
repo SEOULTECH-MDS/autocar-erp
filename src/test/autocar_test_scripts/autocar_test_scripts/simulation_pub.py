@@ -26,17 +26,27 @@ class SimulationPub(Node):
         self.publisher_imu = self.create_publisher(Imu, '/imu/data', 10)
 
         self.obstacle_marker_pub = self.create_publisher(MarkerArray, '/obstacles/markers', 10)
+        self.stopline_marker_pub = self.create_publisher(MarkerArray, '/stoplines/markers', 10)
         # 장애물 정보 설정
         # self.obstacle_lat = 37.62999526
         # self.obstacle_lon = 127.08136022
         # self.obstacle_a = 0.5  # 장축 길이 (meter)
         # self.obstacle_b = 0.5  # 단축 길이 (meter)
         
-        self.obstacle1_lat = 37.63004349
-        self.obstacle1_lon = 127.08137807
-        self.obstacle2_lat = 37.62999185
-        self.obstacle2_lon = 127.08135382
+        # self.obstacle1_lat = 37.63004349
+        # self.obstacle1_lon = 127.08137807
+        # self.obstacle2_lat = 37.62999185
+        # self.obstacle2_lon = 127.08135382
 
+        self.obstacle1_lat = 37.62998188
+        self.obstacle1_lon = 127.08135814
+        self.obstacle2_lat = 37.62995006
+        self.obstacle2_lon = 127.08134290
+        
+        # 정지선 정보 설정
+        self.stopline_lat = 37.62983145
+        self.stopline_lon = 127.08144689
+        
         # UTM 변환 설정 (한국 지역에 맞는 설정)
         self.transformer = Transformer.from_proj(
             Proj(proj='latlong', ellps='WGS84', datum='WGS84'),
@@ -46,6 +56,9 @@ class SimulationPub(Node):
         # 장애물의 UTM 좌표 계산
         self.obstacle1_x, self.obstacle1_y = self.transformer.transform(self.obstacle1_lon, self.obstacle1_lat)
         self.obstacle2_x, self.obstacle2_y = self.transformer.transform(self.obstacle2_lon, self.obstacle2_lat)
+        
+        # 정지선의 UTM 좌표 계산
+        self.stopline_x, self.stopline_y = self.transformer.transform(self.stopline_lon, self.stopline_lat)
         
         # 장애물 리스트 생성
         self.obstacles = [
@@ -60,6 +73,17 @@ class SimulationPub(Node):
                 'y': self.obstacle2_y,
                 'color': ColorRGBA(r=1.0, g=0.5, b=0.0, a=0.5),  # 주황색
                 'scale': {'x': 1.0, 'y': 1.0, 'z': 0.5}
+            }
+        ]
+
+        # 정지선 정보 생성
+        self.stoplines = [
+            {
+                'x': self.stopline_x,
+                'y': self.stopline_y,
+                'color': ColorRGBA(r=1.0, g=1.0, b=1.0, a=0.9),  # 흰색
+                'scale': {'x': 4.0, 'y': 0.15, 'z': 0.05},  # 정지선 형태 (길고 얇음)
+                'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': np.deg2rad(-90.0)}  # 도로에 수직 (차량 초기 방향에 수직)
             }
         ]
 
@@ -155,6 +179,7 @@ class SimulationPub(Node):
         self.get_logger().info(f"\n lat={self.latitude:.8f}, lon={self.longitude:.8f}, \n Heading: {np.rad2deg(self.yaw):.2f} deg, Speed: {self.velocity:.2f} m/s")
 
         self.publish_obstacle_marker()
+        self.publish_stopline_marker()
 
     def publish_obstacle_marker(self):
         marker_array = MarkerArray()
@@ -192,6 +217,52 @@ class SimulationPub(Node):
             for i, obs in enumerate(self.obstacles)
         ])
         self.get_logger().info(obstacle_info)
+
+    def publish_stopline_marker(self):
+        """정지선 마커 퍼블리시"""
+        marker_array = MarkerArray()
+        
+        # 정지선 마커들 생성
+        for i, stopline in enumerate(self.stoplines):
+            marker = Marker()
+            marker.header.frame_id = "world"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "stoplines"
+            marker.id = i
+            marker.type = Marker.CUBE  # 정지선은 직육면체로 표현
+            marker.action = Marker.ADD
+            
+            # 위치 설정
+            marker.pose.position.x = stopline['x']
+            marker.pose.position.y = stopline['y']
+            marker.pose.position.z = 0.05  # 지면보다 약간 위에
+            
+            # 방향 설정 (도로 방향에 맞게)
+            orientation = stopline['orientation']
+            q = yaw_to_quaternion(orientation['yaw'])
+            marker.pose.orientation.x = q.x
+            marker.pose.orientation.y = q.y
+            marker.pose.orientation.z = q.z
+            marker.pose.orientation.w = q.w
+            
+            # 크기 설정 (정지선 형태)
+            marker.scale.x = stopline['scale']['x']  # 길이
+            marker.scale.y = stopline['scale']['y']  # 폭 (얇게)
+            marker.scale.z = stopline['scale']['z']  # 높이
+            
+            # 색상 설정 (흰색 정지선)
+            marker.color = stopline['color']
+            
+            marker_array.markers.append(marker)
+        
+        self.stopline_marker_pub.publish(marker_array)
+        
+        # 로그에 정지선 정보 추가
+        stopline_info = " | ".join([
+            f"Stopline{i+1} UTM: x={stop['x']:.2f}, y={stop['y']:.2f}"
+            for i, stop in enumerate(self.stoplines)
+        ])
+        self.get_logger().info(f"Stoplines: {stopline_info}")
 
 
 def main(args=None):

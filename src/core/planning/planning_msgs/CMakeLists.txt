@@ -13,6 +13,7 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Obstacle.msg"
   "msg/ObstacleArray.msg"
+  "msg/ModeState.msg"
   DEPENDENCIES geometry_msgs std_msgs
 )
 
