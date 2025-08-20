@@ -89,7 +89,7 @@ class Control(Node):
         self.map_origin_y = None
 
         self.mode = 0
-        self.mode_description = None
+        self.mode_description = "Drive"
 
         # MPC Solver 초기화
         self.solver = acados_solver() 
@@ -126,7 +126,6 @@ class Control(Node):
             self.v = 0.1
         self.yawrate = msg.twist.twist.angular.z
 
-        # s 계산은 제어루프에서만 수행하여 불필요한 연산 부하 방지
         # if len(self.xs_global) > 0 or len(self.xs_local) > 0:
         #     self.calc_current_s()
 
@@ -260,7 +259,7 @@ class Control(Node):
             for i in range(N):
                 s = current_s + self.dt * self.target_vel
                 if s > cubic_spline.s[-1]:
-                    s = cubic_spline.s[-1] - 0.01
+                    s = cubic_spline.s[-1] - 0.1
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 xref[2, i] = cubic_spline.calc_yaw(s)
