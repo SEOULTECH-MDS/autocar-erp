@@ -41,6 +41,7 @@ setup(
     entry_points={
         'console_scripts': [
             'autocar_tf_publisher = localization_core.autocar_tf_ros2:main',
+            'localization = localization_core.localization:main',
             'global_planner = localization_core.global_planner:main',
             'global_click_planner = localization_core.global_click_planner:main',
             'map_visualizer = localization_core.map_visualizer:main',

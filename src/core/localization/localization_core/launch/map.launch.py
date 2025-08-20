@@ -131,6 +131,21 @@ def generate_launch_description():
             output='screen'
         ),
 
+        # 6.5 Current lanelet detection (localization)
+        Node(
+            package='localization_core',
+            executable='localization',
+            name='localization',
+            parameters=[{
+                'map_origin.lat': LaunchConfiguration('map_origin_lat'),
+                'map_origin.lon': LaunchConfiguration('map_origin_lon'),
+                'lanelet2_map_path': LaunchConfiguration('lanelet2_map_path'),
+                'allowed_lanelet_subtypes': ['road'],
+                'max_select_distance': 3.0
+            }],
+            output='screen'
+        ),
+
         # 7. RViz2 Node
         Node(
             package='rviz2',

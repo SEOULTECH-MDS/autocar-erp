@@ -42,6 +42,7 @@
 #include <autoware_map_msgs/msg/lanelet_map_bin.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <geometry_msgs/msg/point.hpp>
 
 #include <lanelet2_core/LaneletMap.h>
 #include <lanelet2_projection/UTM.h>
@@ -76,6 +77,10 @@ Lanelet2MapVisualizationNode::Lanelet2MapVisualizationNode(const rclcpp::NodeOpt
     "input/lanelet2_map", rclcpp::QoS{1}.transient_local(),
     std::bind(&Lanelet2MapVisualizationNode::on_map_bin, this, _1));
 
+  sub_current_lanelet_ = this->create_subscription<std_msgs::msg::Int64>(
+    "/current_lanelet_id", rclcpp::QoS{10},
+    std::bind(&Lanelet2MapVisualizationNode::on_current_lanelet, this, _1));
+
   pub_marker_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
     "output/lanelet2_map_marker", rclcpp::QoS{1}.transient_local());
 }
@@ -83,30 +88,29 @@ Lanelet2MapVisualizationNode::Lanelet2MapVisualizationNode(const rclcpp::NodeOpt
 void Lanelet2MapVisualizationNode::on_map_bin(
   const autoware_map_msgs::msg::LaneletMapBin::ConstSharedPtr msg)
 {
-  lanelet::LaneletMapPtr viz_lanelet_map(new lanelet::LaneletMap);
-
-  lanelet::utils::conversion::fromBinMsg(*msg, viz_lanelet_map);
+  viz_lanelet_map_.reset(new lanelet::LaneletMap);
+  lanelet::utils::conversion::fromBinMsg(*msg, viz_lanelet_map_);
   RCLCPP_INFO(this->get_logger(), "Map is loaded\n");
 
   // get lanelets etc to visualize
-  lanelet::ConstLanelets all_lanelets = lanelet::utils::query::laneletLayer(viz_lanelet_map);
+  lanelet::ConstLanelets all_lanelets = lanelet::utils::query::laneletLayer(viz_lanelet_map_);
   lanelet::ConstLanelets road_lanelets = lanelet::utils::query::roadLanelets(all_lanelets);
   lanelet::ConstLanelets shoulder_lanelets = lanelet::utils::query::shoulderLanelets(all_lanelets);
   lanelet::ConstLanelets crosswalk_lanelets =
     lanelet::utils::query::crosswalkLanelets(all_lanelets);
   lanelet::ConstLanelets bicycle_lane_lanelets =
     lanelet::utils::query::bicycleLaneLanelets(all_lanelets);
-  lanelet::ConstLineStrings3d partitions = lanelet::utils::query::getAllPartitions(viz_lanelet_map);
+  lanelet::ConstLineStrings3d partitions = lanelet::utils::query::getAllPartitions(viz_lanelet_map_);
   lanelet::ConstLineStrings3d pedestrian_polygon_markings =
-    lanelet::utils::query::getAllPedestrianPolygonMarkings(viz_lanelet_map);
+    lanelet::utils::query::getAllPedestrianPolygonMarkings(viz_lanelet_map_);
   lanelet::ConstLineStrings3d pedestrian_line_markings =
-    lanelet::utils::query::getAllPedestrianLineMarkings(viz_lanelet_map);
+    lanelet::utils::query::getAllPedestrianLineMarkings(viz_lanelet_map_);
   lanelet::ConstLanelets walkway_lanelets = lanelet::utils::query::walkwayLanelets(all_lanelets);
   std::vector<lanelet::ConstLineString3d> stop_lines =
     lanelet::utils::query::stopLinesLanelets(road_lanelets);
   // Also visualize raw lineStrings whose type is explicitly tagged as "stop_line"
   lanelet::ConstLineStrings3d raw_stop_lines;
-  for (const auto & ls : viz_lanelet_map->lineStringLayer) {
+  for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
     const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
     if (type == "stop_line") {
       raw_stop_lines.push_back(static_cast<lanelet::ConstLineString3d>(ls));
@@ -123,22 +127,22 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   std::vector<lanelet::CrosswalkConstPtr> cw_reg_elems =
     lanelet::utils::query::crosswalks(all_lanelets);
   lanelet::ConstLineStrings3d parking_spaces =
-    lanelet::utils::query::getAllParkingSpaces(viz_lanelet_map);
-  lanelet::ConstPolygons3d parking_lots = lanelet::utils::query::getAllParkingLots(viz_lanelet_map);
+    lanelet::utils::query::getAllParkingSpaces(viz_lanelet_map_);
+  lanelet::ConstPolygons3d parking_lots = lanelet::utils::query::getAllParkingLots(viz_lanelet_map_);
   lanelet::ConstPolygons3d obstacle_polygons =
-    lanelet::utils::query::getAllObstaclePolygons(viz_lanelet_map);
+    lanelet::utils::query::getAllObstaclePolygons(viz_lanelet_map_);
   lanelet::ConstPolygons3d no_obstacle_segmentation_area =
-    lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map, "no_obstacle_segmentation_area");
+    lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map_, "no_obstacle_segmentation_area");
   lanelet::ConstPolygons3d no_obstacle_segmentation_area_for_run_out =
     lanelet::utils::query::getAllPolygonsByType(
-      viz_lanelet_map, "no_obstacle_segmentation_area_for_run_out");
+      viz_lanelet_map_, "no_obstacle_segmentation_area_for_run_out");
   lanelet::ConstPolygons3d hatched_road_markings_area =
-    lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map, "hatched_road_markings");
+    lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map_, "hatched_road_markings");
   lanelet::ConstPolygons3d intersection_areas =
-    lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map, "intersection_area");
+    lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map_, "intersection_area");
   std::vector<lanelet::NoParkingAreaConstPtr> no_parking_reg_elems =
     lanelet::utils::query::noParkingAreas(all_lanelets);
-  lanelet::ConstLineStrings3d curbstones = lanelet::utils::query::curbstones(viz_lanelet_map);
+  lanelet::ConstLineStrings3d curbstones = lanelet::utils::query::curbstones(viz_lanelet_map_);
   std::vector<lanelet::BusStopAreaConstPtr> bus_stop_reg_elems =
     lanelet::utils::query::busStopAreas(all_lanelets);
 
@@ -324,6 +328,89 @@ void Lanelet2MapVisualizationNode::on_map_bin(
                          "bicycle_lane_lanelets", bicycle_lane_lanelets, cl_bicycle_lane));
 
   pub_marker_->publish(map_marker_array);
+}
+
+void Lanelet2MapVisualizationNode::on_current_lanelet(const std_msgs::msg::Int64::ConstSharedPtr msg)
+{
+  current_lanelet_id_ = msg->data;
+
+  // First publish a message that deletes previous highlight markers
+  {
+    visualization_msgs::msg::MarkerArray delete_array;
+    for (int id = 1; id <= 2; ++id) {
+      visualization_msgs::msg::Marker del_marker;
+      del_marker.header.frame_id = "map";
+      del_marker.header.stamp = this->now();
+      del_marker.ns = "current_lanelet_highlight";
+      del_marker.id = id;
+      del_marker.action = visualization_msgs::msg::Marker::DELETE;
+      delete_array.markers.push_back(del_marker);
+    }
+    pub_marker_->publish(delete_array);
+  }
+
+  visualization_msgs::msg::MarkerArray marker_array;
+
+  if (!viz_lanelet_map_) {
+    pub_marker_->publish(marker_array);
+    return;
+  }
+
+  // Find lanelet by id
+  lanelet::ConstLanelet lanelet_obj;
+  try {
+    lanelet_obj = viz_lanelet_map_->laneletLayer.get(static_cast<lanelet::Id>(current_lanelet_id_));
+  } catch (const std::exception & e) {
+    // No such lanelet, publish only clear
+    pub_marker_->publish(marker_array);
+    return;
+  }
+
+  // Prepare a base marker style for highlight
+  auto make_base = [this]() {
+    visualization_msgs::msg::Marker m;
+    m.header.frame_id = "map"; // keep consistent with base visualizer
+    m.header.stamp = this->now();
+    m.ns = "current_lanelet_highlight";
+    m.action = visualization_msgs::msg::Marker::ADD;
+    m.type = visualization_msgs::msg::Marker::LINE_STRIP;
+    m.scale.x = 0.35; // thicker than default borders
+    m.color.a = 1.0;
+    m.color.r = 1.0;
+    m.color.g = 0.6;
+    m.color.b = 0.0; // orange/yellow
+    return m;
+  };
+
+  // Left bound only
+  {
+    visualization_msgs::msg::Marker left_mk = make_base();
+    left_mk.id = 1;
+    for (const auto & p : lanelet_obj.leftBound().basicLineString()) {
+      geometry_msgs::msg::Point pt;
+      pt.x = p.x();
+      pt.y = p.y();
+      pt.z = p.z();
+      left_mk.points.push_back(pt);
+    }
+    marker_array.markers.push_back(left_mk);
+  }
+
+  // Right bound only
+  {
+    visualization_msgs::msg::Marker right_mk = make_base();
+    right_mk.id = 2;
+    for (const auto & p : lanelet_obj.rightBound().basicLineString()) {
+      geometry_msgs::msg::Point pt;
+      pt.x = p.x();
+      pt.y = p.y();
+      pt.z = p.z();
+      right_mk.points.push_back(pt);
+    }
+    marker_array.markers.push_back(right_mk);
+  }
+
+  pub_marker_->publish(marker_array);
 }
 }  // namespace autoware::lanelet2_map_visualizer
 
