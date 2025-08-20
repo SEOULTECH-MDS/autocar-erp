@@ -125,7 +125,8 @@ def generate_launch_description():
             parameters=[{
                 'map_origin.lat': LaunchConfiguration('map_origin_lat'),
                 'map_origin.lon': LaunchConfiguration('map_origin_lon'),
-                'lanelet2_map_path': LaunchConfiguration('lanelet2_map_path')
+                'lanelet2_map_path': LaunchConfiguration('lanelet2_map_path'),
+                'allowed_lanelet_subtypes': ['road']
             }],
             output='screen'
         ),

@@ -59,10 +59,16 @@ class LaneletClickPlanner(QMainWindow):
         self.node.declare_parameter('map_origin.lat', 37.630117)
         self.node.declare_parameter('map_origin.lon', 127.081431)
         self.node.declare_parameter('lanelet2_map_path', '')
+        # Allowed lanelet subtypes (if non-empty, selection will only accept these)
+        self.node.declare_parameter('allowed_lanelet_subtypes', ['road'])
+        # Maximum distance to snap selection to an allowed lanelet (meters)
+        self.node.declare_parameter('max_select_distance', 3.0)
         self.map_frame = self.node.get_parameter('map_frame').get_parameter_value().string_value
         self.map_origin_lat = self.node.get_parameter('map_origin.lat').get_parameter_value().double_value
         self.map_origin_lon = self.node.get_parameter('map_origin.lon').get_parameter_value().double_value
         self.projector = UtmProjector(Origin(self.map_origin_lat, self.map_origin_lon))
+        self.allowed_lanelet_subtypes = list(self.node.get_parameter('allowed_lanelet_subtypes').get_parameter_value().string_array_value)
+        self.max_select_distance = self.node.get_parameter('max_select_distance').get_parameter_value().double_value
 
         # Remove map subscriber
         # self.map_sub = self.node.create_subscription(...)
@@ -94,6 +100,33 @@ class LaneletClickPlanner(QMainWindow):
         
         # Map loading flag
         self.map_loaded = False
+
+    def _get_attr(self, attr_map, key: str) -> str:
+        """Robustly fetch an attribute value from lanelet AttributeMap.
+        Tries .get, dict access, and case-insensitive key scan. Returns empty string if missing."""
+        try:
+            if hasattr(attr_map, 'get'):
+                v = attr_map.get(key, '')
+            else:
+                try:
+                    v = attr_map[key]
+                except Exception:
+                    v = ''
+        except Exception:
+            v = ''
+        if v in (None, ''):
+            # try case-insensitive scan
+            try:
+                for k in list(attr_map):
+                    if str(k).lower() == key.lower():
+                        try:
+                            v = attr_map[k]
+                        except Exception:
+                            v = ''
+                        break
+            except Exception:
+                pass
+        return '' if v is None else str(v)
 
     def init_ui(self):
         central_widget = QWidget()
@@ -148,6 +181,23 @@ class LaneletClickPlanner(QMainWindow):
             
             self.node.get_logger().info("Lanelet2 map loaded successfully.")
             self.map_status_label.setText(f'Map: Loaded ({len(self.lanelet_map.laneletLayer)} lanelets)')
+            
+            # Precompute selectable lanelet ids based on allowed subtypes (and exclude pedestrian/stop_line)
+            allowed_subtypes_lower = set(s.lower() for s in (self.allowed_lanelet_subtypes or []))
+            self.allowed_lanelet_ids = set()
+            for ll in self.lanelet_map.laneletLayer:
+                subtype_val = self._get_attr(ll.attributes, 'subtype').lower()
+                ped_val = self._get_attr(ll.attributes, 'participant:pedestrian').lower()
+                ltype_val = self._get_attr(ll.attributes, 'type').lower()
+                if allowed_subtypes_lower and subtype_val not in allowed_subtypes_lower:
+                    continue
+                if ped_val == 'yes':
+                    continue
+                if ltype_val == 'stop_line':
+                    continue
+                self.allowed_lanelet_ids.add(ll.id)
+            if not self.allowed_lanelet_ids:
+                self.node.get_logger().warn('No lanelets match allowed subtypes. Click selection may be disabled. Check map tags (subtype=road).')
             
             # Publish map origin in UTM
             self.publish_map_origin()
@@ -208,11 +258,38 @@ class LaneletClickPlanner(QMainWindow):
         scene_pos = self.map_canvas.mapToScene(event.pos())
         point_ll = lanelet2.core.BasicPoint2d(scene_pos.x(), -scene_pos.y())
 
-        # Find closest lanelet
-        closest_lanelets = lanelet2.geometry.findNearest(self.lanelet_map.laneletLayer, point_ll, 1)
-        if not closest_lanelets: return
+        # Find closest allowed lanelet
+        k_neighbors = min(50, max(1, len(self.lanelet_map.laneletLayer)))
+        nearest_list = lanelet2.geometry.findNearest(self.lanelet_map.laneletLayer, point_ll, k_neighbors)
+        if not nearest_list:
+            return
         
-        _, closest_lanelet = closest_lanelets[0]
+        closest_lanelet = None
+        closest_lanelet_dist = None
+        for dist, cand_lanelet in nearest_list:
+            # Always re-check attributes to be safe even if precomputed set is empty
+            subtype = self._get_attr(cand_lanelet.attributes, 'subtype').lower()
+            ped = self._get_attr(cand_lanelet.attributes, 'participant:pedestrian').lower()
+            ltype = self._get_attr(cand_lanelet.attributes, 'type').lower()
+            if self.allowed_lanelet_subtypes and subtype not in (s.lower() for s in self.allowed_lanelet_subtypes):
+                continue
+            if ped == 'yes':
+                continue
+            if ltype == 'stop_line':
+                continue
+            closest_lanelet = cand_lanelet
+            closest_lanelet_dist = dist
+            break
+
+        if closest_lanelet is None:
+            # No selectable lanelet near click
+            self.node.get_logger().info('No selectable lanelet near click (filtered).')
+            return
+        
+        # If the closest allowed lanelet is too far, ignore selection (prevents crosswalk clicks snapping to distant roads)
+        if closest_lanelet_dist is not None and closest_lanelet_dist > self.max_select_distance:
+            self.node.get_logger().info(f'Closest allowed lanelet is {closest_lanelet_dist:.2f} m away (> {self.max_select_distance:.2f} m). Ignoring click.')
+            return
         
         # Toggle selection
         if closest_lanelet.id in self.selected_lanelet_ids:
