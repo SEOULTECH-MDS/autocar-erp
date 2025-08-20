@@ -15,7 +15,7 @@ def generate_launch_description():
     # --- Launch Arguments ---
     map_name_arg = DeclareLaunchArgument(
         'map_name',
-        default_value='mirae_map',
+        default_value='kcity_v5',
         description='Name of the map folder in localization_core/data'
     )
     map_osm_file_arg = DeclareLaunchArgument(
@@ -25,12 +25,12 @@ def generate_launch_description():
     )
     map_origin_lat_arg = DeclareLaunchArgument(
         'map_origin_lat',
-        default_value='37.630117',
+        default_value='37.239205', 
         description='Latitude of map origin for UTM projection'
     )
     map_origin_lon_arg = DeclareLaunchArgument(
         'map_origin_lon',
-        default_value='127.081431',
+        default_value='126.773193',
         description='Longitude of map origin for UTM projection'
     )
 

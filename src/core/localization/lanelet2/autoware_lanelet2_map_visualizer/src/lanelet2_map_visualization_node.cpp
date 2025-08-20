@@ -104,6 +104,14 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   lanelet::ConstLanelets walkway_lanelets = lanelet::utils::query::walkwayLanelets(all_lanelets);
   std::vector<lanelet::ConstLineString3d> stop_lines =
     lanelet::utils::query::stopLinesLanelets(road_lanelets);
+  // Also visualize raw lineStrings whose type is explicitly tagged as "stop_line"
+  lanelet::ConstLineStrings3d raw_stop_lines;
+  for (const auto & ls : viz_lanelet_map->lineStringLayer) {
+    const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
+    if (type == "stop_line") {
+      raw_stop_lines.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+    }
+  }
   std::vector<lanelet::AutowareTrafficLightConstPtr> aw_tl_reg_elems =
     lanelet::utils::query::autowareTrafficLights(all_lanelets);
   std::vector<lanelet::DetectionAreaConstPtr> da_reg_elems =
@@ -167,7 +175,7 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   set_color(&cl_pedestrian_markings, 0.5, 0.5, 0.5, 0.999);
   set_color(&cl_ll_borders, 0.5, 0.5, 0.5, 0.999);
   set_color(&cl_shoulder_borders, 0.2, 0.2, 0.2, 0.999);
-  set_color(&cl_stoplines, 0.5, 0.5, 0.5, 0.999);
+  set_color(&cl_stoplines, 0.85, 0.85, 0.85, 0.999);
   set_color(&cl_trafficlights, 0.5, 0.5, 0.5, 0.8);
   set_color(&cl_detection_areas, 0.27, 0.27, 0.37, 0.5);
   set_color(&cl_no_stopping_areas, 0.37, 0.37, 0.37, 0.5);
@@ -192,6 +200,10 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   insert_marker_array(
     &map_marker_array,
     lanelet::visualization::lineStringsAsMarkerArray(stop_lines, "stop_lines", cl_stoplines, 0.5));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(
+      raw_stop_lines, "stop_lines_raw", cl_stoplines, 0.5));
   insert_marker_array(
     &map_marker_array,
     lanelet::visualization::lineStringsAsMarkerArray(partitions, "partitions", cl_partitions, 0.1));

@@ -5,7 +5,7 @@ package_name = 'path_planning'
 setup(
     name=package_name,
     version='0.0.1',
-    packages=['bae_planning', 'mode_selector', 'scenario_planner', 'planning_msgs', 'test_utils'],
+    packages=['bae_planning', 'mode_selector', 'scenario_planner', 'test_utils'],
     package_dir={'': 'src'},
     data_files=[
         ('share/ament_index/resource_index/packages',
