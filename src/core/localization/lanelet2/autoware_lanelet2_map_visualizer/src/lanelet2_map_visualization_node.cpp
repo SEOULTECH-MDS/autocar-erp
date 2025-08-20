@@ -327,6 +327,23 @@ void Lanelet2MapVisualizationNode::on_map_bin(
     &map_marker_array, lanelet::visualization::laneletsAsTriangleMarkerArray(
                          "bicycle_lane_lanelets", bicycle_lane_lanelets, cl_bicycle_lane));
 
+  // Z-offset adjustments to mitigate z-fighting
+  auto adjust_z_by_namespace = [&](const std::string & ns, const double dz) {
+    for (auto & mk : map_marker_array.markers) {
+      if (mk.ns == ns) {
+        for (auto & pt : mk.points) {
+          pt.z += dz;
+        }
+        mk.pose.position.z += dz;
+      }
+    }
+  };
+
+  // Lower road surface slightly and raise stop lines slightly
+  adjust_z_by_namespace("road_lanelets", -0.05);
+  adjust_z_by_namespace("stop_lines", +0.05);
+  adjust_z_by_namespace("stop_lines_raw", +0.05);
+
   pub_marker_->publish(map_marker_array);
 }
 
