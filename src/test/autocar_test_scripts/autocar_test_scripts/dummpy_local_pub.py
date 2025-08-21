@@ -21,7 +21,7 @@ class DummyLocalPub(Node):
         # OSM 파일 경로 설정
         self.osm_file_path = os.path.join(
             os.path.dirname(__file__), 
-            'dummy_parking.osm'
+            'dummy_parking1.osm' 
         )
         
         # OSM Handler 초기화
@@ -34,11 +34,11 @@ class DummyLocalPub(Node):
         
         self.get_logger().info("DummyLocalPub 노드가 시작되었습니다.")
         
-        # OSM 파일 파싱 (최초 한 번만)
+        # OSM 파일 파싱
         self.load_osm_waypoints()
         
-        # 타이머 설정 - 1초마다 한 번 발행
-        self.create_timer(1.0, self.publish_local_waypoints)
+        # 1초마다 주기적으로 발행하는 타이머 설정
+        self.create_timer(1.0, self.publish_waypoints)
 
     def load_osm_waypoints(self):
         """OSM 파일에서 waypoints를 로드 (최초 한 번만 실행)"""
@@ -70,7 +70,7 @@ class DummyLocalPub(Node):
                             self.waypoints.append({'x': x, 'y': y})
             
             if self.waypoints:
-                # Path 메시지 생성 (한 번만)
+                # Path 메시지 생성
                 self.path_msg = self.create_path_message(self.waypoints)
                 self.waypoints_loaded = True
                 self.get_logger().info(f"OSM waypoints 로딩 완료: {len(self.waypoints)}개 포인트")
@@ -119,13 +119,13 @@ class DummyLocalPub(Node):
         
         return path_msg
 
-    def publish_local_waypoints(self):
-        """로컬 waypoints를 주기적으로 발행"""
+    def publish_waypoints(self):
+        """주기적으로 waypoints를 발행"""
         if not self.waypoints_loaded or self.path_msg is None:
             self.get_logger().warn("OSM waypoints가 아직 로드되지 않았습니다.")
             return
         
-        # 헤더 타임스탬프만 업데이트 (효율성을 위해)
+        # 타임스탬프 업데이트
         current_time = self.get_clock().now().to_msg()
         self.path_msg.header.stamp = current_time
         

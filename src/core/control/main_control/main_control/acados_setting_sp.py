@@ -22,9 +22,10 @@ def acados_solver():
 
     # 제약 조건 설정
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
-    MAX_SPEED = 3.0  # 최대 속도 [m/s]
-    MIN_SPEED = -3.0  # 최소 속도 [m/s]
-    MAX_ACCEL = 9.0  # 최대 가속도 [m/s^2]
+    MAX_SPEED = 4.0  # 최대 속도 [m/s]
+    MIN_SPEED = 0.0  # 최소 속도 [m/s] (후진 방지)
+    MAX_ACCEL = 12.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
+    MIN_ACCEL = -8.0  # 최대 감속도 [m/s^2]
 
     NX = 5  # reference size (x, y, yaw, v, s)
     ND = 1 # 이전 조향각 입력 크기 (delta)
@@ -45,7 +46,7 @@ def acados_solver():
     # W_lag = 0.75  # lag error 가중치 1.0
     # W_con = 0.05  # contour error 가중치 1.0
     # W_yaw = 0.5  # heading error 가중치 (terminal cost) 0.5
-    # m_term = -0.4  # terminal cost에서 stage cost 비율 감소시키는 가중치
+    # m_term = -0.4  # terminal cost에서 lag, con error 비율 감소시키는 가중치
 
     # cost function weights (0819 test)
     # W_acc = 0.1  # 가속도 입력 크기 가중치 0.1
@@ -54,17 +55,17 @@ def acados_solver():
     # W_lag = 1.0  # lag error 가중치 1.0
     # W_con = 0.3  # contour error 가중치 1.0
     # W_yaw = 0.3  # heading error 가중치 (terminal cost) 0.5
-    # m_term = -0.3 # terminal cost에서 stage cost 비율 감소시키는 가중치
+    # m_term = -0.3 # terminal cost에서 lag, con error 비율 감소시키는 가중치
 
     # cost function weights 
-    W_acc = 0.1  # 가속도 입력 크기 가중치 0.1
+    W_acc = 0.2  # 가속도 입력 크기 가중치 0.1
     W_steer = 0.4  # 조향각 입력 크기 가중치 0.2
     W_steer_rate = 0.2  # 조향각 변화율 가중치
-    W_v = 0.1  # 속도 error 가중치 0.1
+    W_v = 2.0  # 속도 error 가중치 0.1
     W_lag = 1.0  # lag error 가중치 1.0
     W_con = 0.3  # contour error 가중치 1.0
     W_yaw = 0.3  # heading error 가중치 (terminal cost) 0.5
-    m_term = -0.3 # terminal cost에서 stage cost 비율 감소시키는 가중치
+    m_term = -0.7 # terminal cost에서 lag, con error 비율 감소시키는 가중치
 
     # parameter variables
     NP = NX + ND + NV + NO   # NX: 참조 변수 크기, ND: 이전 조향각 입력 크기 NV: 접선 벡터 크기, O: 장애물 정보 크기
@@ -107,13 +108,12 @@ def acados_solver():
                     W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                     W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
                     W_yaw * ((vehicle_yaw - yaw_ref) ** 2)+ \
-                    m_term * (W_v * ((vehicle_v - v_ref) ** 2) + \
-                              W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
+                    m_term * (W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                               W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 )
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # constraints
-    ocp.constraints.lbu = np.array([-MAX_STEER, -MAX_ACCEL])
+    ocp.constraints.lbu = np.array([-MAX_STEER, MIN_ACCEL])
     ocp.constraints.ubu = np.array([MAX_STEER, MAX_ACCEL])
     ocp.constraints.idxbu = np.array([0, 1])  # 제어 입력 인덱스
 

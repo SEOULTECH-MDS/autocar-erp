@@ -10,6 +10,11 @@ from std_msgs.msg import ColorRGBA
 
 import numpy as np
 import math
+import threading
+import sys
+import select
+import termios
+import tty
 from autocar_utils.euler_from_quaternion import euler_from_quaternion
 from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
 from geometry_msgs.msg import Quaternion
@@ -87,14 +92,25 @@ class SimulationPub(Node):
             }
         ]
 
-        self.get_logger().info("SimulationPub START")
+        self.get_logger().info("SimulationPub START \
+                               \n 모드 전환 키: m \
+                               \n 수동 모드: w(전진), s(후진), a(좌회전), d(우회전) \
+                               \n 종료 키: q")
+
+        # 조작 모드 설정
+        self.is_manual_mode = False  # False: 자동모드, True: 수동모드
+        self.manual_speed = 2.0  # 수동 모드 기본 속도 (m/s)
+        self.manual_turn_rate = 0.5  # 수동 모드 회전 속도 (rad/s)
+        
+        # 로그 제어 변수
+        self.last_mode_logged = None  # 마지막으로 로그에 출력한 모드
 
         # 초기 차량 상태 파라미터 설정
         # self.declare_parameter('initial_latitude', 37.630096)  # 미래관 주차장
         # self.declare_parameter('initial_longitude', 127.081397)
-        self.declare_parameter('initial_latitude', 37.239205)  # kcity
-        self.declare_parameter('initial_longitude', 126.773193)
-        self.declare_parameter('initial_yaw_deg', 60.0)
+        self.declare_parameter('initial_latitude', 37.24172412883958)  # KCITY
+        self.declare_parameter('initial_longitude', 126.7740569641074)
+        self.declare_parameter('initial_yaw_deg', -70.0)
         self.declare_parameter('wheel_base', 1.566)  # 차량 휠베이스 (m)
 
         # 파라미터 값 가져오기
@@ -122,12 +138,86 @@ class SimulationPub(Node):
         self.dt = 0.05  # 20Hz
         self.sensor_rate = 0.1
         self.create_timer(self.sensor_rate, self.publish_data)
+        
+        # 키보드 입력 스레드 시작
+        self.key_thread = threading.Thread(target=self.keyboard_listener, daemon=True)
+        self.key_thread.start()
+        
+        self.get_logger().info("키보드 조작 안내:")
+        self.get_logger().info("m: 모드 전환 (자동/수동)")
+        self.get_logger().info("수동 모드: w(전진), s(후진), a(좌회전), d(우회전)")
+        self.get_logger().info("q: 종료")
+
+    def keyboard_listener(self):
+        """키보드 입력을 실시간으로 감지하는 함수"""
+        # 터미널 설정 저장
+        old_settings = termios.tcgetattr(sys.stdin)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            while rclpy.ok():  # ROS2가 실행 중일 때만 루프
+                if select.select([sys.stdin], [], [], 0.1) == ([sys.stdin], [], []):
+                    key = sys.stdin.read(1)
+                    self.handle_key_input(key)
+                    if key.lower() == 'q':
+                        self.get_logger().info("종료 키 입력됨")
+                        rclpy.shutdown()
+                        break
+        except Exception as e:
+            self.get_logger().error(f"키보드 리스너 오류: {e}")
+        finally:
+            # 터미널 설정 복원
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+
+    def handle_key_input(self, key):
+        """키 입력 처리"""
+        if key.lower() == 'm':
+            self.is_manual_mode = not self.is_manual_mode
+            mode_str = "수동" if self.is_manual_mode else "자동"
+            self.get_logger().info(f"모드 전환: {mode_str} 모드")
+        
+        elif self.is_manual_mode:
+            # 수동 모드에서만 동작
+            if key.lower() == 'w':
+                self.manual_move_forward()
+            elif key.lower() == 's':
+                self.manual_move_backward()
+            elif key.lower() == 'a':
+                self.manual_turn_left()
+            elif key.lower() == 'd':
+                self.manual_turn_right()
+
+    def manual_move_forward(self):
+        """수동 모드: 전진"""
+        self.x += self.manual_speed * math.cos(self.yaw) * self.dt * 10  # 10배 빠르게
+        self.y += self.manual_speed * math.sin(self.yaw) * self.dt * 10
+        self.longitude, self.latitude = self.transformer.transform(self.x, self.y, direction='INVERSE')
+        self.velocity = self.manual_speed  # 수동 모드에서 속도 표시용
+
+    def manual_move_backward(self):
+        """수동 모드: 후진"""
+        self.x -= self.manual_speed * math.cos(self.yaw) * self.dt * 10
+        self.y -= self.manual_speed * math.sin(self.yaw) * self.dt * 10
+        self.longitude, self.latitude = self.transformer.transform(self.x, self.y, direction='INVERSE')
+        self.velocity = -self.manual_speed  # 수동 모드에서 속도 표시용 (후진)
+
+    def manual_turn_left(self):
+        """수동 모드: 좌회전"""
+        self.yaw += self.manual_turn_rate * self.dt * 10
+        self.yaw = self.normalize_angle(self.yaw)
+
+    def manual_turn_right(self):
+        """수동 모드: 우회전"""
+        self.yaw -= self.manual_turn_rate * self.dt * 10
+        self.yaw = self.normalize_angle(self.yaw)
 
     # 사용자 입력(속도, 조향각) 콜백 함수
     def cmd_callback(self, msg):
-        self.velocity = msg.drive.speed  # m/s
-        self.steering_angle = msg.drive.steering_angle  # 라디안
-        self.update_vehicle_state()
+        # 자동 모드에서만 사용자 입력 적용
+        if not self.is_manual_mode:
+            self.velocity = msg.drive.speed  # m/s
+            self.steering_angle = msg.drive.steering_angle  # 라디안
+            self.update_vehicle_state()
+        # 수동 모드에서는 사용자 입력 무시
     
     # 차량 상태 업데이트 (자전거 모델)
     def update_vehicle_state(self):
@@ -174,12 +264,16 @@ class SimulationPub(Node):
             imu_msg.angular_velocity.z = 0.0
             
         self.publisher_imu.publish(imu_msg)
-        
-        # 로그 출력
-        self.get_logger().info(f"\n lat={self.latitude:.8f}, lon={self.longitude:.8f}, \n Heading: {np.rad2deg(self.yaw):.2f} deg, Speed: {self.velocity:.2f} m/s")
-
         self.publish_obstacle_marker()
         self.publish_stopline_marker()
+
+        # 모드 변경 시에만 로그 출력
+        current_mode = "수동" if self.is_manual_mode else "자동"
+        if self.last_mode_logged != current_mode:
+            self.get_logger().info(f"현재 모드: {current_mode}")
+            self.last_mode_logged = current_mode
+
+
 
     def publish_obstacle_marker(self):
         marker_array = MarkerArray()
@@ -211,12 +305,8 @@ class SimulationPub(Node):
         
         self.obstacle_marker_pub.publish(marker_array)
         
-        # 로그에 장애물 정보 추가
-        obstacle_info = " | ".join([
-            f"Obstacle{i+1} UTM: x={obs['x']:.2f}, y={obs['y']:.2f}"
-            for i, obs in enumerate(self.obstacles)
-        ])
-        self.get_logger().info(obstacle_info)
+        # 로그에 장애물 정보 추가 (로그 출력 제거)
+        # 장애물 마커만 발행하고 로그는 출력하지 않음
 
     def publish_stopline_marker(self):
         """정지선 마커 퍼블리시"""
@@ -257,12 +347,6 @@ class SimulationPub(Node):
         
         self.stopline_marker_pub.publish(marker_array)
         
-        # 로그에 정지선 정보 추가
-        stopline_info = " | ".join([
-            f"Stopline{i+1} UTM: x={stop['x']:.2f}, y={stop['y']:.2f}"
-            for i, stop in enumerate(self.stoplines)
-        ])
-        self.get_logger().info(f"Stoplines: {stopline_info}")
 
 
 def main(args=None):
