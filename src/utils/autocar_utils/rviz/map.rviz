@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Odometry1
-        - /Map1/Status1
         - /Map1/Namespaces1
         - /Stopline1
       Splitter Ratio: 0.5058823823928833
@@ -175,7 +174,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /autocar/overlay
+        Value: /autocar/steering_angle
       Value: true
       font: DejaVu Sans Mono
       height: 128
@@ -229,7 +228,26 @@ Visualization Manager:
       Tree:
         world:
           map:
-            {}
+            base_link:
+              gps_link:
+                {}
+              imu_link:
+                {}
+              structure:
+                left_back_disk_wheel:
+                  left_back_wheel:
+                    {}
+                left_front_disk_wheel:
+                  left_front_wheel:
+                    {}
+                right_back_disk_wheel:
+                  right_back_wheel:
+                    {}
+                right_front_disk_wheel:
+                  right_front_wheel:
+                    {}
+              velodyne:
+                {}
       Update Interval: 0
       Value: true
     - Angle Tolerance: 0.10000000149011612
@@ -292,6 +310,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /map/lanelet2_map_viz
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Map Selected
+      Namespaces:
+        current_lanelet_highlight: true
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /map/lanelet2_map_viz_highlight
+      Value: true
     - Alpha: 1
       Class: rviz_default_plugins/PointStamped
       Color: 204; 41; 204
@@ -306,18 +336,6 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /map/origin
-      Value: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: Map Selected
-      Namespaces:
-        {}
-      Topic:
-        Depth: 5
-        Durability Policy: Transient Local
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /selected_lanelets_viz
       Value: true
     - Alpha: 1
       Buffer Length: 1
@@ -351,7 +369,7 @@ Visualization Manager:
       Enabled: true
       Name: MPC Predict
       Namespaces:
-        {}
+        predicted_points: true
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -363,7 +381,7 @@ Visualization Manager:
       Enabled: true
       Name: MPC Ref
       Namespaces:
-        {}
+        xref_points: true
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -396,7 +414,7 @@ Visualization Manager:
       Enabled: true
       Name: Obstacle
       Namespaces:
-        {}
+        obstacles: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -408,7 +426,7 @@ Visualization Manager:
       Enabled: true
       Name: Stopline
       Namespaces:
-        {}
+        stoplines: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -469,9 +487,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.460720539093018
-        Y: -3.427070140838623
-        Z: 4.015359401702881
+        X: 4.460700035095215
+        Y: -3.4270999431610107
+        Z: 4.015399932861328
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

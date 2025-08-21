@@ -83,6 +83,8 @@ Lanelet2MapVisualizationNode::Lanelet2MapVisualizationNode(const rclcpp::NodeOpt
 
   pub_marker_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
     "output/lanelet2_map_marker", rclcpp::QoS{1}.transient_local());
+  pub_highlight_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    "output/lanelet2_map_marker_highlight", rclcpp::QoS{1}.transient_local());
 }
 
 void Lanelet2MapVisualizationNode::on_map_bin(
@@ -363,7 +365,7 @@ void Lanelet2MapVisualizationNode::on_current_lanelet(const std_msgs::msg::Int64
       del_marker.action = visualization_msgs::msg::Marker::DELETE;
       delete_array.markers.push_back(del_marker);
     }
-    pub_marker_->publish(delete_array);
+    pub_highlight_->publish(delete_array);
   }
 
   visualization_msgs::msg::MarkerArray marker_array;
@@ -427,7 +429,7 @@ void Lanelet2MapVisualizationNode::on_current_lanelet(const std_msgs::msg::Int64
     marker_array.markers.push_back(right_mk);
   }
 
-  pub_marker_->publish(marker_array);
+  pub_highlight_->publish(marker_array);
 }
 }  // namespace autoware::lanelet2_map_visualizer
 
