@@ -78,7 +78,7 @@ class Control(Node):
 
         self.stopline_distance = 1e6
 
-        self.target_vel = 3.0  # 목표 속도 (m/s)
+        self.target_vel = 4.0  # 목표 속도 (m/s)
         self.steering_angle = 0.0
         self.velocity = 0.0
         
@@ -86,6 +86,10 @@ class Control(Node):
         self.prev_steering_angle = 0.0
         self.prev_velocity = 0.0
         self.fail_count = 0  # 실패 횟수 카운트
+        
+        # s 값 제약을 위한 변수들
+        self.prev_s = 0.0  # 이전 s 값 저장
+        self.s_tolerance = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
         
         # map 원점
         self.map_origin_x = None
@@ -150,7 +154,7 @@ class Control(Node):
 
     def calc_current_s(self, _cubic_spline):
         """
-        이진 탐색과 gradient descent를 사용한 s 값 탐색
+        이진 탐색과 gradient descent를 사용한 s 값 탐색 (단조증가 제약 포함)
         """
         cubic_spline = _cubic_spline
 
@@ -164,12 +168,16 @@ class Control(Node):
         
         total_length = cubic_spline.s[-1]
         
-        # 1단계: 거친 탐색으로 대략적인 위치 찾기
+        # s 탐색 범위를 이전 s 값 기준으로 제한
+        search_start = max(0, self.prev_s - self.s_tolerance)
+        search_end = min(total_length, self.prev_s + 50.0)  # 앞으로 최대 50m까지만 탐색
+        
+        # 1단계: 제한된 범위에서 거친 탐색
         coarse_resolution = 1.0  # 1m 간격
-        s_coarse = np.arange(0, total_length + coarse_resolution, coarse_resolution)
+        s_coarse = np.arange(search_start, search_end + coarse_resolution, coarse_resolution)
         
         min_distance = float('inf')
-        best_s = 0.0
+        best_s = self.prev_s  # 기본값을 이전 s로 설정
         
         for s_val in s_coarse:
             sx, sy = cubic_spline.calc_position(s_val)
@@ -182,8 +190,8 @@ class Control(Node):
         
         # 2단계: 최적 지점 주변을 세밀하게 탐색
         search_range = 2.0  # 최적점 주변 ±2m 범위
-        s_start = max(0, best_s - search_range)
-        s_end = min(total_length, best_s + search_range)
+        s_start = max(search_start, best_s - search_range)
+        s_end = min(search_end, best_s + search_range)
         
         fine_resolution = 0.05  # 0.05m 간격으로 세밀 탐색
         s_fine = np.arange(s_start, s_end + fine_resolution, fine_resolution)
@@ -197,6 +205,12 @@ class Control(Node):
                 min_distance = distance
                 best_s = s_val
         
+        # s 값이 너무 크게 역행하는 것을 방지 (단조증가 제약)
+        if best_s < self.prev_s - self.s_tolerance:
+            best_s = self.prev_s - self.s_tolerance
+            self.get_logger().warn(f"S 값 역행 제한: {best_s:.2f} (이전: {self.prev_s:.2f})")
+        
+        self.prev_s = best_s  # 이전 s 값 업데이트
         self.s = best_s
         return
 
@@ -220,9 +234,17 @@ class Control(Node):
         local waypoints 콜백
         """
         self.xs_local, self.ys_local = [], []  # waypoint 리스트
-        for node in path_msg.poses:
-            self.xs_local.append(node.pose.position.x)
-            self.ys_local.append(node.pose.position.y)
+        if self.map_origin_x is not None and self.map_origin_y is not None:
+            for node in path_msg.poses:
+                self.xs_local.append(node.pose.position.x - self.map_origin_x)
+                self.ys_local.append(node.pose.position.y - self.map_origin_y)
+        else:
+            self.get_logger().warn("Map origin 정보가 설정되지 않았습니다. Local waypoints를 업데이트할 수 없습니다.")
+            return
+        
+        # for node in path_msg.poses:
+        #     self.xs_local.append(node.pose.position.x)
+        #     self.ys_local.append(node.pose.position.y)
 
         # self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)  # waypoint를 보간한 CubicSpline2D 객체 생성
         self.make_cubic_spline()
@@ -230,11 +252,15 @@ class Control(Node):
         return
     
     def make_cubic_spline(self):
-        if self.mode == 0 or self.mode == 1: # DRIVE 모드 or PAUSE 모드
+        # Global waypoints로 스플라인 생성 (DRIVE/PAUSE 모드용)
+        if len(self.xs_global) >= 2 and len(self.ys_global) >= 2:
             self.cubic_spline_global = CubicSpline2D(self.xs_global, self.ys_global)
-
-        elif self.mode == 2 or self.mode == 3 or self.mode == 4 or self.mode == 5 or self.mode == 6:  # MISSION 모드
+            self.get_logger().info(f"Global cubic spline 생성 완료: {len(self.xs_global)}개 포인트")
+        
+        # Local waypoints로 스플라인 생성 (MISSION 모드용)
+        if len(self.xs_local) >= 2 and len(self.ys_local) >= 2:
             self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)
+            self.get_logger().info(f"Local cubic spline 생성 완료: {len(self.xs_local)}개 포인트")
 
     def obstacle_cb(self, msg):
         """ 
@@ -275,20 +301,34 @@ class Control(Node):
             current_s = self.s
 
             for i in range(N):
+                # 다음 s 값을 먼저 계산
                 s = current_s + self.dt * self.target_vel
+                
+                # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
-                    s = cubic_spline.s[-1] - 0.1
-                    xref[3, i] = 0.0
+                    # 끝점을 넘어갔으면 끝점으로 고정하고 속도 0 설정
+                    s = cubic_spline.s[-1] - 0.5
+                    target_vel = 0.0
+                else:
+                    # 끝점까지 남은 거리 계산
+                    remaining_distance = cubic_spline.s[-1] - s
+
+                    if remaining_distance <= 3.0:  # 3m 이내에서 미리 속도 0 설정
+                        target_vel = 0.0
+                    else:
+                        # 정상 범위 내라면 원래 목표 속도 사용
+                        target_vel = self.target_vel
+                
+                # 다음 iteration을 위해 current_s 업데이트
+                current_s = s
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 xref[2, i] = cubic_spline.calc_yaw(s)
-                xref[3, i] = self.target_vel
+                xref[3, i] = target_vel
                 xref[4, i] = s 
 
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
                 tan_vec[1, i] = math.sin(cubic_spline.calc_yaw(s))
-
-                current_s = s
 
         self.visualize_ref_trajectory(xref)
 
@@ -303,18 +343,23 @@ class Control(Node):
             self.get_logger().warn("차량 상태가 초기화되지 않았습니다.")
             return
 
-        if self.xs_global == [] or self.ys_global == []:
-            self.get_logger().warn("Global waypoints 데이터가 없습니다.")
-            return
-        
+        # 현재 모드에 따라 사용할 스플라인 결정
         if self.mode == 0 or self.mode == 1:  # DRIVE 모드 or PAUSE 모드
             current_cubic_spline = self.cubic_spline_global
-        else:  # MISSION 모드
+            if self.xs_global == [] or self.ys_global == []:
+                self.get_logger().warn("Global waypoints 데이터가 없습니다.")
+                return
+            if current_cubic_spline is None:
+                self.get_logger().warn("Global cubic spline이 초기화되지 않았습니다.")
+                return
+        else:  # MISSION 모드 (2, 3, 4, 5, 6)
             current_cubic_spline = self.cubic_spline_local
-
-        if current_cubic_spline is None:
-            self.get_logger().warn("Cubic spline이 초기화되지 않았습니다.")
-            return
+            if self.xs_local == [] or self.ys_local == []:
+                self.get_logger().warn("Local waypoints 데이터가 없습니다.")
+                return
+            if current_cubic_spline is None:
+                self.get_logger().warn("Local cubic spline이 초기화되지 않았습니다.")
+                return
 
         # 현재 s 값 계산, reference trajectory 계산
         self.calc_current_s(current_cubic_spline)
@@ -346,8 +391,8 @@ class Control(Node):
             self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity) # 이전 제어 입력으로 차량에 입력
             return
         
-        self.get_logger().info(f"tan_vec: {tan_vec}\
-                               \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
+        # self.get_logger().info(f"tan_vec: {tan_vec}\
+        #                        \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
         
         # Solver에서 최적화된 제어 입력, 상태 변수 추출
         u_opt = np.array([self.solver.get(i, "u") for i in range(N)])
@@ -402,7 +447,8 @@ class Control(Node):
         text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
             \n Fail Count: {self.fail_count}\
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
-            \n Mode: {self.mode} ({self.mode_description})"
+            \n Mode: {self.mode} ({self.mode_description}) \
+            \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f})"
 
 
         self.overlay_pub.publish(text_msg)
