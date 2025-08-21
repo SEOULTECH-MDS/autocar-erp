@@ -94,7 +94,7 @@ class SensorFusion(Node):
         # ROS
         super().__init__('sensor_fusion')
 
-        self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
+        self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/markers')
         self.bbox_sub = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/deliver")
 
         self.sync = message_filters.ApproximateTimeSynchronizer([self.cluster_sub, self.bbox_sub], queue_size=10, slop=0.5, allow_headerless=True)
