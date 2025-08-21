@@ -37,8 +37,7 @@ private:
   rclcpp::Subscription<autoware_map_msgs::msg::LaneletMapBin>::SharedPtr sub_map_bin_;
   rclcpp::Subscription<std_msgs::msg::Int64>::SharedPtr sub_current_lanelet_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_marker_;
-  // Optional: separate publisher for highlights (unused; we reuse pub_marker_ with ns)
-  // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_highlight_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_highlight_;
 
   bool viz_lanelets_centerline_;
   int64_t current_lanelet_id_ = 0;

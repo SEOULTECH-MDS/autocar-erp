@@ -3331,12 +3331,16 @@
     <nd ref="1479"/>
     <nd ref="1480"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="12"/>
+    <tag k="stopline_type" v="nonstop"/>
   </way>
   <way id="68">
     <nd ref="666"/>
     <nd ref="671"/>
     <nd ref="992"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="16"/>
+    <tag k="stopline_type" v="traffic_straight"/>
   </way>
   <way id="69">
     <nd ref="516"/>
@@ -3349,6 +3353,8 @@
     <nd ref="710"/>
     <nd ref="1481"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="1"/>
+    <tag k="stopline_type" v="nonstop"/>
   </way>
   <way id="71">
     <nd ref="1482"/>
@@ -3357,6 +3363,8 @@
     <nd ref="428"/>
     <nd ref="385"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="3"/>
+    <tag k="stopline_type" v="traffic_straight"/>
   </way>
   <way id="72">
     <nd ref="437"/>
@@ -3365,6 +3373,8 @@
     <nd ref="1484"/>
     <nd ref="1485"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="5"/>
+    <tag k="stopline_type" v="traffic_straight"/>
   </way>
   <way id="73">
     <nd ref="1486"/>
@@ -3378,6 +3388,8 @@
     <nd ref="1492"/>
     <nd ref="1493"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="10"/>
+    <tag k="stopline_type" v="traffic_right"/>
   </way>
   <way id="74">
     <nd ref="1494"/>
@@ -3388,12 +3400,16 @@
     <nd ref="602"/>
     <nd ref="1459"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="8"/>
+    <tag k="stopline_type" v="traffic_straight"/>
   </way>
   <way id="75">
     <nd ref="480"/>
     <nd ref="514"/>
     <nd ref="497"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="18"/>
+    <tag k="stopline_type" v="nonstop"/>
   </way>
   <way id="76">
     <nd ref="1498"/>
@@ -3403,6 +3419,8 @@
     <nd ref="1501"/>
     <nd ref="1502"/>
     <tag k="type" v="stop_line"/>
+    <tag k="ref_lanlet_id" v="10"/>
+    <tag k="stopline_type" v="nonstop"/>
   </way>
   <way id="77">
     <nd ref="1503"/>

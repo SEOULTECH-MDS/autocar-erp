@@ -98,7 +98,8 @@ def generate_launch_description():
             parameters=[{'map_frame': 'world'}],
             remappings=[
                 ('input/lanelet2_map', '/map/vector_map'),
-                ('output/lanelet2_map_marker', '/map/lanelet2_map_viz')
+                ('output/lanelet2_map_marker', '/map/lanelet2_map_viz'),
+                ('output/lanelet2_map_marker_highlight', '/map/lanelet2_map_viz_highlight')
             ]
         ),
 
