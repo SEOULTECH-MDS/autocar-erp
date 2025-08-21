@@ -63,9 +63,9 @@ def acados_solver():
     W_steer_rate = 0.2  # 조향각 변화율 가중치
     W_v = 2.0  # 속도 error 가중치 0.1
     W_lag = 1.0  # lag error 가중치 1.0
-    W_con = 0.3  # contour error 가중치 1.0
+    W_con = 0.1  # contour error 가중치 1.0
     W_yaw = 0.3  # heading error 가중치 (terminal cost) 0.5
-    m_term = -0.7 # terminal cost에서 lag, con error 비율 감소시키는 가중치
+    m_term = -0.8 # terminal cost에서 lag, con error 비율 감소시키는 가중치
 
     # parameter variables
     NP = NX + ND + NV + NO   # NX: 참조 변수 크기, ND: 이전 조향각 입력 크기 NV: 접선 벡터 크기, O: 장애물 정보 크기

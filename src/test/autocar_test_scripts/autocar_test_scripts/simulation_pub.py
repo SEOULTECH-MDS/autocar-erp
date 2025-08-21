@@ -108,8 +108,8 @@ class SimulationPub(Node):
         # 초기 차량 상태 파라미터 설정
         # self.declare_parameter('initial_latitude', 37.630096)  # 미래관 주차장
         # self.declare_parameter('initial_longitude', 127.081397)
-        self.declare_parameter('initial_latitude', 37.24172412883958)  # KCITY
-        self.declare_parameter('initial_longitude', 126.7740569641074)
+        self.declare_parameter('initial_latitude', 37.239205)  # KCITY
+        self.declare_parameter('initial_longitude', 126.773193)
         self.declare_parameter('initial_yaw_deg', -70.0)
         self.declare_parameter('wheel_base', 1.566)  # 차량 휠베이스 (m)
 
@@ -142,11 +142,7 @@ class SimulationPub(Node):
         # 키보드 입력 스레드 시작
         self.key_thread = threading.Thread(target=self.keyboard_listener, daemon=True)
         self.key_thread.start()
-        
-        self.get_logger().info("키보드 조작 안내:")
-        self.get_logger().info("m: 모드 전환 (자동/수동)")
-        self.get_logger().info("수동 모드: w(전진), s(후진), a(좌회전), d(우회전)")
-        self.get_logger().info("q: 종료")
+    
 
     def keyboard_listener(self):
         """키보드 입력을 실시간으로 감지하는 함수"""

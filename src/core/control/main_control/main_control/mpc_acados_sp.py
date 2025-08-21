@@ -307,7 +307,7 @@ class Control(Node):
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
                     # 끝점을 넘어갔으면 끝점으로 고정하고 속도 0 설정
-                    s = cubic_spline.s[-1] - 0.1
+                    s = cubic_spline.s[-1] - 0.5
                     target_vel = 0.0
                 else:
                     # 끝점까지 남은 거리 계산
