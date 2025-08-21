@@ -18,6 +18,7 @@ from autocar_utils.utils import generate_target_course
 from rviz_2d_overlay_msgs.msg import OverlayText
 from visualization_msgs.msg import Marker, MarkerArray
 # from planning_msgs.msg import ModeState
+# from planning_msgs.msg import ModeState
 from std_msgs.msg import ColorRGBA
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
@@ -53,6 +54,7 @@ class Control(Node):
         qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
+        self.mode_sub = self.create_subscription(Float64, '/mode_state', self.mode_cb, 10)
         # self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
 
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)

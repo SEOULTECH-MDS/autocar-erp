@@ -4,26 +4,26 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     return LaunchDescription([
-        Node(
-            package='perception',
-            executable='left_camera',
-            name='left_camera',
-            output='screen'
-        ),
+        # Node(
+        #     package='perception',
+        #     executable='left_camera',
+        #     name='left_camera',
+        #     output='screen'
+        # ),
 
-        Node(
-            package='perception',
-            executable='right_camera',
-            name='right_camera',
-            output='screen'
-        ),
+        # Node(
+        #     package='perception',
+        #     executable='right_camera',
+        #     name='right_camera',
+        #     output='screen'
+        # ),
 
-        Node(
-            package='perception',
-            executable='combined_camera',
-            name='combined_camera',
-            output='screen'
-        ),
+        # Node(
+        #     package='perception',
+        #     executable='combined_camera',
+        #     name='combined_camera',
+        #     output='screen'
+        # ),
 
         Node(
             package='perception',

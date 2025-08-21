@@ -144,8 +144,7 @@ def generate_lanelet2_map(osm_files, output_file):
 
 if __name__ == '__main__':
     osm_files = [
-        'src/core/localization/localization_core/data/mirae_link.osm',
-        'src/core/localization/localization_core/data/mirae_intersection.osm'
+        '/home/hmmdyn/autocar-erp/src/core/localization/localization_core/data/A2_LINK.osm'
     ]
-    output_osm_file = 'mirae_lanelet2_map.osm'
+    output_osm_file = '/home/hmmdyn/autocar-erp/autocar_lanelet2_map.osm'
     generate_lanelet2_map(osm_files, output_osm_file) 

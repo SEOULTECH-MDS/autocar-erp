@@ -19,6 +19,9 @@
 
 #include <autoware_map_msgs/msg/lanelet_map_bin.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <std_msgs/msg/int64.hpp>
+
+#include <lanelet2_core/LaneletMap.h>
 
 #include <string>
 #include <vector>
@@ -32,11 +35,17 @@ public:
 
 private:
   rclcpp::Subscription<autoware_map_msgs::msg::LaneletMapBin>::SharedPtr sub_map_bin_;
+  rclcpp::Subscription<std_msgs::msg::Int64>::SharedPtr sub_current_lanelet_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_marker_;
+  // Optional: separate publisher for highlights (unused; we reuse pub_marker_ with ns)
+  // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_highlight_;
 
   bool viz_lanelets_centerline_;
+  int64_t current_lanelet_id_ = 0;
+  lanelet::LaneletMapPtr viz_lanelet_map_;
 
   void on_map_bin(const autoware_map_msgs::msg::LaneletMapBin::ConstSharedPtr msg);
+  void on_current_lanelet(const std_msgs::msg::Int64::ConstSharedPtr msg);
 };
 }  // namespace autoware::lanelet2_map_visualizer
 
