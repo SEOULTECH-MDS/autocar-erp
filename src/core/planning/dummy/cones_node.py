@@ -18,7 +18,13 @@ class ConesNode(Node):
         super().__init__('cones_node')
         
         # ──── 패턴 선택 파라미터 ───────────────────────────────────────────────
-        self.declare_parameter('open_area_pattern', 1)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
+        self.declare_parameter('open_area_pattern', 2)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
+        # ──── 순차 인식 모사 파라미터 ─────────────────────────────────────────
+        self.declare_parameter('sequential_mode', True)   # True면 순차 공개
+        self.declare_parameter('seq_publish_rate', 5)   # Hz
+        self.declare_parameter('seq_order', 'near_to_far') # near_to_far | far_to_near | random
+        self.declare_parameter('seq_dropout_prob', 0.0)    # 0.0~0.5 일부 프레임 드롭
+        self.declare_parameter('seq_noise_std', 0.0)       # m, 위치 잡음
         
         # 퍼블리셔 초기화
         self.marker_pub = self.create_publisher(
@@ -34,8 +40,9 @@ class ConesNode(Node):
             10
         )
         
-        # 타이머 설정 (10Hz로 마커 업데이트)
-        self.timer = self.create_timer(0.1, self.publish_cones)
+        # 타이머 설정
+        rate = float(self.get_parameter('seq_publish_rate').value)
+        self.timer = self.create_timer(1.0 / max(1e-3, rate), self.publish_cones)
         
         # 라바콘 마커 설정
         self.cone_markers = MarkerArray()
@@ -87,6 +94,19 @@ class ConesNode(Node):
         # 라바콘의 기본 색상
         self.cone_color = (1.0, 0.5, 0.0, 0.8)  # 주황색
         
+        # 순차 인식 모사 인덱스 준비(마커/장애물 초기화 전에 준비)
+        self._seq_indices = list(range(len(self.relative_positions)))
+        order = str(self.get_parameter('seq_order').value)
+        if order == 'near_to_far':
+            # y 기준 오름차순
+            self._seq_indices.sort(key=lambda i: self.relative_positions[i][1])
+        elif order == 'far_to_near':
+            self._seq_indices.sort(key=lambda i: self.relative_positions[i][1], reverse=True)
+        elif order == 'random':
+            import random
+            random.shuffle(self._seq_indices)
+        self._seq_cursor = 0
+
         # 라바콘 마커 초기화
         self.setup_cone_markers()
         
@@ -240,22 +260,31 @@ class ConesNode(Node):
         self.obstacle_array.obstacles.clear()
         self.obstacle_array.header.frame_id = "map"
         self.obstacle_array.header.stamp = self.get_clock().now().to_msg()
-        
-        for i, (rel_x, rel_y) in enumerate(self.relative_positions):
+        # 순차 모드면 일부만 공개
+        sequential = bool(self.get_parameter('sequential_mode').value)
+        dropout = float(self.get_parameter('seq_dropout_prob').value)
+        noise_std = float(self.get_parameter('seq_noise_std').value)
+        import random
+
+        def maybe_noise(v: float) -> float:
+            if noise_std <= 0.0:
+                return v
+            return float(v + np.random.normal(0.0, noise_std))
+
+        indices = range(len(self.relative_positions)) if not sequential else self._seq_indices[: self._seq_cursor]
+        for i in indices:
+            rel_x, rel_y = self.relative_positions[i]
+            if sequential and dropout > 0.0 and random.random() < dropout:
+                continue
             obstacle = Obstacle()
             obstacle.id = i
             obstacle.type = "cone"
-            
-            # 절대 위치 계산
             abs_x = self.group_reference_x + rel_x
             abs_y = self.group_reference_y + rel_y
-            
-            # 중심점과 반지름 설정
-            obstacle.center.x = abs_x
-            obstacle.center.y = abs_y
+            obstacle.center.x = maybe_noise(abs_x)
+            obstacle.center.y = maybe_noise(abs_y)
             obstacle.center.z = 0.0
             obstacle.radius = self.cone_radius
-            
             self.obstacle_array.obstacles.append(obstacle)
     
     def publish_cones(self):
@@ -270,6 +299,14 @@ class ConesNode(Node):
         self.marker_pub.publish(self.cone_markers)
         
         # 장애물 배열 퍼블리시
+        # 순차 모드에서는 커서를 전진시키며 업데이트
+        if bool(self.get_parameter('sequential_mode').value):
+            if self._seq_cursor < len(self._seq_indices):
+                self._seq_cursor += 1
+            # 동기화된 마커 업데이트를 위해 마커 위치는 고정(시각화는 전체), 장애물만 점진 공개
+            self.update_obstacle_array()
+        else:
+            self.update_obstacle_array()
         self.obstacle_pub.publish(self.obstacle_array)
 
 
