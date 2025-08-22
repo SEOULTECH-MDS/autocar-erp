@@ -36,7 +36,6 @@ class Control(Node):
         # 시각화 Publisher
         qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.overlay_pub = self.create_publisher(OverlayText, '/autocar/overlay', 10)
-        self.global_path_pub = self.create_publisher(MarkerArray, '/autocar/global_path', qos_profile=qos_transient_local)
         self.mpc_predict_pub = self.create_publisher(MarkerArray, '/autocar/mpc_predict', qos_profile=qos_transient_local)
         self.mpc_ref_pub = self.create_publisher(MarkerArray, '/autocar/mpc_ref', qos_profile=qos_transient_local)
 
@@ -49,8 +48,8 @@ class Control(Node):
 
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
-        self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)
-        self.stopline_sub = self.create_subscription(MarkerArray, '/stoplines/markers', self.stopline_cb, 10)
+        # self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacles/markers', self.obstacle_cb, 10)
+        self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
 
         # 변수 초기화
         self.x = None
@@ -154,7 +153,8 @@ class Control(Node):
 
     def calc_current_s(self, _cubic_spline):
         """
-        이진 탐색과 gradient descent를 사용한 s 값 탐색 (단조증가 제약 포함)
+        이진 탐색과 gradient descent를 사용한 s 값 탐색
+        최근 s값 기준으로 일정 범위 안에서만 탐색
         """
         cubic_spline = _cubic_spline
 
@@ -205,7 +205,7 @@ class Control(Node):
                 min_distance = distance
                 best_s = s_val
         
-        # s 값이 너무 크게 역행하는 것을 방지 (단조증가 제약)
+        # s 값이 너무 크게 역행하는 것을 방지 
         if best_s < self.prev_s - self.s_tolerance:
             best_s = self.prev_s - self.s_tolerance
             self.get_logger().warn(f"S 값 역행 제한: {best_s:.2f} (이전: {self.prev_s:.2f})")
@@ -277,16 +277,11 @@ class Control(Node):
         """ 
         정지선 위치 업데이트 
         """
-        if len(msg.markers) > 0 and self.x is not None and self.y is not None:
-            stopline_x = msg.markers[0].pose.position.x - self.map_origin_x
-            stopline_y = msg.markers[0].pose.position.y - self.map_origin_y
-            self.stopline_distance = np.sqrt(
-                (stopline_x - self.x) ** 2 +
-                (stopline_y - self.y) ** 2
-            )
-            self.get_logger().info(f"Stopline distance: {self.stopline_distance:.2f} m")
+        if msg.data is not None:
+            self.stopline_distance = msg.data
         else:
             self.stopline_distance = 1e6
+
 
     def calc_ref_trajectory(self, _cubic_spline):
         """
@@ -307,7 +302,7 @@ class Control(Node):
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
                     # 끝점을 넘어갔으면 끝점으로 고정하고 속도 0 설정
-                    s = cubic_spline.s[-1] - 0.5
+                    s = cubic_spline.s[-1] - 0.1
                     target_vel = 0.0
                 else:
                     # 끝점까지 남은 거리 계산
@@ -400,12 +395,18 @@ class Control(Node):
         self.visualize_predicted_trajectory(x_opt)
 
         # 제어 입력
-        self.steering_angle = u_opt[1, 0] - 0.14137166941   # 0번째 step의 조향각 (delta)
-        self.velocity = x_opt[1, 3]        # 0번째 step의 속도 (v)
+        # self.steering_angle = u_opt[1, 0] - 0.14137166941  # 조향각 (delta) alignment 보정 -2.7도
+        self.steering_angle = u_opt[1, 0]  # 조향각 (delta)
+        self.velocity = x_opt[1, 3]        # 속도 (v)
 
         # 이전 제어 입력 저장 (다음 실패 시 fallback용)
         self.prev_steering_angle = self.steering_angle
         self.prev_velocity = self.velocity
+
+        # s 값이 목표 지점에 도달했는지 확인
+        # remaining_distance = current_cubic_spline.s[-1] - self.s
+        # if remaining_distance <= 0.3:
+        #     self.velocity = 0.0 # path의 끝에 도달했을 떄 속도를 0으로 설정 -> 브레이크
 
         # 차량에 제어 명령 전송
         self.set_vehicle_command(self.steering_angle, self.velocity)

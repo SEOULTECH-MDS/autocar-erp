@@ -106,10 +106,10 @@ class SimulationPub(Node):
         self.last_mode_logged = None  # 마지막으로 로그에 출력한 모드
 
         # 초기 차량 상태 파라미터 설정
-        # self.declare_parameter('initial_latitude', 37.630096)  # 미래관 주차장
-        # self.declare_parameter('initial_longitude', 127.081397)
-        self.declare_parameter('initial_latitude', 37.239205)  # KCITY
-        self.declare_parameter('initial_longitude', 126.773193)
+        self.declare_parameter('initial_latitude', 37.630096)  # 미래관 주차장
+        self.declare_parameter('initial_longitude', 127.081397)
+        # self.declare_parameter('initial_latitude', 37.239205)  # KCITY
+        # self.declare_parameter('initial_longitude', 126.773193)
         self.declare_parameter('initial_yaw_deg', -70.0)
         self.declare_parameter('wheel_base', 1.566)  # 차량 휠베이스 (m)
 
