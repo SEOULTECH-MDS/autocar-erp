@@ -18,13 +18,14 @@ class ConesNode(Node):
         super().__init__('cones_node')
         
         # ──── 패턴 선택 파라미터 ───────────────────────────────────────────────
-        self.declare_parameter('open_area_pattern', 2)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
+        self.declare_parameter('open_area_pattern', 1)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
         # ──── 순차 인식 모사 파라미터 ─────────────────────────────────────────
         self.declare_parameter('sequential_mode', True)   # True면 순차 공개
-        self.declare_parameter('seq_publish_rate', 5)   # Hz
+        self.declare_parameter('seq_publish_rate', 0.5)   # Hz
         self.declare_parameter('seq_order', 'near_to_far') # near_to_far | far_to_near | random
         self.declare_parameter('seq_dropout_prob', 0.0)    # 0.0~0.5 일부 프레임 드롭
-        self.declare_parameter('seq_noise_std', 0.0)       # m, 위치 잡음
+        self.declare_parameter('seq_noise_std', 0.1)       # m, 위치 잡음
+        self.declare_parameter('seq_step_per_tick', 3)     # 한 틱에 공개할 콘 개수
         
         # 퍼블리셔 초기화
         self.marker_pub = self.create_publisher(
@@ -302,7 +303,10 @@ class ConesNode(Node):
         # 순차 모드에서는 커서를 전진시키며 업데이트
         if bool(self.get_parameter('sequential_mode').value):
             if self._seq_cursor < len(self._seq_indices):
-                self._seq_cursor += 1
+                step = int(self.get_parameter('seq_step_per_tick').value)
+                if step <= 0:
+                    step = 1
+                self._seq_cursor = min(len(self._seq_indices), self._seq_cursor + step)
             # 동기화된 마커 업데이트를 위해 마커 위치는 고정(시각화는 전체), 장애물만 점진 공개
             self.update_obstacle_array()
         else:

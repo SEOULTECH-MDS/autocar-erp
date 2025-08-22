@@ -74,10 +74,15 @@ class ParkingAreaNode(Node):
         self.declare_parameter('seq.release_threshold', 0.7)
         self.declare_parameter('seq.stable_hold_sec', 0.8)
         self.declare_parameter('seq.ema_alpha', 0.5)
-        self.declare_parameter('seq.publish_stable_only', False)
+        self.declare_parameter('seq.publish_stable_only', True)
         self.declare_parameter('seq.logging_enabled', True)
         self.declare_parameter('seq.log_path', '/tmp/parking_area_seq.csv')
         self.declare_parameter('seq.map_cache_ttl_sec', 5.0)
+        # Robustness controls against frame drops / oscillation
+        self.declare_parameter('seq.skip_on_drop', True)
+        self.declare_parameter('seq.min_score_delta', 0.08)
+        self.declare_parameter('seq.provisional_dwell_sec', 0.4)
+        self.declare_parameter('seq.release_grace_sec', 0.8)
         
         # 파라미터 로드
         self.slot_origin_x = self.get_parameter('slot_origin_x').value
@@ -170,7 +175,7 @@ class ParkingAreaNode(Node):
         }
         
         # 패턴 매칭 임계값
-        self.PATTERN_MATCH_THRESHOLD = 0.7  # 70% 이상 일치
+        self.PATTERN_MATCH_THRESHOLD = 0.5  # 70% 이상 일치
         self.CONE_MATCH_TOLERANCE = 0.3     # 30cm 허용 오차
         
         # 구역 정보 초기화
@@ -185,6 +190,11 @@ class ParkingAreaNode(Node):
         self._seq_stable_since = None
         self._seq_stable_pattern = None
         self._seq_log_file = None
+        self._seq_prev_buffer_count = 0
+        self._seq_last_inst_scores = None
+        self._seq_prov_candidate = None
+        self._seq_prov_since = None
+        self._seq_release_below_since = None
         
         # 타이머 설정 (10Hz로 시각화 업데이트)
         self.timer = self.create_timer(0.1, self.publish_visualization)
@@ -376,11 +386,19 @@ class ParkingAreaNode(Node):
         # Update cache and build buffered cones
         self._seq_update_cache(cone_obstacles)
         buffered_cones = self._seq_get_buffered_cones()
+        now_s = self._now_sec()
+        buf_count = len(buffered_cones)
+
+        # If buffer size dropped (frame drop), optionally skip updates to avoid oscillation
+        if bool(self.get_parameter('seq.skip_on_drop').value) and buf_count < self._seq_prev_buffer_count:
+            self._seq_prev_buffer_count = buf_count
+            return None
 
         # Compute instantaneous scores for each pattern using buffered cones
         inst_scores = {}
         for pname, pdata in self.LAYOUT_PATTERNS.items():
             inst_scores[pname] = self.calculate_pattern_match_score(buffered_cones, pdata)
+        self._seq_last_inst_scores = inst_scores
 
         # Update EMA scores
         alpha = float(self.get_parameter('seq.ema_alpha').value)
@@ -389,32 +407,43 @@ class ParkingAreaNode(Node):
             self._seq_ema_scores[pname] = alpha * float(s) + (1.0 - alpha) * float(prev)
 
         # Provisional decision: use best instantaneous score
-        if inst_scores:
-            best_p = max(inst_scores.items(), key=lambda kv: kv[1])[0]
-        else:
-            best_p = None
-
-        if best_p is None:
+        if not inst_scores:
             # Fallback to dynamic if no cones buffered
             return self.process_cones_dynamic_fallback(buffered_cones)
 
-        # Apply pattern and build provisional areas
-        pattern_data = self.LAYOUT_PATTERNS[best_p]
-        self.open_area_id = pattern_data["open_slot"]
-        self.detected_pattern = best_p
-        self.adjust_parameters_to_actual_cones(buffered_cones)
-        self.areas = self.build_parking_areas(buffered_cones)
-        for i, area in enumerate(self.areas):
-            area.is_open = (i == self.open_area_id)
-        # Build virtual walls and publish provisional
-        self.virtual_walls = []
-        if self.open_area_id >= 0 and self.open_area_id < len(self.areas):
-            self.virtual_walls.extend(self.make_D_shaped_walls(self.areas[self.open_area_id]))
-        for i, area in enumerate(self.areas):
-            if not area.is_open:
-                self.virtual_walls.extend(self.make_rectangular_walls(area))
+        best_p = max(inst_scores.items(), key=lambda kv: kv[1])[0]
+        min_score_delta = float(self.get_parameter('seq.min_score_delta').value)
+        dwell_sec = float(self.get_parameter('seq.provisional_dwell_sec').value)
+
+        # Update provisional candidate with stickiness
+        if self._seq_prov_candidate is None:
+            self._seq_prov_candidate = best_p
+            self._seq_prov_since = now_s
+        else:
+            cur = self._seq_prov_candidate
+            if best_p != cur:
+                # Switch only if margin is significant
+                if inst_scores[best_p] - inst_scores[cur] >= min_score_delta:
+                    self._seq_prov_candidate = best_p
+                    self._seq_prov_since = now_s
+
+        # Apply pattern and build provisional areas only after dwell time
         if not bool(self.get_parameter('seq.publish_stable_only').value):
-            self.publish_results()
+            if self._seq_prov_since is not None and (now_s - self._seq_prov_since) >= dwell_sec:
+                pattern_data = self.LAYOUT_PATTERNS[self._seq_prov_candidate]
+                self.open_area_id = pattern_data["open_slot"]
+                self.detected_pattern = self._seq_prov_candidate
+                self.adjust_parameters_to_actual_cones(buffered_cones)
+                self.areas = self.build_parking_areas(buffered_cones)
+                for i, area in enumerate(self.areas):
+                    area.is_open = (i == self.open_area_id)
+                self.virtual_walls = []
+                if self.open_area_id >= 0 and self.open_area_id < len(self.areas):
+                    self.virtual_walls.extend(self.make_D_shaped_walls(self.areas[self.open_area_id]))
+                for i, area in enumerate(self.areas):
+                    if not area.is_open:
+                        self.virtual_walls.extend(self.make_rectangular_walls(area))
+                self.publish_results()
 
         # Stable decision via EMA + hysteresis + hold time
         ema_best_p = max(self._seq_ema_scores.items(), key=lambda kv: kv[1])[0]
@@ -422,7 +451,7 @@ class ParkingAreaNode(Node):
         confirm_th = float(self.get_parameter('seq.confirm_threshold').value)
         release_th = float(self.get_parameter('seq.release_threshold').value)
         hold_sec = float(self.get_parameter('seq.stable_hold_sec').value)
-        now_s = self._now_sec()
+        release_grace = float(self.get_parameter('seq.release_grace_sec').value)
 
         # Start/maintain candidate
         if ema_best >= confirm_th:
@@ -432,12 +461,23 @@ class ParkingAreaNode(Node):
             # Hold satisfied -> confirm stable pattern
             if self._seq_stable_since is not None and (now_s - self._seq_stable_since) >= hold_sec:
                 self._seq_stable_pattern = ema_best_p
+            # Reset release grace timer
+            self._seq_release_below_since = None
         else:
-            # Below confirm; if below release threshold, drop stable
-            if self._seq_stable_pattern is not None and self._seq_ema_scores.get(self._seq_stable_pattern, 0.0) < release_th:
-                self._seq_stable_pattern = None
-                self._seq_stable_candidate = None
-                self._seq_stable_since = None
+            # Below confirm; if below release threshold, start grace timer to drop stable
+            if self._seq_stable_pattern is not None:
+                cur_stable_ema = self._seq_ema_scores.get(self._seq_stable_pattern, 0.0)
+                if cur_stable_ema < release_th:
+                    if self._seq_release_below_since is None:
+                        self._seq_release_below_since = now_s
+                    elif (now_s - self._seq_release_below_since) >= release_grace:
+                        self._seq_stable_pattern = None
+                        self._seq_stable_candidate = None
+                        self._seq_stable_since = None
+                        self._seq_release_below_since = None
+                else:
+                    # Recovered above release threshold
+                    self._seq_release_below_since = None
 
         # Publish stable topics if available
         if self._seq_stable_pattern is not None:
@@ -455,6 +495,7 @@ class ParkingAreaNode(Node):
                 if not area.is_open:
                     virtual_walls.extend(self.make_rectangular_walls(area))
             self.publish_results_stable(areas, open_id, virtual_walls)
+        self._seq_prev_buffer_count = buf_count
         return None
 
     def publish_results_stable(self, areas: List[ParkingArea], open_area_id: int, virtual_walls: List[VirtualWall]) -> None:
