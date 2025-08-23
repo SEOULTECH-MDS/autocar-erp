@@ -133,7 +133,6 @@ class DummyLocalPub(Node):
         self.local_path_pub.publish(self.path_msg)
         self.get_logger().info(f"OSM waypoints 발행: {len(self.path_msg.poses)}개 포인트")
 
-
 def main(args=None):
     rclpy.init(args=args)
     

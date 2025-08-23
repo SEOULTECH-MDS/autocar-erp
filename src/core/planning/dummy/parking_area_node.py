@@ -65,6 +65,24 @@ class ParkingAreaNode(Node):
         self.declare_parameter('SLOT_WIDTH', 2.5)         # W : 가로 폭
         self.declare_parameter('EPS_X', 0.3)              # 좌/우 여유 허용치
         self.declare_parameter('EPS_Y', 0.01)              # 상/하 여유 허용치
+        # Recognition mode and sequential settings
+        self.declare_parameter('recognition_mode', 'pattern')  # pattern | dynamic | sequential
+        # Sequential mode parameters
+        self.declare_parameter('seq.buffer_window_sec', 2.0)
+        self.declare_parameter('seq.cone_timeout_sec', 2.5)
+        self.declare_parameter('seq.confirm_threshold', 0.8)
+        self.declare_parameter('seq.release_threshold', 0.7)
+        self.declare_parameter('seq.stable_hold_sec', 0.8)
+        self.declare_parameter('seq.ema_alpha', 0.5)
+        self.declare_parameter('seq.publish_stable_only', True)
+        self.declare_parameter('seq.logging_enabled', True)
+        self.declare_parameter('seq.log_path', '/tmp/parking_area_seq.csv')
+        self.declare_parameter('seq.map_cache_ttl_sec', 5.0)
+        # Robustness controls against frame drops / oscillation
+        self.declare_parameter('seq.skip_on_drop', True)
+        self.declare_parameter('seq.min_score_delta', 0.08)
+        self.declare_parameter('seq.provisional_dwell_sec', 0.4)
+        self.declare_parameter('seq.release_grace_sec', 0.8)
         
         # 파라미터 로드
         self.slot_origin_x = self.get_parameter('slot_origin_x').value
@@ -109,6 +127,17 @@ class ParkingAreaNode(Node):
             '/open_slot_pose',
             10
         )
+        # Stable topic publishers (sequential mode)
+        self.open_slot_pose_stable_pub = self.create_publisher(
+            PoseStamped,
+            '/open_slot_pose_stable',
+            10
+        )
+        self.virtual_walls_stable_pub = self.create_publisher(
+            ObstacleArray,
+            '/virtual_walls_stable',
+            10
+        )
         
         # TF 브로드캐스터 추가
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
@@ -146,7 +175,7 @@ class ParkingAreaNode(Node):
         }
         
         # 패턴 매칭 임계값
-        self.PATTERN_MATCH_THRESHOLD = 0.7  # 70% 이상 일치
+        self.PATTERN_MATCH_THRESHOLD = 0.5  # 70% 이상 일치
         self.CONE_MATCH_TOLERANCE = 0.3     # 30cm 허용 오차
         
         # 구역 정보 초기화
@@ -154,6 +183,18 @@ class ParkingAreaNode(Node):
         self.open_area_id = 0
         self.virtual_walls = []
         self.detected_pattern = None
+        # Sequential mode state
+        self._seq_cone_cache = {}  # cone_id -> {'x':float,'y':float,'t':float}
+        self._seq_ema_scores = {k: 0.0 for k in self.LAYOUT_PATTERNS.keys()}
+        self._seq_stable_candidate = None
+        self._seq_stable_since = None
+        self._seq_stable_pattern = None
+        self._seq_log_file = None
+        self._seq_prev_buffer_count = 0
+        self._seq_last_inst_scores = None
+        self._seq_prov_candidate = None
+        self._seq_prov_since = None
+        self._seq_release_below_since = None
         
         # 타이머 설정 (10Hz로 시각화 업데이트)
         self.timer = self.create_timer(0.1, self.publish_visualization)
@@ -252,7 +293,11 @@ class ParkingAreaNode(Node):
     
     def process_cones(self, cone_obstacles: ObstacleArray):
         """라바콘 위치 정보를 처리하여 구역을 정의하고 분석"""
-        # 라바콘 위치 추출
+        mode = str(self.get_parameter('recognition_mode').value).lower()
+        if mode == 'sequential':
+            return self.process_cones_sequential(cone_obstacles)
+
+        # 라바콘 위치 추출 (pattern/dynamic 기존 방식)
         cone_positions = [(obs.center.x, obs.center.y) for obs in cone_obstacles.obstacles]
         
         # ──── ❷ 패턴 매칭 기반 콘 콜백 처리 ───────────────────────────────────────────────
@@ -295,6 +340,195 @@ class ParkingAreaNode(Node):
         
         # STEP 7: 결과 퍼블리시
         self.publish_results()
+
+    def _seq_log(self, t: float, cone_id: int, x: float, y: float, status: str) -> None:
+        if not bool(self.get_parameter('seq.logging_enabled').value):
+            return
+        try:
+            if self._seq_log_file is None:
+                import csv
+                self._seq_log_file = open(str(self.get_parameter('seq.log_path').value), 'a', newline='')
+                self._seq_csv = csv.writer(self._seq_log_file)
+                self._seq_csv.writerow(['stamp','cone_id','x','y','status'])
+            self._seq_csv.writerow([f"{t:.6f}", cone_id, f"{x:.3f}", f"{y:.3f}", status])
+            self._seq_log_file.flush()
+        except Exception:
+            pass
+
+    def _now_sec(self) -> float:
+        return self.get_clock().now().nanoseconds * 1e-9
+
+    def _seq_update_cache(self, msg: ObstacleArray) -> None:
+        now_s = self._now_sec()
+        for obs in msg.obstacles:
+            cid = int(obs.id)
+            x = float(obs.center.x)
+            y = float(obs.center.y)
+            self._seq_cone_cache[cid] = {'x': x, 'y': y, 't': now_s}
+            self._seq_log(now_s, cid, x, y, 'seen')
+        # prune old
+        ttl = float(self.get_parameter('seq.map_cache_ttl_sec').value)
+        for cid in list(self._seq_cone_cache.keys()):
+            if now_s - self._seq_cone_cache[cid]['t'] > ttl:
+                st = self._seq_cone_cache.pop(cid)
+                self._seq_log(now_s, cid, st['x'], st['y'], 'expired')
+
+    def _seq_get_buffered_cones(self) -> List[Tuple[float, float]]:
+        now_s = self._now_sec()
+        win = float(self.get_parameter('seq.buffer_window_sec').value)
+        cones = []
+        for st in self._seq_cone_cache.values():
+            if now_s - st['t'] <= win:
+                cones.append((st['x'], st['y']))
+        return cones
+
+    def process_cones_sequential(self, cone_obstacles: ObstacleArray):
+        # Update cache and build buffered cones
+        self._seq_update_cache(cone_obstacles)
+        buffered_cones = self._seq_get_buffered_cones()
+        now_s = self._now_sec()
+        buf_count = len(buffered_cones)
+
+        # If buffer size dropped (frame drop), optionally skip updates to avoid oscillation
+        if bool(self.get_parameter('seq.skip_on_drop').value) and buf_count < self._seq_prev_buffer_count:
+            self._seq_prev_buffer_count = buf_count
+            return None
+
+        # Compute instantaneous scores for each pattern using buffered cones
+        inst_scores = {}
+        for pname, pdata in self.LAYOUT_PATTERNS.items():
+            inst_scores[pname] = self.calculate_pattern_match_score(buffered_cones, pdata)
+        self._seq_last_inst_scores = inst_scores
+
+        # Update EMA scores
+        alpha = float(self.get_parameter('seq.ema_alpha').value)
+        for pname, s in inst_scores.items():
+            prev = self._seq_ema_scores.get(pname, 0.0)
+            self._seq_ema_scores[pname] = alpha * float(s) + (1.0 - alpha) * float(prev)
+
+        # Provisional decision: use best instantaneous score
+        if not inst_scores:
+            # Fallback to dynamic if no cones buffered
+            return self.process_cones_dynamic_fallback(buffered_cones)
+
+        best_p = max(inst_scores.items(), key=lambda kv: kv[1])[0]
+        min_score_delta = float(self.get_parameter('seq.min_score_delta').value)
+        dwell_sec = float(self.get_parameter('seq.provisional_dwell_sec').value)
+
+        # Update provisional candidate with stickiness
+        if self._seq_prov_candidate is None:
+            self._seq_prov_candidate = best_p
+            self._seq_prov_since = now_s
+        else:
+            cur = self._seq_prov_candidate
+            if best_p != cur:
+                # Switch only if margin is significant
+                if inst_scores[best_p] - inst_scores[cur] >= min_score_delta:
+                    self._seq_prov_candidate = best_p
+                    self._seq_prov_since = now_s
+
+        # Apply pattern and build provisional areas only after dwell time
+        if not bool(self.get_parameter('seq.publish_stable_only').value):
+            if self._seq_prov_since is not None and (now_s - self._seq_prov_since) >= dwell_sec:
+                pattern_data = self.LAYOUT_PATTERNS[self._seq_prov_candidate]
+                self.open_area_id = pattern_data["open_slot"]
+                self.detected_pattern = self._seq_prov_candidate
+                self.adjust_parameters_to_actual_cones(buffered_cones)
+                self.areas = self.build_parking_areas(buffered_cones)
+                for i, area in enumerate(self.areas):
+                    area.is_open = (i == self.open_area_id)
+                self.virtual_walls = []
+                if self.open_area_id >= 0 and self.open_area_id < len(self.areas):
+                    self.virtual_walls.extend(self.make_D_shaped_walls(self.areas[self.open_area_id]))
+                for i, area in enumerate(self.areas):
+                    if not area.is_open:
+                        self.virtual_walls.extend(self.make_rectangular_walls(area))
+                self.publish_results()
+
+        # Stable decision via EMA + hysteresis + hold time
+        ema_best_p = max(self._seq_ema_scores.items(), key=lambda kv: kv[1])[0]
+        ema_best = self._seq_ema_scores[ema_best_p]
+        confirm_th = float(self.get_parameter('seq.confirm_threshold').value)
+        release_th = float(self.get_parameter('seq.release_threshold').value)
+        hold_sec = float(self.get_parameter('seq.stable_hold_sec').value)
+        release_grace = float(self.get_parameter('seq.release_grace_sec').value)
+
+        # Start/maintain candidate
+        if ema_best >= confirm_th:
+            if self._seq_stable_candidate != ema_best_p:
+                self._seq_stable_candidate = ema_best_p
+                self._seq_stable_since = now_s
+            # Hold satisfied -> confirm stable pattern
+            if self._seq_stable_since is not None and (now_s - self._seq_stable_since) >= hold_sec:
+                self._seq_stable_pattern = ema_best_p
+            # Reset release grace timer
+            self._seq_release_below_since = None
+        else:
+            # Below confirm; if below release threshold, start grace timer to drop stable
+            if self._seq_stable_pattern is not None:
+                cur_stable_ema = self._seq_ema_scores.get(self._seq_stable_pattern, 0.0)
+                if cur_stable_ema < release_th:
+                    if self._seq_release_below_since is None:
+                        self._seq_release_below_since = now_s
+                    elif (now_s - self._seq_release_below_since) >= release_grace:
+                        self._seq_stable_pattern = None
+                        self._seq_stable_candidate = None
+                        self._seq_stable_since = None
+                        self._seq_release_below_since = None
+                else:
+                    # Recovered above release threshold
+                    self._seq_release_below_since = None
+
+        # Publish stable topics if available
+        if self._seq_stable_pattern is not None:
+            pstable = self.LAYOUT_PATTERNS[self._seq_stable_pattern]
+            open_id = pstable['open_slot']
+            # Recompute geometry using buffered cones for stability
+            self.adjust_parameters_to_actual_cones(buffered_cones)
+            areas = self.build_parking_areas(buffered_cones)
+            for i, area in enumerate(areas):
+                area.is_open = (i == open_id)
+            virtual_walls = []
+            if open_id >= 0 and open_id < len(areas):
+                virtual_walls.extend(self.make_D_shaped_walls(areas[open_id]))
+            for i, area in enumerate(areas):
+                if not area.is_open:
+                    virtual_walls.extend(self.make_rectangular_walls(area))
+            self.publish_results_stable(areas, open_id, virtual_walls)
+        self._seq_prev_buffer_count = buf_count
+        return None
+
+    def publish_results_stable(self, areas: List[ParkingArea], open_area_id: int, virtual_walls: List[VirtualWall]) -> None:
+        # Stable virtual walls
+        virtual_walls_msg = ObstacleArray()
+        virtual_walls_msg.header.frame_id = "map"
+        virtual_walls_msg.header.stamp = self.get_clock().now().to_msg()
+        for i, wall in enumerate(virtual_walls):
+            obstacle = Obstacle()
+            obstacle.id = i + 2000
+            obstacle.type = "virtual_wall_segment"
+            cx = (wall.start_point[0] + wall.end_point[0]) / 2
+            cy = (wall.start_point[1] + wall.end_point[1]) / 2
+            obstacle.center.x = cx
+            obstacle.center.y = cy
+            obstacle.center.z = 0.0
+            obstacle.radius = 0.0
+            obstacle.description = f"seg:{wall.start_point[0]:.3f},{wall.start_point[1]:.3f},{wall.end_point[0]:.3f},{wall.end_point[1]:.3f},{wall.width:.3f}"
+            virtual_walls_msg.obstacles.append(obstacle)
+        self.virtual_walls_stable_pub.publish(virtual_walls_msg)
+
+        # Stable open slot pose
+        if areas and open_area_id < len(areas):
+            open_slot_pose = PoseStamped()
+            open_slot_pose.header.frame_id = "map"
+            open_slot_pose.header.stamp = self.get_clock().now().to_msg()
+            open_area = areas[open_area_id]
+            open_slot_pose.pose.position.x = open_area.center[0]
+            open_slot_pose.pose.position.y = open_area.center[1]
+            open_slot_pose.pose.position.z = 0.0
+            orientation = self._calculate_slot_orientation(open_area)
+            open_slot_pose.pose.orientation = orientation
+            self.open_slot_pose_stable_pub.publish(open_slot_pose)
     
     def process_cones_dynamic_fallback(self, cone_positions: List[Tuple[float, float]]):
         """패턴 매칭 실패 시 기존 동적 로직 사용 (fallback)"""
