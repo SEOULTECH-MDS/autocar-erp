@@ -400,7 +400,7 @@ class Control(Node):
         self.visualize_predicted_trajectory(x_opt)
 
         # 제어 입력
-        self.steering_angle = u_opt[1, 0] - 0.14137166941   # 0번째 step의 조향각 (delta)
+        self.steering_angle = u_opt[1, 0]   # 0번째 step의 조향각 (delta)  - 0.14137166941
         self.velocity = x_opt[1, 3]        # 0번째 step의 속도 (v)
 
         # 이전 제어 입력 저장 (다음 실패 시 fallback용)
