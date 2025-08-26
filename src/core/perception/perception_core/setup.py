@@ -43,7 +43,7 @@ setup(
             'trafficlight = perception.yolov11.trafficlight:main',
 
             # 장애물
-            #'camera_obstacle = perception.yolov11.camera_obstacle:main',
+            'camera_obstacle = perception.yolov11.camera_obstacle:main',
             "left_camera = perception.yolov11.obstacle_camera.left_camera:main",
             "right_camera = perception.yolov11.obstacle_camera.right_camera:main",
             'combined_camera = perception.yolov11.obstacle_camera.combined_camera:main',

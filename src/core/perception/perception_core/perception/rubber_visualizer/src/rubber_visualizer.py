@@ -47,9 +47,6 @@ class RubberVisualizer(Node):
         img_out.header.stamp = self.get_clock().now().to_msg()
         self.img_result_pub.publish(img_out)
 
-        cv2.imshow("YOLO Rubber Detection", img)
-        cv2.waitKey(1)
-
 def main() -> None:
     rclpy.init()
     visualizer = RubberVisualizer()

@@ -12,7 +12,7 @@ class CameraObstacle(Node):
         self.publisher_ = self.create_publisher(Image, '/camera_rubber/image_raw', 10)
         self.bridge = CvBridge()
 
-        self.cap = cv2.VideoCapture(2)  # 카메라 인덱스 2번 사용
+        self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             self.get_logger().error("카메라를 열 수 없습니다!")
         self.timer = self.create_timer(0.1, self.timer_callback)  # 10Hz로 프레임 퍼블리시

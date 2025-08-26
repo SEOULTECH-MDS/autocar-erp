@@ -16,45 +16,45 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose, PoseArray
 import message_filters
 
-# 2024 파라미터
-#self.intrinsic_left = np.array([[381.18310547,   0.,         319.02992935, 0.],
-#                    [0. ,        448.0055542, 207.31755552, 0.],
-#                    [0.000000, 0.000000, 1.000000, 0.]])
-#
-#self.extrinsic_left = self.rtlc(alpha = np.radians(38.0),
-#                                beta = np.radians(26.0),
-#                                gamma = np.radians(4.9), 
-#                                tx = 0.965, ty = -0.23, tz = -0.95)
-#
-#self.intrinsic_right = np.array([[378.68261719,   0.,         328.19930137, 0.],
-#                    [0. ,        443.68624878, 153.57524293, 0.],
-#                    [0.000000, 0.000000, 1.000000, 0.]])
-#
-#self.extrinsic_right = self.rtlc(alpha = np.radians(36.8),
-#                                    beta = np.radians(-29.4),
-#                                    gamma = np.radians(-5.5), 
-#                                    tx = 0.965, ty = 0.218, tz = -0.965)
+# 배달 파라미터
+#self.intrinsic = np.array([[378.68261719, 0.0, 328.19930137, 0.0],
+#                                            [0.0, 443.68624878, 153.57524293, 0.0],
+#                                            [0.0, 0.0, 1.0, 0.0]])
+#        
+#self.extrinsic = self.rtlc(alpha = np.radians(2.2),
+#                                        beta = np.radians(326.4),
+#                                        gamma = np.radians(359.4), 
+#                                        tx = 0.965, ty = 0.22, tz = -0.7)
 
 class SensorFusion(Node):
     def __init__(self):
         super().__init__('sensor_fusion')
         self.bridge = CvBridge()
 
-        self.intrinsic_left = np.array([[381.18310547,   0., 319.02992935, 0.],
-                                         [0., 448.0055542, 207.31755552, 0.],
-                                         [0., 0., 1., 0.]])
-        self.extrinsic_left = self.rtlc(alpha=np.radians(38.0),
-                                        beta=np.radians(26.0),
-                                        gamma=np.radians(4.9),
-                                        tx=0.965, ty=-0.23, tz=-0.95)
+        #self.intrinsic_left = np.array([[381.18310547,   0., 319.02992935, 0.],
+        #                                 [0., 448.0055542, 207.31755552, 0.],
+        #                                 [0., 0., 1., 0.]])
+        #self.extrinsic_left = self.rtlc(alpha=np.radians(38.0),
+        #                                beta=np.radians(26.0),
+        #                                gamma=np.radians(4.9),
+        #                                tx=0.965, ty=-0.23, tz=-0.95)
+        #
+        #self.intrinsic_right = np.array([[378.68261719,   0., 328.19930137, 0.],
+        #                                  [0., 443.68624878, 153.57524293, 0.],
+        #                                 [0., 0., 1., 0.]])
+        #self.extrinsic_right = self.rtlc(alpha=np.radians(36.8),
+        #                                 beta=np.radians(-29.4),
+        #                                 gamma=np.radians(-5.5),
+        #                                 tx=0.965, ty=0.218, tz=-0.965)
 
         self.intrinsic_right = np.array([[378.68261719,   0., 328.19930137, 0.],
                                           [0., 443.68624878, 153.57524293, 0.],
-                                          [0., 0., 1., 0.]])
-        self.extrinsic_right = self.rtlc(alpha=np.radians(36.8),
-                                         beta=np.radians(-29.4),
-                                         gamma=np.radians(-5.5),
-                                         tx=0.965, ty=0.218, tz=-0.965)
+                                         [0., 0., 1., 0.]])
+        
+        self.extrinsic_right = self.rtlc(alpha = np.radians(2.2),
+                                        beta = np.radians(326.4),
+                                        gamma = np.radians(359.4), 
+                                        tx = 0.965, ty = 0.218, tz = -0.965)
 
         # ROS
         # Subscriber
@@ -80,20 +80,22 @@ class SensorFusion(Node):
         clusters = cluster_for_fusion(cluster_msg) # 클러스터링 중점을 계산 (3D)
 
         # 2D bounding boxes
-        left_bboxes, left_labels, right_bboxes, right_labels = bounding_boxes(bbox_msg)
+        #left_bboxes, left_labels, right_bboxes, right_labels = bounding_boxes(bbox_msg)
+        right_bboxes, right_labels = bounding_boxes(bbox_msg)
 
         # 3D BBOX to Pixel Frame
-        clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
+        #clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
         clusters_2d_right, valid_right = projection_3d_to_2d(clusters, self.intrinsic_right, self.extrinsic_right)
 
         # Sensor Fusion (Hungarian Algorithm)
-        matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
+        #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
         matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
 
-        labels_left = get_label(matched_left, valid_left)
+        #labels_left = get_label(matched_left, valid_left)
         labels_right = get_label(matched_right, valid_right)
-        labels = [i if i != -1 else j if j != -1 else -1
-                  for i, j in zip(labels_left, labels_right)]
+        #labels = [i if i != -1 else j if j != -1 else -1
+        #          for i, j in zip(labels_left, labels_right)]
+        labels = labels_right
 
         self.get_logger().debug(f'라벨 개수: {len(labels)}, {len(clusters.T[:,:3])}')
 
@@ -110,8 +112,9 @@ class SensorFusion(Node):
         self.fusion_pub.publish(fusion_markers)
 
         # ROS Publish (Projected clusters to 2D frame) 
-        clusters_2d_right[:, 0] += 640
-        clusters_2d = np.vstack([clusters_2d_left, clusters_2d_right])
+        #clusters_2d_right[:, 0] += 640
+        #clusters_2d = np.vstack([clusters_2d_left, clusters_2d_right])
+        clusters_2d = clusters_2d_right
 
         clusters_2d_msg = self.make_pose_array(clusters_2d)
         self.clusters_2d_pub.publish(clusters_2d_msg)

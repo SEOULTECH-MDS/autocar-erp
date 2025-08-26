@@ -44,8 +44,8 @@ class YOLO(Node):
         super().__init__('obstacle_rubber')
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
-        self.subscription = self.create_subscription(Image, '/usb_cam_1/image_raw', self.image_callback, 10)
-        # self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
+        #self.subscription = self.create_subscription(Image, '/image_combined', self.image_callback, 10)
+        self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성
@@ -96,18 +96,18 @@ class YOLO(Node):
             # 객체 검출 수행
             rubbers = self.detect(cv_image)
             if rubbers is None:
-                # [✓] Modified: 검출 결과가 없을 때도 원본 이미지를 표시
+                # 검출 결과가 없을 때도 원본 이미지를 표시
                 #cv2.imshow("YOLO Rubber Detection", cv_image)
                 #cv2.waitKey(1)
                 return
             
-            # [✓] Modified: 검출 결과를 바탕으로 원본 이미지에 바운딩 박스 그리기
+            # 검출 결과를 바탕으로 원본 이미지에 바운딩 박스 그리기
             #for det in rubbers:
             #    cls, xmin, ymin, xmax, ymax, conf = det
             #    label = f'{self.names[cls]} {conf:.2f}'
             #    plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls], line_thickness=2)
             
-            # [✓] Modified: 결과 이미지를 실시간으로 디스플레이
+            # 결과 이미지를 실시간으로 디스플레이
             #cv2.imshow("YOLO Rubber Detection", cv_image)
             #cv2.waitKey(1)
             
@@ -123,8 +123,7 @@ class YOLO(Node):
             
             for rubber in rubbers:
                 pose = Pose()
-                # 각 필드에 검출 결과 할당 (클래스, 바운딩 박스 좌표, 신뢰도)
-                # [✓] Modified: 각 필드에 float 형식으로 검출 결과 할당 (ROS msg 타입은 float이어야 함)
+                # 각 필드에 검출 결과 할당 (클래스, 바운딩 박스 좌표, 신뢰도)(ROS msg 타입은 float이어야 함)
                 pose.position.x = float(rubber[0])  # 클래스 인덱스 # 0 blue or 1 yellow
                 pose.position.y = float(rubber[5])  # 신뢰도
                 # pose.position.z 는 0으로 유지됨
