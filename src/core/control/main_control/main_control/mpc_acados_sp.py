@@ -77,7 +77,7 @@ class Control(Node):
 
         self.stopline_distance = 1e6
 
-        self.target_vel = 2.0  # 목표 속도 (m/s)
+        self.target_vel = 4.0  # 목표 속도 (m/s)
 
         self.steering_angle = 0.0
         self.velocity = 0.0
@@ -413,7 +413,7 @@ class Control(Node):
 
         # s 값이 목표 지점에 도달했는지 확인 -> local path 활용 시 s의 끝에 도달했을 떄 속도를 0으로 설정
         remaining_distance = current_cubic_spline.s[-1] - self.s
-        if remaining_distance <= 0.3:
+        if remaining_distance <= 0.5:
             self.velocity = 0.0 # path의 끝에 도달했을 떄 속도를 0으로 설정 -> 브레이크
 
         if self.mode == 1 and self.stopline_distance < 1.5: # PAUSE 모드이고 정지선 까지 거리가 1.5m 이내이면 정지
@@ -433,8 +433,8 @@ class Control(Node):
         cmd.drive.speed = velocity
         cmd.drive.steering_angle = steering_angle
 
-        if self.mode == 1 and self.stopline_distance < 1.5:
-            cmd.drive.speed = 0.0  # 정지선 근처에서는 속도를 0으로 설정
+        # if self.mode == 1 and self.stopline_distance < 1.5:
+        #     cmd.drive.speed = 0.0  # 정지선 근처에서는 속도를 0으로 설정
 
         self.erp_pub.publish(cmd)
 
