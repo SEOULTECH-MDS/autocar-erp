@@ -30,8 +30,8 @@ STATE_GO = 3
 
 NX = 5  # (x, y, yaw, v, s)
 NU = 2  # (delta, a)
-T = 3.0
-N = 30
+T = 2.0
+N = 20
 
 
 class Control(Node):
@@ -40,7 +40,7 @@ class Control(Node):
 
         # Parameters (could be declared as ROS2 params later)
         self.approach_distance_threshold = 20.0 # 이 거리 이내에서만 신호 준수 로직 활성
-        self.stopline_margin = 0.8 # 차량이 정지선에 도달하기 전에 미리 멈추는 거리
+        self.stopline_margin = 1.5 # 차량이 정지선에 도달하기 전에 미리 멈추는 거리
         self.min_hold_time_at_red = 1.0 # 빨간색 신호 유지 최소 시간 (s)
         self.green_confirm_time = 0.7 # 녹색 신호 확인 윈도우 (s)
         self.yellow_treat_as_red = False # 노란색도 정지 신호로 처리

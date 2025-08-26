@@ -24,6 +24,13 @@ def generate_launch_description():
         #     name='combined_camera',
         #     output='screen'
         # ),
+        
+        # Node(
+        #     package='perception',
+        #     executable='camera_obstacle',
+        #     name='camera_obstacle',
+        #     output='screen'
+        # ),
 
         Node(
             package='perception',

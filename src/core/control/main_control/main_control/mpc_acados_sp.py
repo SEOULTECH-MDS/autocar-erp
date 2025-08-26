@@ -23,8 +23,8 @@ from rclpy.qos import QoSProfile, DurabilityPolicy
 
 NX = 5  # 상태 변수 크기 (x, y, yaw, v, s)
 NU = 2 # 제어 입력 크기 (delta , a)
-T = 3.0  # 예측 시간 [s]
-N = 30  # 예측 구간 [s]
+T = 2.0  # 예측 시간 [s]
+N = 20  # 예측 구간 [s]
 
 class Control(Node):
     def __init__(self):
@@ -395,8 +395,8 @@ class Control(Node):
         self.visualize_predicted_trajectory(x_opt)
 
         # 제어 입력
-        # self.steering_angle = u_opt[1, 0] - 0.14137166941  # 조향각 (delta) alignment 보정 -2.7도
-        self.steering_angle = u_opt[1, 0]  # 조향각 (delta)
+        self.steering_angle = u_opt[1, 0] - 0.14137166941  # 조향각 (delta) alignment 보정 -2.7도
+        # self.steering_angle = u_opt[1, 0]   # 조향각 (delta)
         self.velocity = x_opt[1, 3]        # 속도 (v)
 
         # 이전 제어 입력 저장 (다음 실패 시 fallback용)
@@ -404,9 +404,9 @@ class Control(Node):
         self.prev_velocity = self.velocity
 
         # s 값이 목표 지점에 도달했는지 확인
-        # remaining_distance = current_cubic_spline.s[-1] - self.s
-        # if remaining_distance <= 0.3:
-        #     self.velocity = 0.0 # path의 끝에 도달했을 떄 속도를 0으로 설정 -> 브레이크
+        remaining_distance = current_cubic_spline.s[-1] - self.s
+        if remaining_distance <= 0.3:
+            self.velocity = 0.0 # path의 끝에 도달했을 떄 속도를 0으로 설정 -> 브레이크
 
         # 차량에 제어 명령 전송
         self.set_vehicle_command(self.steering_angle, self.velocity)

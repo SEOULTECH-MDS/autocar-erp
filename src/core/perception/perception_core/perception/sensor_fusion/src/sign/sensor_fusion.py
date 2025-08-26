@@ -117,7 +117,7 @@ class SensorFusion(Node):
             visualize_bbox(self.bboxes, img)
 
         result_img = bridge.cv2_to_imgmsg(img, encoding="bgr8")
-        result_img.header.stamp = self.get_clock().now().to_msg()
+        result_img.header.stamp = self.get_clock(2).now().to_msg()
         self.result_img_pub.publish(result_img)
 
     def callback_targetsign(self, sign_msg):
@@ -173,6 +173,7 @@ class SensorFusion(Node):
         
             self.deliverysign_spot_pub.publish(delivery_pose_array)
         
+        self.get_logger().info(f'fusion 좌표: {target_clusters}')
         self.get_logger().info(f'소요시간: {time.perf_counter() - first_time:.5f}')
         return
     

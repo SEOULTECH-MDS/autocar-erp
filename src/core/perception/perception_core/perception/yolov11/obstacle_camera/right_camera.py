@@ -16,7 +16,7 @@ class CameraRight(Node):
         width, height = 640, 360
 
         # Set the camera's resolution
-        self.cap = cv2.VideoCapture(6)
+        self.cap = cv2.VideoCapture(0)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 

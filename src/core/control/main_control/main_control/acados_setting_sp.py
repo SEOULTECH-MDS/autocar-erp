@@ -32,8 +32,8 @@ def acados_solver():
     NV = 2 # tangent vector size (tx, ty)
     NO = 4  # 장애물 정보 크기 (obs1_x, obs1_y, obs2_x, obs2_y)
     
-    T = 3.0
-    N = 30  # 예측 구간 [s]
+    T = 2.0
+    N = 20  # 예측 구간 [s]
 
     # cost type
     ocp.cost.cost_type = 'EXTERNAL'
@@ -59,15 +59,15 @@ def acados_solver():
 
     # cost function weights 
     W_acc = 0.1  # 가속도 입력 크기 가중치 (대폭 감소 - 빠른 가속 적극 허용)
-    W_steer = 0.2  # 조향각 입력 크기 가중치 0.2
-    W_steer_rate = 1.5  # 조향각 변화율 가중치
+    W_steer = 0.4  # 조향각 입력 크기 가중치 0.2
+    W_steer_rate = 2.0  # 조향각 변화율 가중치
     W_v = 0.5  # 속도 error 가중치 
     W_lag = 1.0  # lag error 가중치 1.0
     W_con = 0.1  # contour error 가중치 1.0
 
-    We_v = W_v * 2.0  # terminal cost에서 속도 error 가중치
-    We_lag = W_lag * 3.0  # terminal cost에서 lag error 가중치
-    We_con = W_con  # terminal cost에서 contour error 가중치
+    We_v = W_v * 0.7   # terminal cost에서 속도 error 가중치
+    We_lag = W_lag * 0.7 # terminal cost에서 lag error 가중치
+    We_con = W_con * 0.7 # terminal cost에서 contour error 가중치
     We_yaw = 0.4  # heading error 가중치 (terminal cost)
 
     # parameter variables
