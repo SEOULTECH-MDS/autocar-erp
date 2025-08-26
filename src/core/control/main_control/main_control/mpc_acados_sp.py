@@ -77,7 +77,8 @@ class Control(Node):
 
         self.stopline_distance = 1e6
 
-        self.target_vel = 4.0  # 목표 속도 (m/s)
+        self.target_vel = 2.0  # 목표 속도 (m/s)
+
         self.steering_angle = 0.0
         self.velocity = 0.0
         
@@ -94,8 +95,9 @@ class Control(Node):
         self.map_origin_x = None
         self.map_origin_y = None
 
+        # 모드 상태
         self.mode = 0
-        self.mode_description = "Drive"
+        self.mode_description = "Drive" 
 
         # MPC Solver 초기화
         self.solver = acados_solver() 
@@ -180,6 +182,9 @@ class Control(Node):
         best_s = self.prev_s  # 기본값을 이전 s로 설정
         
         for s_val in s_coarse:
+            # s 값이 유효한 범위 내에 있는지 확인
+            if s_val < 0 or s_val > total_length:
+                continue
             sx, sy = cubic_spline.calc_position(s_val)
             if sx is None or sy is None:
                 continue
@@ -197,6 +202,9 @@ class Control(Node):
         s_fine = np.arange(s_start, s_end + fine_resolution, fine_resolution)
         
         for s_val in s_fine:
+            # s 값이 유효한 범위 내에 있는지 확인
+            if s_val < 0 or s_val > total_length:
+                continue
             sx, sy = cubic_spline.calc_position(s_val)
             if sx is None or sy is None:
                 continue
@@ -403,10 +411,13 @@ class Control(Node):
         self.prev_steering_angle = self.steering_angle
         self.prev_velocity = self.velocity
 
-        # s 값이 목표 지점에 도달했는지 확인
+        # s 값이 목표 지점에 도달했는지 확인 -> local path 활용 시 s의 끝에 도달했을 떄 속도를 0으로 설정
         remaining_distance = current_cubic_spline.s[-1] - self.s
         if remaining_distance <= 0.3:
             self.velocity = 0.0 # path의 끝에 도달했을 떄 속도를 0으로 설정 -> 브레이크
+
+        if self.mode == 1 and self.stopline_distance < 1.5: # PAUSE 모드이고 정지선 까지 거리가 1.5m 이내이면 정지
+            self.velocity = 0.0
 
         # 차량에 제어 명령 전송
         self.set_vehicle_command(self.steering_angle, self.velocity)
