@@ -30,7 +30,7 @@ def bounding_boxes(bbox_msg):
     right_bboxes = np.empty((0,2))
     bboxes_label = []
     right_bboxes_label = []
-    '''
+    
     for bbox in bbox_msg.poses:
         if bbox.orientation.x < 640:
             # left_bboxes.append(((bbox.orientation.z + bbox.orientation.x)/2, (bbox.orientation.w + bbox.orientation.y)/2))
@@ -54,7 +54,7 @@ def bounding_boxes(bbox_msg):
         right_bboxes_label.append(int(bbox.position.x))
 
     return right_bboxes, right_bboxes_label
-    #'''
+    '''
     
 def projection_3d_to_2d(clusters, intrinsic, extrinsic):
     points_c = intrinsic @ (extrinsic @ clusters)
