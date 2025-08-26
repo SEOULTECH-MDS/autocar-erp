@@ -5,10 +5,10 @@ from ament_index_python.packages import get_package_share_directory
 
 # [✓] Modified: "models" alias 추가
 import sys
-import perception.yolov7.models as models
+import perception.yolov11.models as models
 sys.modules['models'] = models
 # [✓] Modified: "utils" alias 추가
-import perception.yolov7.utils as utils
+import perception.yolov11.utils as utils
 sys.modules['utils'] = utils
 
 import time
@@ -21,7 +21,6 @@ import argparse
 
 from numpy import random
 from cv_bridge import CvBridge
-# YOLOv8 사용: ultralytics의 YOLO 모델을 import
 from ultralytics import YOLO
 from perception.yolov11.utils.plots import plot_one_box
 
@@ -138,12 +137,12 @@ class YOLOv11(Node):
 
                 poses.poses.append(pose)
             self.boungingboxes_pub.publish(poses)
-            cv2.imshow("Real-time Result", result)
+            # cv2.imshow("Real-time Result", result)
         else:
             image_message = bridge.cv2_to_imgmsg(cap, encoding="bgr8")
-            cv2.imshow("Real-time Result", cap) 
+            # cv2.imshow("Real-time Result", cap) 
 
-        cv2.waitKey(1)
+        # cv2.waitKey(1)
 
         # header stamp 갱신
         image_message.header.stamp = self.get_clock().now().to_msg()

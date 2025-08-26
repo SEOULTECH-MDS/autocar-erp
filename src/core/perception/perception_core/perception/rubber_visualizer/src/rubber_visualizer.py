@@ -14,7 +14,8 @@ class RubberVisualizer(Node):
 
         self.bridge = CvBridge()
 
-        self.image_sub = message_filters.Subscriber(self, Image, '/image_combined')
+        #self.image_sub = message_filters.Subscriber(self, Image, '/image_combined')
+        self.image_sub = message_filters.Subscriber(self, Image, '/usb_cam_1/image_raw')
         self.cluster_2d_sub = message_filters.Subscriber(self, PoseArray, '/clusters_2d')
         self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber')
         self.bbox_tracked_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/tracked')
@@ -46,9 +47,6 @@ class RubberVisualizer(Node):
         img_out = self.bridge.cv2_to_imgmsg(img, encoding='bgr8')
         img_out.header.stamp = self.get_clock().now().to_msg()
         self.img_result_pub.publish(img_out)
-
-        cv2.imshow("YOLO Rubber Detection", img)
-        cv2.waitKey(1)
 
 def main() -> None:
     rclpy.init()

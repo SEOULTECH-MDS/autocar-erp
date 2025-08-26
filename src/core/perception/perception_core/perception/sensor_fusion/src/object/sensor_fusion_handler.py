@@ -25,6 +25,7 @@ def cluster_for_fusion(cluster_msg):
     return clusters
 
 def bounding_boxes(bbox_msg):
+    
     left_bboxes = np.empty((0,2))
     right_bboxes = np.empty((0,2))
     bboxes_label = []
@@ -42,7 +43,18 @@ def bounding_boxes(bbox_msg):
             right_bboxes_label.append(int(bbox.position.x))
 
     return left_bboxes, bboxes_label, right_bboxes, right_bboxes_label
+    '''
+    right_bboxes = np.empty((0,2))
+    right_bboxes_label = []
+    
+    for bbox in bbox_msg.poses:
+        # left_bboxes.append(((bbox.orientation.z + bbox.orientation.x)/2, (bbox.orientation.w + bbox.orientation.y)/2))
+        right_bboxes = np.append(right_bboxes, [((bbox.orientation.z + bbox.orientation.x)/2, (bbox.orientation.w + bbox.orientation.y)/2)], axis=0)
+        # left_bboxes.append([bbox.orientation.z, bbox.orientation.x, bbox.orientation.w, bbox.orientation.y])
+        right_bboxes_label.append(int(bbox.position.x))
 
+    return right_bboxes, right_bboxes_label
+    '''
     
 def projection_3d_to_2d(clusters, intrinsic, extrinsic):
     points_c = intrinsic @ (extrinsic @ clusters)

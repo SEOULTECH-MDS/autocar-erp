@@ -43,16 +43,17 @@ setup(
             'trafficlight = perception.yolov11.trafficlight:main',
 
             # 장애물
-            #'camera_obstacle = perception.yolov11.camera_obstacle:main',
+            'camera_obstacle = perception.yolov11.camera_obstacle:main',
             "left_camera = perception.yolov11.obstacle_camera.left_camera:main",
             "right_camera = perception.yolov11.obstacle_camera.right_camera:main",
             'combined_camera = perception.yolov11.obstacle_camera.combined_camera:main',
             'obstacle = perception.yolov11.obstacle:main',
             "sensor_fusion_object = perception.sensor_fusion.src.object.sensor_fusion:main",
-            #"object_tracker2D = perception.tracker.src.object_tracker2D:main",
             "bbox_tracker = perception.tracker.src.bbox_tracker:main",
             "object_tracker3D = perception.tracker.src.object_tracker3D:main",
             "rubber_visualizer = perception.rubber_visualizer.src.rubber_visualizer:main",
+
+            "car_detect = perception.yolov11.car_detect:main",
 
             # 표지판
             'camera_sign = perception.yolov11.camera_sign:main',
