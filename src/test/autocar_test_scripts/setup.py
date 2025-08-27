@@ -23,6 +23,7 @@ setup(
             'simulation_pub = autocar_test_scripts.simulation_pub:main',
             'mode_pub = autocar_test_scripts.mode_pub:main',
             'dummy_local_path_pub = autocar_test_scripts.dummy_local_path_pub:main',
+            'mpc_realtime_plotter = autocar_test_scripts.mpc_realtime_plotter:main',
         ],
     },
 ) 

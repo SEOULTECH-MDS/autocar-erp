@@ -77,7 +77,7 @@ class Control(Node):
 
         self.stopline_distance = 1e6
 
-        self.target_vel = 4.0  # 목표 속도 (m/s)
+        self.target_vel = 2.0  # 목표 속도 (m/s)
 
         self.steering_angle = 0.0
         self.velocity = 0.0

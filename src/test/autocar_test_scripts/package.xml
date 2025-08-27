@@ -14,6 +14,7 @@
   <depend>autocar_utils</depend>
   <depend>planning_msgs</depend>
   <exec_depend>python3-pyqt5</exec_depend>
+  <exec_depend>python3-matplotlib</exec_depend>
 
 
   <export>
