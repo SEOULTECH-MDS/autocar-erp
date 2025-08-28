@@ -47,15 +47,6 @@ class SensorFusion(Node):
                                          gamma=np.radians(-5.5),
                                          tx=0.965, ty=0.218, tz=-0.965)
 
-        #self.intrinsic_right = np.array([[378.68261719,   0., 328.19930137, 0.],
-        #                                  [0., 443.68624878, 153.57524293, 0.],
-        #                                 [0., 0., 1., 0.]])
-        #
-        #self.extrinsic_right = self.rtlc(alpha = np.radians(2.2),
-        #                                beta = np.radians(326.4),
-        #                                gamma = np.radians(359.4), 
-        #                                tx = 0.965, ty = 0.218, tz = -0.965)
-
         # ROS
         # Subscriber
         self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/markers')
@@ -81,8 +72,7 @@ class SensorFusion(Node):
 
         # 2D bounding boxes
         left_bboxes, left_labels, right_bboxes, right_labels = bounding_boxes(bbox_msg)
-        right_bboxes, right_labels = bounding_boxes(bbox_msg)
-
+        
         # 3D BBOX to Pixel Frame
         clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
         clusters_2d_right, valid_right = projection_3d_to_2d(clusters, self.intrinsic_right, self.extrinsic_right)
@@ -95,7 +85,6 @@ class SensorFusion(Node):
         labels_right = get_label(matched_right, valid_right)
         labels = [i if i != -1 else j if j != -1 else -1
                   for i, j in zip(labels_left, labels_right)]
-        labels = labels_right
 
         self.get_logger().debug(f'라벨 개수: {len(labels)}, {len(clusters.T[:,:3])}')
 
@@ -114,7 +103,6 @@ class SensorFusion(Node):
         # ROS Publish (Projected clusters to 2D frame) 
         clusters_2d_right[:, 0] += 640
         clusters_2d = np.vstack([clusters_2d_left, clusters_2d_right])
-        clusters_2d = clusters_2d_right
 
         clusters_2d_msg = self.make_pose_array(clusters_2d)
         self.clusters_2d_pub.publish(clusters_2d_msg)
