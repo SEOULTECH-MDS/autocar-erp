@@ -403,8 +403,8 @@ class Control(Node):
         self.visualize_predicted_trajectory(x_opt)
 
         # 제어 입력
-        self.steering_angle = u_opt[1, 0] - 0.14137166941  # 조향각 (delta) alignment 보정 -8.0도
-        # self.steering_angle = u_opt[1, 0]   # 조향각 (delta)
+        # self.steering_angle = u_opt[1, 0] - 0.14137166941  # 조향각 (delta) alignment 보정 -8.0도
+        self.steering_angle = u_opt[1, 0]   # 조향각 (delta)
         self.velocity = x_opt[1, 3]        # 속도 (v)
 
         # 이전 제어 입력 저장 (다음 실패 시 fallback용)
