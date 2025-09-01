@@ -31,15 +31,10 @@ class SensorFusion(Node):
         super().__init__('sensor_fusion')
         self.bridge = CvBridge()
 
-        self.intrinsic_left = np.array([[381.18310547,   0., 319.02992935, 0.],
-                                         [0., 448.0055542, 207.31755552, 0.],
-                                         [0., 0., 1., 0.]])
-        self.extrinsic_right = np.array([
-                                        [-0.646827193433469, -0.762331655475608,  0.0215645286245695, -0.707366566360487],
-                                        [ 0.0105802657440605, -0.0372435842785907, -0.999250205607619,  0.449338070735928],
-                                        [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
-                                        [ 0.0,                 0.0,                 0.0,                 1.0]
-                                        ])
+        #self.intrinsic_left = np.array([[381.18310547,   0., 319.02992935, 0.],
+        #                                 [0., 448.0055542, 207.31755552, 0.],
+        #                                 [0., 0., 1., 0.]])
+
         # self.extrinsic_left = self.rtlc(alpha=np.radians(38.0),
         #                                 beta=np.radians(26.0),
         #                                 gamma=np.radians(4.9),
@@ -55,9 +50,15 @@ class SensorFusion(Node):
         self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
                                           [0., 558.033519869795, 221.832568485757, 0.],
                                          [0., 0., 1., 0.]])
-        self.extrinsic_right = self.rtlc(alpha=np.radians(179.1),
+        #self.extrinsic_right = np.array([
+        #                                [-0.646827193433469, -0.762331655475608,  0.0215645286245695, -0.707366566360487],
+        #                                [ 0.0105802657440605, -0.0372435842785907, -0.999250205607619,  0.449338070735928],
+        #                                [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
+        #                                [ 0.0,                 0.0,                 0.0,                 1.0]
+        #                                ])
+        self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
                                          beta=np.radians(-49.7),
-                                         gamma=np.radians(-87.2),
+                                         gamma=np.radians(179.1),
                                          tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
 
         # ROS
@@ -84,20 +85,22 @@ class SensorFusion(Node):
         clusters = cluster_for_fusion(cluster_msg) # 클러스터링 중점을 계산 (3D)
 
         # 2D bounding boxes
-        left_bboxes, left_labels, right_bboxes, right_labels = bounding_boxes(bbox_msg)
+        #left_bboxes, left_labels, right_bboxes, right_labels = bounding_boxes(bbox_msg)
+        right_bboxes, right_labels = bounding_boxes(bbox_msg)
         
         # 3D BBOX to Pixel Frame
-        clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
+        #clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
         clusters_2d_right, valid_right = projection_3d_to_2d(clusters, self.intrinsic_right, self.extrinsic_right)
 
         # Sensor Fusion (Hungarian Algorithm)
-        matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
+        #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
         matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
 
-        labels_left = get_label(matched_left, valid_left)
+        #labels_left = get_label(matched_left, valid_left)
         labels_right = get_label(matched_right, valid_right)
-        labels = [i if i != -1 else j if j != -1 else -1
-                  for i, j in zip(labels_left, labels_right)]
+        #labels = [i if i != -1 else j if j != -1 else -1
+        #          for i, j in zip(labels_left, labels_right)]
+        labels = labels_right
 
         self.get_logger().debug(f'라벨 개수: {len(labels)}, {len(clusters.T[:,:3])}')
 
@@ -114,8 +117,9 @@ class SensorFusion(Node):
         self.fusion_pub.publish(fusion_markers)
 
         # ROS Publish (Projected clusters to 2D frame) 
-        clusters_2d_right[:, 0] += 640
-        clusters_2d = np.vstack([clusters_2d_left, clusters_2d_right])
+        #clusters_2d_right[:, 0] += 640
+        #clusters_2d = np.vstack([clusters_2d_left, clusters_2d_right])
+        clusters_2d = clusters_2d_right
 
         clusters_2d_msg = self.make_pose_array(clusters_2d)
         self.clusters_2d_pub.publish(clusters_2d_msg)
