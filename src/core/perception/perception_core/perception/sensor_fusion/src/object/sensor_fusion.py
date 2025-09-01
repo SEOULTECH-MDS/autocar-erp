@@ -3,6 +3,9 @@
 import numpy as np
 import time
 
+from scipy.spatial import distance_matrix
+from scipy.optimize import linear_sum_assignment
+
 #from motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
 #from motrackers.utils import draw_tracks
 
@@ -43,8 +46,9 @@ class SensorFusion(Node):
         #self.intrinsic_right = np.array([[378.68261719,   0., 328.19930137, 0.],
         #                                  [0., 443.68624878, 153.57524293, 0.],
         #                                 [0., 0., 1., 0.]])
-        #elf.extrinsic_right = self.rtlc(alpha=np.radians(36.8),
-        #                                 beta=np.radians(-29.4),
+        #self.extrinsic_right = self.rtlc(alpha=np.radians(36.8),
+        #                                beta=np.radians(-29.4),
+        #                                 gamma=np.radians(-5.5),
         #                                 tx=0.965, ty=0.218, tz=-0.965)
 
         self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
@@ -56,10 +60,20 @@ class SensorFusion(Node):
         #                                [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
         #                                [ 0.0,                 0.0,                 0.0,                 1.0]
         #                                ])
+        #self.extrinsic_right = np.linalg.inv(np.array([
+        #   [-0.646827193433469, -0.762331655475608,  0.0215645286245695, -0.707366566360487],
+        #   [ 0.0105802657440605, -0.0372435842785907, -0.999250205607619,  0.449338070735928],
+        #    [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
+        #    [ 0.0,                 0.0,                 0.0,                 1.0]
+        #]))
         self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
-                                         beta=np.radians(-49.7),
+                                        beta=np.radians(-49.7),
                                          gamma=np.radians(179.1),
                                          tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
+        #self.extrinsic_right = self.rtlc(alpha=np.radians(179.1),
+        #                                 beta=np.radians(-49.7),
+        #                                 gamma=np.radians(-87.2),
+        #                                 tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
 
         # ROS
         # Subscriber
@@ -78,7 +92,7 @@ class SensorFusion(Node):
 
         self.get_logger().info('🚀  Camera & 3D LiDAR fusion node started.')
 
-    def callback_fusion(self, cluster_msg, bbox_msg):
+    def callback_fusion(self, cluster_msg, bbox_msg):        
         first_time = time.perf_counter()
 
         # Clustering points to np array
@@ -91,10 +105,51 @@ class SensorFusion(Node):
         # 3D BBOX to Pixel Frame
         #clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
         clusters_2d_right, valid_right = projection_3d_to_2d(clusters, self.intrinsic_right, self.extrinsic_right)
+        
+
+        self.get_logger().info(f"[SF] valid_right: {np.count_nonzero(valid_right)}/{len(valid_right)}")
+        try:
+            P = np.c_[clusters.T[:,:3], np.ones((clusters.shape[1], 1))]
+            Xc = (self.extrinsic_right @ P.T).T
+            Zc = Xc[:, 2]
+            self.get_logger().info(f"[SF] Zc>0: {np.count_nonzero(Zc>0)}/{len(Zc)} "
+                                   f"(minZ={Zc.min():.3f}, maxZ={Zc.max():.3f})")
+        except Exception as e:
+            self.get_logger().warn(f"[SF] cam-space debug skipped: {e}")
+        if clusters_2d_right.size > 0:
+            xs, ys = clusters_2d_right[:,0], clusters_2d_right[:,1]
+            self.get_logger().info(f"[SF] clusters_2d_right x:[{np.nanmin(xs):.1f},{np.nanmax(xs):.1f}] "
+                                   f"y:[{np.nanmin(ys):.1f},{np.nanmax(ys):.1f}]")
+        
 
         # Sensor Fusion (Hungarian Algorithm)
         #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
-        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
+        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=300)
+
+
+        # clusters_2d_right: (N,2)  // projection 결과(유효 포인트만)
+        # right_bboxes: (M,2) or (M,4)
+        pts = np.asarray(clusters_2d_right, dtype=float)
+        bbs = np.asarray(right_bboxes, dtype=float)
+        # 만약 bboxes가 xyxy라면 중심점으로 변환 (헝가리안은 중심점 거리만 사용)
+        if bbs.ndim == 2 and bbs.shape[1] == 4:
+            bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]  # (M,2)
+        if pts.size > 0 and bbs.size > 0:
+            cost = distance_matrix(pts, bbs)              # 중심점 L2 거리
+            rows, cols = linear_sum_assignment(cost)      # 동일한 규칙으로 할당만 재현(로깅용)
+            # ROS 로그(원하면 print(...)로 바꿔도 됨)
+            lines = []
+            for i, j in zip(rows, cols):
+                lines.append(
+                    f"({i}->{j}) d={cost[i,j]:.1f} "
+                    f"pt=({pts[i,0]:.1f},{pts[i,1]:.1f}) "
+                    f"ctr=({bbs[j,0]:.1f},{bbs[j,1]:.1f})"
+                )
+            self.get_logger().info("[SF] assignments: " + " | ".join(lines))
+        self.get_logger().info(f"[SF] #right_bboxes={len(right_bboxes)}, labels={set(right_labels)}")
+        self.get_logger().info(f"[SF] matched_right len={len(matched_right)}")
+        self.get_logger().info(f"shape={right_bboxes.shape}")
+
 
         #labels_left = get_label(matched_left, valid_left)
         labels_right = get_label(matched_right, valid_right)
@@ -113,6 +168,11 @@ class SensorFusion(Node):
 
         label_clusters(clusters.T[:,:3], labels, blue_marker, yellow_marker, white_marker)
 
+
+        self.get_logger().info(f"[SF] blue:{len(blue_marker.points)} "
+                       f"yellow:{len(yellow_marker.points)} white:{len(white_marker.points)}")
+        
+
         fusion_markers.markers.extend([blue_marker, yellow_marker, white_marker])
         self.fusion_pub.publish(fusion_markers)
 
@@ -125,7 +185,7 @@ class SensorFusion(Node):
         self.clusters_2d_pub.publish(clusters_2d_msg)
 
         self.get_logger().debug(f'소요 시간: {time.perf_counter() - first_time:.5f}s')
-
+    
     # ───────────────── 유틸 ─────────────────
     def rtlc(self, alpha, beta, gamma, tx, ty, tz):
         Rxa = np.array([[1, 0, 0, 0],
@@ -148,11 +208,16 @@ class SensorFusion(Node):
                          [0, np.cos(np.deg2rad(90)), -np.sin(np.deg2rad(90)), 0],
                          [0, np.sin(np.deg2rad(90)),  np.cos(np.deg2rad(90)), 0],
                          [0, 0, 0, 1]])
+        Rz90 = np.array([[np.cos(np.deg2rad(90)), -np.sin(np.deg2rad(90)), 0, 0],
+                         [np.sin(np.deg2rad(90)),  np.cos(np.deg2rad(90)), 0, 0],
+                         [0, 0, 1, 0],
+                         [0, 0, 0, 1]])
         T = np.array([[1, 0, 0, tx],
                       [0, 1, 0, ty],
                       [0, 0, 1, tz],
                       [0, 0, 0, 1]])
-        return Rzg @ Rxa @ Ryb @ Ry90 @ Rx90 @ T
+        #return Rzg @ Rxa @ Ryb @ Ry90 @ Rx90 @ T
+        return Rzg @ Rxa @ Ryb @ Ry90 @ T
 
     def make_marker(self, color):
         marker = Marker()

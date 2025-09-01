@@ -51,13 +51,13 @@ def bounding_boxes(bbox_msg):
         right_bboxes_label.append(int(bbox.position.x))
 
     return right_bboxes, right_bboxes_label
-    
+
 def projection_3d_to_2d(clusters, intrinsic, extrinsic):
     points_c = intrinsic @ (extrinsic @ clusters)
     center_x = points_c[0,:] / points_c[2,:] # center point in pixel frame
     center_y = points_c[1,:] / points_c[2,:]
     
-    height, width = 360, 640
+    height, width = 480, 640 # 기존: 360, 640
     valid_indicies = (center_x >= 0) & (center_x < width) & (center_y >=0) & (center_y < height)
     
     center_x = center_x[valid_indicies]
