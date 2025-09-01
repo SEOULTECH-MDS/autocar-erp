@@ -61,6 +61,9 @@ setup(
             "sensor_fusion_sign = perception.sensor_fusion.src.sign.sensor_fusion:main",
             #"sensor_fusion = perception.sensor_fusion.src.sensor_fusion_v3kcity:main",
 
+            # 포인트클라우드 필터
+            'region_filter_node = perception.pointcloud.region_filter_node:main',
+
             
         ],
     },

@@ -11,7 +11,7 @@ def generate_launch_description():
         name='ground_segmentation',
         # namespace='lexus3/os_left',
         parameters=[
-            {'cloud_topic': '/velodyne_points'}, # Input pointcloud
+            {'cloud_topic': '/velodyne_points/filtered'}, # Input pointcloud
             {'frame_id': 'velodyne'},
             {'sensor_height': 1.88},
             {'num_iter': 3},             # Number of iterations for ground plane estimation using PCA.

@@ -2,7 +2,7 @@ import launch
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import ComposableNodeContainer
+from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 
 def generate_launch_description():
@@ -14,9 +14,25 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "cloud_topic",
             default_value="/velodyne_points",
-            description="Input point cloud topic.",
+            description="Raw input point cloud topic.",
         )
     )
+    declared_args.append(
+        DeclareLaunchArgument(
+            "filtered_topic",
+            default_value="/velodyne_points/filtered",
+            description="Filtered point cloud topic.",
+        )
+    )
+    # Region filter parameters
+    declared_args.append(DeclareLaunchArgument("min_x", default_value="-1.8"))
+    declared_args.append(DeclareLaunchArgument("max_x", default_value="-0.5"))
+    declared_args.append(DeclareLaunchArgument("min_y", default_value="-0.6"))
+    declared_args.append(DeclareLaunchArgument("max_y", default_value="0.6"))
+    declared_args.append(DeclareLaunchArgument("min_z", default_value="-0.5"))
+    declared_args.append(DeclareLaunchArgument("max_z", default_value="0.0"))
+    # inside_mode: true => 박스 내부 유지(기본값: 전체 유지 = 무필터), false => 박스 내부 제거
+    declared_args.append(DeclareLaunchArgument("inside_mode", default_value="false"))
 
     # Define composable nodes
     composable_nodes = [
@@ -25,13 +41,13 @@ def generate_launch_description():
             plugin='patchworkpp::PatchworkppPointXYZI',
             name='patchworkpp_node',
             parameters=[{
-                'cloud_topic': LaunchConfiguration("cloud_topic"),
+                'cloud_topic': LaunchConfiguration("filtered_topic"),
                 'frame_id': 'velodyne',
-                'sensor_height': 0.42,
+                'sensor_height': 0.70,
                 'num_iter': 3,
                 'num_lpr': 20,
                 'num_min_pts': 10,
-                'th_seeds': 0.3,
+                'th_seeds': 0.4,
                 'th_dist': 0.125,
                 'max_r': 80.0,
                 'min_r': 1.0,
@@ -40,6 +56,8 @@ def generate_launch_description():
             }],
             remappings=[
                 ("nonground", "/patchwork/nonground"),
+                ("ground", "/patchwork/ground"),
+                ("plane", "/patchwork/plane"),
             ],
             extra_arguments=[{'use_intra_process_comms': True}],
         ),
@@ -63,6 +81,25 @@ def generate_launch_description():
         ),
     ]
 
+    # Region filter node (standalone)
+    region_filter_node = Node(
+        package='perception',
+        executable='region_filter_node',
+        name='region_filter_node',
+        output='screen',
+        parameters=[
+            {'input_topic': LaunchConfiguration('cloud_topic')},
+            {'output_topic': LaunchConfiguration('filtered_topic')},
+            {'min_x': LaunchConfiguration('min_x')},
+            {'max_x': LaunchConfiguration('max_x')},
+            {'min_y': LaunchConfiguration('min_y')},
+            {'max_y': LaunchConfiguration('max_y')},
+            {'min_z': LaunchConfiguration('min_z')},
+            {'max_z': LaunchConfiguration('max_z')},
+            {'inside_mode': LaunchConfiguration('inside_mode')},
+        ],
+    )
+
     # Create the container for the composable nodes
     container = ComposableNodeContainer(
         name='perception_container',
@@ -73,4 +110,4 @@ def generate_launch_description():
         output='screen',
     )
 
-    return LaunchDescription(declared_args + [container]) 
+    return LaunchDescription(declared_args + [region_filter_node, container]) 

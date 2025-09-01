@@ -34,18 +34,31 @@ class SensorFusion(Node):
         self.intrinsic_left = np.array([[381.18310547,   0., 319.02992935, 0.],
                                          [0., 448.0055542, 207.31755552, 0.],
                                          [0., 0., 1., 0.]])
-        self.extrinsic_left = self.rtlc(alpha=np.radians(38.0),
-                                        beta=np.radians(26.0),
-                                        gamma=np.radians(4.9),
-                                        tx=0.965, ty=-0.23, tz=-0.95)
+        self.extrinsic_right = np.array([
+                                        [-0.646827193433469, -0.762331655475608,  0.0215645286245695, -0.707366566360487],
+                                        [ 0.0105802657440605, -0.0372435842785907, -0.999250205607619,  0.449338070735928],
+                                        [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
+                                        [ 0.0,                 0.0,                 0.0,                 1.0]
+                                        ])
+        # self.extrinsic_left = self.rtlc(alpha=np.radians(38.0),
+        #                                 beta=np.radians(26.0),
+        #                                 gamma=np.radians(4.9),
+        #                                 tx=0.965, ty=-0.23, tz=-0.95)
         
-        self.intrinsic_right = np.array([[378.68261719,   0., 328.19930137, 0.],
-                                          [0., 443.68624878, 153.57524293, 0.],
+        #self.intrinsic_right = np.array([[378.68261719,   0., 328.19930137, 0.],
+        #                                  [0., 443.68624878, 153.57524293, 0.],
+        #                                 [0., 0., 1., 0.]])
+        #elf.extrinsic_right = self.rtlc(alpha=np.radians(36.8),
+        #                                 beta=np.radians(-29.4),
+        #                                 tx=0.965, ty=0.218, tz=-0.965)
+
+        self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
+                                          [0., 558.033519869795, 221.832568485757, 0.],
                                          [0., 0., 1., 0.]])
-        self.extrinsic_right = self.rtlc(alpha=np.radians(36.8),
-                                         beta=np.radians(-29.4),
-                                         gamma=np.radians(-5.5),
-                                         tx=0.965, ty=0.218, tz=-0.965)
+        self.extrinsic_right = self.rtlc(alpha=np.radians(179.1),
+                                         beta=np.radians(-49.7),
+                                         gamma=np.radians(-87.2),
+                                         tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
 
         # ROS
         # Subscriber
