@@ -78,6 +78,7 @@ class Control(Node):
         self.stopline_distance = 1e6
 
         self.target_vel = 2.0  # 목표 속도 (m/s)
+        # 추후에 모드에 따라 변경 고려
 
         self.steering_angle = 0.0
         self.velocity = 0.0
@@ -98,6 +99,18 @@ class Control(Node):
         # 모드 상태
         self.mode = 0
         self.mode_description = "Drive" 
+
+        # 모드별 가중치 설정
+        self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
+            0: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.3, 0.4]), # DRIVE
+            1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
+            2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
+            3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
+            4: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY
+            5: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # PARKING
+            6: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN
+        }        
+        self.current_weights = self.mode_weights[self.mode]
 
         # MPC Solver 초기화
         self.solver = acados_solver() 
@@ -150,8 +163,18 @@ class Control(Node):
         uint8 PARKING=5
         uint8 RETURN=6
         """
-        self.mode = msg.current_mode
-        self.mode_description = msg.description    
+        # self.mode = msg.current_mode
+        # self.mode_description = msg.description    
+        if self.mode != msg.current_mode:
+            self.mode = msg.current_mode
+            self.mode_description = msg.description
+
+            if self.mode in self.mode_weights:
+                self.current_weights = self.mode_weights[self.mode]
+                self.get_logger().info(f"모드 변경: {self.mode_description}, 가중치 변경")
+            else: 
+                self.get_logger().warn(f"정의되지 않은 모드: {self.mode}, 기존 가중치 사용")
+
 
     def calc_current_s(self, _cubic_spline):
         """
@@ -379,10 +402,21 @@ class Control(Node):
         self.solver.constraints_set(0, "ubx", x0)
         self.get_logger().info(f"Current state: {x0}")
 
+        weights = self.current_weights
+
         # MPC Solver에 파라미터 변수 전달
         for i in range(N):
-            self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
-        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
+            params = np.hstack([
+                xref[:5, i],
+                u_opt[i, 0],
+                tan_vec[:, i],
+                weights,
+                obs
+            ])
+            self.solver.set(i, "p", params)
+            # self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
+        # self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
+        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
 
         # Solver 실행, status 확인
         status = self.solver.solve()
@@ -460,7 +494,8 @@ class Control(Node):
             \n Fail Count: {self.fail_count}\
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \
-            \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f})"
+            \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f}) \
+            \n weights: {self.current_weights}"
 
 
         self.overlay_pub.publish(text_msg)
