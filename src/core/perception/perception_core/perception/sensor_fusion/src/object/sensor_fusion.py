@@ -4,7 +4,6 @@ import numpy as np
 import time
 
 from scipy.spatial import distance_matrix
-from scipy.optimize import linear_sum_assignment
 
 #from motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
 #from motrackers.utils import draw_tracks
@@ -44,15 +43,10 @@ class SensorFusion(Node):
         self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
                                           [0., 558.033519869795, 221.832568485757, 0.],
                                          [0., 0., 1., 0.]])
-        #self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
-        #                                beta=np.radians(-49.7),
-        #                                gamma=np.radians(179.1),
-        #                                 tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
-        self.extrinsic_right = self.rtlc(alpha=np.radians(92.8),
+        self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
                                         beta=np.radians(-49.7),
-                                         gamma=np.radians(179.1),
+                                        gamma=np.radians(179.1),
                                          tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
-        
 
         # ROS
         # Subscriber
@@ -95,28 +89,51 @@ class SensorFusion(Node):
                                    f"(minZ={Zc.min():.3f}, maxZ={Zc.max():.3f})")
         except Exception as e:
             self.get_logger().warn(f"[SF] cam-space debug skipped: {e}")
+
+        #idx_img  = np.where(valid_right)[0]          # in-frame 원본 인덱스들
+        #mask_pos = Xc[idx_img, 2] > 0                # 그중 Zc>0만
+        #lusters_2d_right = clusters_2d_right[mask_pos]
+        #valid_right = np.zeros_like(valid_right, dtype=bool); valid_right[idx_img[mask_pos]] = True
+
+
         if clusters_2d_right.size > 0:
             xs, ys = clusters_2d_right[:,0], clusters_2d_right[:,1]
             self.get_logger().info(f"[SF] clusters_2d_right x:[{np.nanmin(xs):.1f},{np.nanmax(xs):.1f}] "
                                    f"y:[{np.nanmin(ys):.1f},{np.nanmax(ys):.1f}]")
+            
         
+        # ★ 추가: 현재 프레임 한 번만 픽셀 평면 전역 이동으로 수평/수직 오차 제거
+        # (bbox 중심이 (cx,cy)인 형태로 맞춤)
+        bbs = np.asarray(right_bboxes, dtype=float)
+        if bbs.ndim == 2 and bbs.shape[1] == 4:
+            bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]
 
+        pts = np.asarray(clusters_2d_right, dtype=float)
+        '''
+        if pts.size > 0 and bbs.size > 0 and not hasattr(self, "_px_shift_done"):
+            C = distance_matrix(pts, bbs)
+            r, c = linear_sum_assignment(C)
+            i, j = int(r[0]), int(c[0])
+
+            du = float(pts[i,0] - bbs[j,0])   # u 오차(px)
+            dv = float(pts[i,1] - bbs[j,1])   # v 오차(px)
+
+            # 전역 평행이동(한 번만 적용)
+            clusters_2d_right[:,0] -= du
+            clusters_2d_right[:,1] -= dv
+            self._px_shift_done = True
+            self.get_logger().info(f"[SF] pixel shift applied: Δu={du:.1f}px, Δv={dv:.1f}px")
+        '''
         # Sensor Fusion (Hungarian Algorithm)
         #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
-        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=250)
+        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
+    
 
-
-        # clusters_2d_right: (N,2)  // projection 결과(유효 포인트만)
-        # right_bboxes: (M,2) or (M,4)
-        pts = np.asarray(clusters_2d_right, dtype=float)
-        bbs = np.asarray(right_bboxes, dtype=float)
-        # 만약 bboxes가 xyxy라면 중심점으로 변환 (헝가리안은 중심점 거리만 사용)
         if bbs.ndim == 2 and bbs.shape[1] == 4:
             bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]  # (M,2)
         if pts.size > 0 and bbs.size > 0:
             cost = distance_matrix(pts, bbs)              # 중심점 L2 거리
             rows, cols = linear_sum_assignment(cost)      # 동일한 규칙으로 할당만 재현(로깅용)
-            # ROS 로그(원하면 print(...)로 바꿔도 됨)
             lines = []
             for i, j in zip(rows, cols):
                 lines.append(
@@ -197,7 +214,7 @@ class SensorFusion(Node):
                       [0, 0, 0, 1]])
         #return Rzg @ Rxa @ Ryb @ Ry90 @ Rx90 @ T
         #return Rzg @ Ryb @ Rxa @ Rx90 @ Rx90 @ T
-        return Rzg @ Ryb @ Rxa @ Rx180 @ T
+        return Rzg @ Ryb @ Rxa @ T
 
     def make_marker(self, color):
         marker = Marker()
