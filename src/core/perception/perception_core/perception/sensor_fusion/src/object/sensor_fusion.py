@@ -70,9 +70,9 @@ class SensorFusion(Node):
                                         beta=np.radians(-49.7),
                                          gamma=np.radians(179.1),
                                          tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
-        #self.extrinsic_right = self.rtlc(alpha=np.radians(179.1),
-        #                                 beta=np.radians(-49.7),
-        #                                 gamma=np.radians(-87.2),
+        #self.extrinsic_right = self.rtlc(alpha=np.radians(-88.2),
+        #                                beta=np.radians(-1.2),
+        #                                 gamma=np.radians(-130.3),
         #                                 tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
 
         # ROS
@@ -124,7 +124,7 @@ class SensorFusion(Node):
 
         # Sensor Fusion (Hungarian Algorithm)
         #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
-        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=300)
+        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=500)
 
 
         # clusters_2d_right: (N,2)  // projection 결과(유효 포인트만)
@@ -208,16 +208,13 @@ class SensorFusion(Node):
                          [0, np.cos(np.deg2rad(90)), -np.sin(np.deg2rad(90)), 0],
                          [0, np.sin(np.deg2rad(90)),  np.cos(np.deg2rad(90)), 0],
                          [0, 0, 0, 1]])
-        Rz90 = np.array([[np.cos(np.deg2rad(90)), -np.sin(np.deg2rad(90)), 0, 0],
-                         [np.sin(np.deg2rad(90)),  np.cos(np.deg2rad(90)), 0, 0],
-                         [0, 0, 1, 0],
-                         [0, 0, 0, 1]])
         T = np.array([[1, 0, 0, tx],
                       [0, 1, 0, ty],
                       [0, 0, 1, tz],
                       [0, 0, 0, 1]])
         #return Rzg @ Rxa @ Ryb @ Ry90 @ Rx90 @ T
-        return Rzg @ Rxa @ Ryb @ Ry90 @ T
+        #return Rzg @ Rxa @ Ryb @ Ry90 @ T
+        return Rzg @ Ryb @ Rxa @ Rx90 @ Rx90 @ T
 
     def make_marker(self, color):
         marker = Marker()
