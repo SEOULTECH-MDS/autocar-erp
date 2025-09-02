@@ -80,9 +80,9 @@ public:
     pose_array_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("poses", 100);
     marker_array_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 100);
     
-    // Subscriber
+    // Subscriber (use SensorDataQoS: BestEffort, low-latency) for compatibility with sensor/filter publishers
     point_cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "velodyne_points", 1, std::bind(&AdaptiveClusteringNode::pointCloudCallback, this, std::placeholders::_1));
+      "velodyne_points", rclcpp::SensorDataQoS(), std::bind(&AdaptiveClusteringNode::pointCloudCallback, this, std::placeholders::_1));
   }
 
 private:

@@ -50,7 +50,8 @@ def generate_launch_description():
             package='perception',
             executable='sensor_fusion_object',
             name='sensor_fusion_object',
-            output='screen'
+            output='screen',
+            remappings=[('/markers', '/adaptive_clustering/markers')],
         ),
 
         Node(
