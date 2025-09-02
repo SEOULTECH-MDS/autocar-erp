@@ -19,16 +19,6 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose, PoseArray
 import message_filters
 
-# 배달 파라미터
-#self.intrinsic = np.array([[378.68261719, 0.0, 328.19930137, 0.0],
-#                                            [0.0, 443.68624878, 153.57524293, 0.0],
-#                                            [0.0, 0.0, 1.0, 0.0]])
-#        
-#self.extrinsic = self.rtlc(alpha = np.radians(2.2),
-#                                        beta = np.radians(326.4),
-#                                        gamma = np.radians(359.4), 
-#                                        tx = 0.965, ty = 0.22, tz = -0.7)
-
 class SensorFusion(Node):
     def __init__(self):
         super().__init__('sensor_fusion')
@@ -54,26 +44,15 @@ class SensorFusion(Node):
         self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
                                           [0., 558.033519869795, 221.832568485757, 0.],
                                          [0., 0., 1., 0.]])
-        #self.extrinsic_right = np.array([
-        #                                [-0.646827193433469, -0.762331655475608,  0.0215645286245695, -0.707366566360487],
-        #                                [ 0.0105802657440605, -0.0372435842785907, -0.999250205607619,  0.449338070735928],
-        #                                [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
-        #                                [ 0.0,                 0.0,                 0.0,                 1.0]
-        #                                ])
-        #self.extrinsic_right = np.linalg.inv(np.array([
-        #   [-0.646827193433469, -0.762331655475608,  0.0215645286245695, -0.707366566360487],
-        #   [ 0.0105802657440605, -0.0372435842785907, -0.999250205607619,  0.449338070735928],
-        #    [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
-        #    [ 0.0,                 0.0,                 0.0,                 1.0]
-        #]))
-        self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
+        #self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
+        #                                beta=np.radians(-49.7),
+        #                                gamma=np.radians(179.1),
+        #                                 tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
+        self.extrinsic_right = self.rtlc(alpha=np.radians(92.8),
                                         beta=np.radians(-49.7),
                                          gamma=np.radians(179.1),
                                          tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
-        #self.extrinsic_right = self.rtlc(alpha=np.radians(-88.2),
-        #                                beta=np.radians(-1.2),
-        #                                 gamma=np.radians(-130.3),
-        #                                 tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
+        
 
         # ROS
         # Subscriber
@@ -124,7 +103,7 @@ class SensorFusion(Node):
 
         # Sensor Fusion (Hungarian Algorithm)
         #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
-        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=500)
+        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=250)
 
 
         # clusters_2d_right: (N,2)  // projection 결과(유효 포인트만)
@@ -208,13 +187,17 @@ class SensorFusion(Node):
                          [0, np.cos(np.deg2rad(90)), -np.sin(np.deg2rad(90)), 0],
                          [0, np.sin(np.deg2rad(90)),  np.cos(np.deg2rad(90)), 0],
                          [0, 0, 0, 1]])
+        Rx180 = np.array([[1, 0, 0, 0],
+                         [0, np.cos(np.deg2rad(180)), -np.sin(np.deg2rad(180)), 0],
+                         [0, np.sin(np.deg2rad(180)),  np.cos(np.deg2rad(180)), 0],
+                         [0, 0, 0, 1]])
         T = np.array([[1, 0, 0, tx],
                       [0, 1, 0, ty],
                       [0, 0, 1, tz],
                       [0, 0, 0, 1]])
         #return Rzg @ Rxa @ Ryb @ Ry90 @ Rx90 @ T
-        #return Rzg @ Rxa @ Ryb @ Ry90 @ T
-        return Rzg @ Ryb @ Rxa @ Rx90 @ Rx90 @ T
+        #return Rzg @ Ryb @ Rxa @ Rx90 @ Rx90 @ T
+        return Rzg @ Ryb @ Rxa @ Rx180 @ T
 
     def make_marker(self, color):
         marker = Marker()
