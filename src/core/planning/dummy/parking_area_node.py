@@ -83,6 +83,10 @@ class ParkingAreaNode(Node):
         self.declare_parameter('seq.min_score_delta', 0.08)
         self.declare_parameter('seq.provisional_dwell_sec', 0.4)
         self.declare_parameter('seq.release_grace_sec', 0.8)
+        # Road-side line extraction params
+        self.declare_parameter('line.quantile', 0.3)           # 좌측 q-분위 범위로 대표 x 추정
+        self.declare_parameter('line.x_tolerance', 0.35)       # 대표 x 주변 허용 오차 (m)
+        self.declare_parameter('line.min_points', 3)           # 일렬로 인정할 최소 포인트 수
         
         # 파라미터 로드
         self.slot_origin_x = self.get_parameter('slot_origin_x').value
@@ -394,6 +398,28 @@ class ParkingAreaNode(Node):
             self._seq_prev_buffer_count = buf_count
             return None
 
+        # 우선: 도로측 일렬 콘 기반 오픈 슬롯 판정 시도 (부분 관측 대응)
+        try:
+            line_open_id = self.find_open_slot_line(buffered_cones)
+        except Exception:
+            line_open_id = None
+
+        if line_open_id is not None:
+            # Geometry 재계산 및 안정 토픽 퍼블리시
+            self.adjust_parameters_to_actual_cones(buffered_cones)
+            areas = self.build_parking_areas(buffered_cones)
+            for i, area in enumerate(areas):
+                area.is_open = (i == line_open_id)
+            virtual_walls = []
+            if line_open_id >= 0 and line_open_id < len(areas):
+                virtual_walls.extend(self.make_D_shaped_walls(areas[line_open_id]))
+            for i, area in enumerate(areas):
+                if not area.is_open:
+                    virtual_walls.extend(self.make_rectangular_walls(area))
+            self.publish_results_stable(areas, line_open_id, virtual_walls)
+            self._seq_prev_buffer_count = buf_count
+            return None
+
         # Compute instantaneous scores for each pattern using buffered cones
         inst_scores = {}
         for pname, pdata in self.LAYOUT_PATTERNS.items():
@@ -649,6 +675,50 @@ class ParkingAreaNode(Node):
         
         return count
     
+    # ──── ❹-b 도로측 일렬 콘 추출 및 카운트 ─────────────────────────────────────────
+    def _extract_roadside_line_cones(self, cones: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """도로에 접한 일렬(열) 콘만 추출
+        - 좌측 q-분위의 x 분포를 사용해 대표 x0를 잡고, |x-x0| <= tol 인 콘만 반환
+        - 반환 리스트는 진행 방향(y 오름차순)으로 정렬
+        - 포인트 수가 최소치 미만이면 빈 리스트 반환
+        """
+        if not cones:
+            return []
+        xs = sorted([x for x, _ in cones])
+        q = float(self.get_parameter('line.quantile').value)
+        tol = float(self.get_parameter('line.x_tolerance').value)
+        min_pts = int(self.get_parameter('line.min_points').value)
+        qn = max(1, int(len(xs) * max(0.05, min(0.9, q))))
+        left_block = xs[:qn]
+        # 대표 x0: 좌측 블록 중앙값
+        if not left_block:
+            return []
+        mid = len(left_block) // 2
+        x0 = left_block[mid] if len(left_block) % 2 == 1 else 0.5 * (left_block[mid - 1] + left_block[mid])
+        # 허용 오차 내 일렬 필터
+        line_cones = [(x, y) for x, y in cones if abs(x - x0) <= tol]
+        # 충분히 세워진 열만 인정
+        if len(line_cones) < min_pts:
+            return []
+        # 진행 방향 정렬(y 오름차순)
+        line_cones.sort(key=lambda p: p[1])
+        return line_cones
+
+    def _count_in_y_band(self, cones_line: List[Tuple[float, float]], y_bottom: float, y_top: float) -> int:
+        """일렬 콘 집합에서 y-구간에 포함되는 포인트 수"""
+        if not cones_line:
+            return 0
+        cnt = 0
+        for _, y in cones_line:
+            if y_bottom <= y <= y_top:
+                cnt += 1
+        return cnt
+
+    def left_cone_count_line(self, cones_line: List[Tuple[float, float]], sid: int) -> int:
+        """일렬 콘 집합을 사용해 슬롯 y-대역 내 개수 계산"""
+        y_bottom, y_top = self.slot_bounds(sid)
+        return self._count_in_y_band(cones_line, y_bottom, y_top)
+    
     # ──── ❺ 열린 슬롯 탐색 (핵심 로직) ───────────────────────────────────────────────
     def find_open_slot(self, cones: List[Tuple[float, float]]) -> int:
         """열린 슬롯 탐색"""
@@ -656,6 +726,19 @@ class ParkingAreaNode(Node):
             if self.left_cone_count(cones, sid) < 3:  # 0,1,2개 → open
                 return sid
         return -1  # 예외: 모든 슬롯이 콘 3개 → 전부 닫힘
+    
+    def find_open_slot_line(self, cones: List[Tuple[float, float]]):
+        """도로측 일렬 콘만으로 열린 슬롯 탐색 (실패 시 None)
+        - 규칙: 각 슬롯 y-대역에서 일렬 콘 개수 < 3 이면 open
+        - 일렬 추출 실패 시 None 반환 (상위 로직이 폴백 처리)
+        """
+        line_cones = self._extract_roadside_line_cones(cones)
+        if not line_cones:
+            return None
+        for sid in [0, 1, 2]:
+            if self.left_cone_count_line(line_cones, sid) < 3:
+                return sid
+        return -1
     
     # ──── ❻ 구역 객체 채우기 ───────────────────────────────────────────────
     def build_parking_areas(self, cones: List[Tuple[float, float]]) -> List[ParkingArea]:

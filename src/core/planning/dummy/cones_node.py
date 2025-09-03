@@ -26,6 +26,7 @@ class ConesNode(Node):
         self.declare_parameter('seq_dropout_prob', 0.0)    # 0.0~0.5 일부 프레임 드롭
         self.declare_parameter('seq_noise_std', 0.1)       # m, 위치 잡음
         self.declare_parameter('seq_step_per_tick', 3)     # 한 틱에 공개할 콘 개수
+        self.declare_parameter('seq_visual_sync', True)    # True면 시각화도 순차 공개
         
         # 퍼블리셔 초기화
         self.marker_pub = self.create_publisher(
@@ -292,12 +293,20 @@ class ConesNode(Node):
         """
         라바콘 마커를 퍼블리시합니다.
         """
-        # 타임스탬프 업데이트
-        for marker in self.cone_markers.markers:
-            marker.header.stamp = self.get_clock().now().to_msg()
-        
-        # 마커 퍼블리시
-        self.marker_pub.publish(self.cone_markers)
+        # 시각화: 순차 공개 옵션에 따라 부분만 퍼블리시
+        sequential = bool(self.get_parameter('sequential_mode').value)
+        visual_sync = bool(self.get_parameter('seq_visual_sync').value)
+        if sequential and visual_sync:
+            visible_indices = self._seq_indices[: self._seq_cursor]
+        else:
+            visible_indices = range(len(self.cone_markers.markers))
+        visible = MarkerArray()
+        now = self.get_clock().now().to_msg()
+        for i in visible_indices:
+            mk = self.cone_markers.markers[i]
+            mk.header.stamp = now
+            visible.markers.append(mk)
+        self.marker_pub.publish(visible)
         
         # 장애물 배열 퍼블리시
         # 순차 모드에서는 커서를 전진시키며 업데이트
@@ -307,7 +316,7 @@ class ConesNode(Node):
                 if step <= 0:
                     step = 1
                 self._seq_cursor = min(len(self._seq_indices), self._seq_cursor + step)
-            # 동기화된 마커 업데이트를 위해 마커 위치는 고정(시각화는 전체), 장애물만 점진 공개
+            # 장애물은 점진 공개
             self.update_obstacle_array()
         else:
             self.update_obstacle_array()
