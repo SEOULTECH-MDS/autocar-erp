@@ -6,7 +6,7 @@ setup(
     name=package_name,
     version='0.0.0',
     packages=[],
-    py_modules=['planner', 'path_follower'],
+    py_modules=['planner'],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
@@ -22,7 +22,6 @@ setup(
     entry_points={
         'console_scripts': [
             'planner_node = planner:main',
-            'path_follower_node = path_follower:main',
         ],
     },
 )
