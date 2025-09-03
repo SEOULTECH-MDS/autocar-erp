@@ -23,9 +23,9 @@ class InitialPoseNode(Node):
         super().__init__('initial_pose_node')
 
         # Parameters
-        self.declare_parameter('x', 1.5)
-        self.declare_parameter('y', 0.0)
-        self.declare_parameter('yaw', math.pi/2)  # radians
+        self.declare_parameter('x', 4)
+        self.declare_parameter('y', 19.0)
+        self.declare_parameter('yaw', math.pi*2/3)  # radians
         self.declare_parameter('publish_current_pose', False)  # optional keep-alive
         self.declare_parameter('rate', 5.0)  # Hz for keep-alive
 

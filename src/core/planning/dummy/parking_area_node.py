@@ -66,7 +66,7 @@ class ParkingAreaNode(Node):
         self.declare_parameter('EPS_X', 0.3)              # 좌/우 여유 허용치
         self.declare_parameter('EPS_Y', 0.01)              # 상/하 여유 허용치
         # Recognition mode and sequential settings
-        self.declare_parameter('recognition_mode', 'pattern')  # pattern | dynamic | sequential
+        self.declare_parameter('recognition_mode', 'sequential')  # pattern | dynamic | sequential
         # Sequential mode parameters
         self.declare_parameter('seq.buffer_window_sec', 2.0)
         self.declare_parameter('seq.cone_timeout_sec', 2.5)
@@ -529,6 +529,15 @@ class ParkingAreaNode(Node):
             orientation = self._calculate_slot_orientation(open_area)
             open_slot_pose.pose.orientation = orientation
             self.open_slot_pose_stable_pub.publish(open_slot_pose)
+        # Update internal state so that timer-driven RViz visualization reflects stable results
+        self.areas = areas
+        self.open_area_id = open_area_id
+        self.virtual_walls = virtual_walls
+        # Optionally trigger an immediate visualization publish
+        try:
+            self.publish_visualization()
+        except Exception:
+            pass
     
     def process_cones_dynamic_fallback(self, cone_positions: List[Tuple[float, float]]):
         """패턴 매칭 실패 시 기존 동적 로직 사용 (fallback)"""

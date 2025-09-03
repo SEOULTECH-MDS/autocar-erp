@@ -18,10 +18,10 @@ class ConesNode(Node):
         super().__init__('cones_node')
         
         # ──── 패턴 선택 파라미터 ───────────────────────────────────────────────
-        self.declare_parameter('open_area_pattern', 1)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
+        self.declare_parameter('open_area_pattern', 2)  # 0, 1, 2 중 선택 (기본값: Area 2 열림)
         # ──── 순차 인식 모사 파라미터 ─────────────────────────────────────────
         self.declare_parameter('sequential_mode', True)   # True면 순차 공개
-        self.declare_parameter('seq_publish_rate', 0.5)   # Hz
+        self.declare_parameter('seq_publish_rate', 1.0)   # Hz
         self.declare_parameter('seq_order', 'near_to_far') # near_to_far | far_to_near | random
         self.declare_parameter('seq_dropout_prob', 0.0)    # 0.0~0.5 일부 프레임 드롭
         self.declare_parameter('seq_noise_std', 0.1)       # m, 위치 잡음

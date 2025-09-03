@@ -6,10 +6,11 @@ from typing import List, Optional, Tuple
 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped, Point
-from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped, Point, PoseArray, Pose
+from nav_msgs.msg import Path, Odometry
 from visualization_msgs.msg import Marker, MarkerArray
 from planning_msgs.msg import ObstacleArray
+from std_msgs.msg import Int32
 
 
 def wrap_to_pi(angle: float) -> float:
@@ -120,18 +121,32 @@ class PlannerNode(Node):
         self.declare_parameter('stage2_lookahead', 1.0)
         # Stage-3
         self.declare_parameter('stage3_preview', True)
+        # General stage control
+        self.declare_parameter('auto_advance', True)            # 오돔 기반 자동 스테이지 전환
+        self.declare_parameter('prefer_odom', True)             # 시작자세로 odom 우선 사용
+        self.declare_parameter('stage_position_tolerance', 0.25)  # [m]
+        self.declare_parameter('stage_yaw_tolerance_deg', 8.0)    # [deg]
+        self.declare_parameter('publish_unified_waypoints', True)  # 현재 스테이지만 /waypoints(및 points) 퍼블리시
 
         # State
         self._open_slot_pose: Optional[PoseStamped] = None
         self._current_pose: Optional[PoseStamped] = None
+        self._odom: Optional[Odometry] = None
         self._segments: List[Segment] = []
         self._lane_left_pts: List[Tuple[float, float]] = []
         self._lane_right_pts: List[Tuple[float, float]] = []
         self._last_stage1_goal: Optional[PoseStamped] = None
+        self._last_stage2_goal: Optional[PoseStamped] = None
+        self._last_stage3_goal: Optional[PoseStamped] = None
+        # Stage machine: 1,2,3
+        self._stage: int = 1
+        # External selector (overrides if provided)
+        self._selector_stage: Optional[int] = None
 
         # Publishers
         # MAIN topic: 컨트롤 파트가 구독할 표준 토픽 (활성 스테이지 최신 경로)
         self._waypoints_pub = self.create_publisher(Path, '/waypoints', 10)
+        self._waypoints_points_pub = self.create_publisher(PoseArray, '/waypoints_points', 10)
 
         # DEBUG topics: 스테이지별 Path/Goal 및 시각화 마커
         self._goal_pub = self.create_publisher(PoseStamped, '/stage1_goal', 10)
@@ -141,14 +156,24 @@ class PlannerNode(Node):
         self._stage2_path_pub = self.create_publisher(Path, '/stage2_path', 10)
         self._stage3_path_pub = self.create_publisher(Path, '/stage3_path', 10)
         self._stage3_goal_pub = self.create_publisher(PoseStamped, '/stage3_goal', 10)
+        # Stage-wise waypoints (PoseArray) publishing
+        self._stage1_points_pub = self.create_publisher(PoseArray, '/stage1_waypoints', 10)
+        self._stage2_points_pub = self.create_publisher(PoseArray, '/stage2_waypoints', 10)
+        self._stage3_points_pub = self.create_publisher(PoseArray, '/stage3_waypoints', 10)
 
         # Subscribers
         self.create_subscription(PoseStamped, '/open_slot_pose', self._on_open_slot_pose, 10)
+        # Prefer stable pose if available
+        self.create_subscription(PoseStamped, '/open_slot_pose_stable', self._on_open_slot_pose, 10)
         self.create_subscription(ObstacleArray, '/virtual_walls', self._on_virtual_walls, 10)
         self.create_subscription(PoseStamped, '/current_pose', self._on_current_pose, 10)
         self.create_subscription(MarkerArray, '/road_markers', self._on_road_markers, 10)
+        # Odom for stage completion/starting pose
+        self.create_subscription(Odometry, '/odom', self._on_odom, 20)
+        # Optional stage selector interface (1,2,3)
+        self.create_subscription(Int32, '/stage_selector', self._on_stage_selector, 10)
 
-        # Timer to re-evaluate goal periodically (in case only one topic updates)
+        # Timer to re-evaluate stage and publish paths
         self.create_timer(0.2, self._maybe_publish_goal)
 
         self.get_logger().info('Planner node started (Stage-1 goal computation).')
@@ -179,6 +204,25 @@ class PlannerNode(Node):
                 right.extend(pts)
         self._lane_left_pts = left
         self._lane_right_pts = right
+
+    def _on_odom(self, msg: Odometry) -> None:
+        self._odom = msg
+        # 스테이지 완료 평가 및 자동 전환
+        try:
+            if bool(self.get_parameter('auto_advance').value):
+                if self._evaluate_and_advance_stage():
+                    # 전환되면 즉시 재계산/퍼블리시
+                    self._maybe_publish_goal()
+        except Exception as e:
+            self.get_logger().warn(f'Odometry stage evaluation error: {e}')
+
+    def _on_stage_selector(self, msg: Int32) -> None:
+        val = int(msg.data)
+        if val in (1, 2, 3):
+            self._selector_stage = val
+            self._stage = val
+            self.get_logger().info(f'Stage overridden by selector: {self._stage}')
+            self._maybe_publish_goal()
 
     # ───────────────────────────── Core Logic ────────────────────────────
     def _parse_segments(self, msg: ObstacleArray) -> List[Segment]:
@@ -374,59 +418,168 @@ class PlannerNode(Node):
         return goal, markers
 
     def _maybe_publish_goal(self) -> None:
+        # 입력 필요 확인
         if self._open_slot_pose is None:
             return
+        # Stage-1 goal/markers는 항상 갱신(디버그 가시화)
         try:
-            goal, markers = self._compute_stage1_goal(self._open_slot_pose)
+            stage1_goal, markers = self._compute_stage1_goal(self._open_slot_pose)
+            self._last_stage1_goal = stage1_goal
+            self._goal_pub.publish(stage1_goal)
+            self._vis_pub.publish(markers)
         except Exception as e:
             self.get_logger().warn(f'Stage-1 goal computation failed: {e}')
             return
-        self._goal_pub.publish(goal)
-        self._vis_pub.publish(markers)
-        # Optional: publish a straight+arc path from current pose
-        if bool(self.get_parameter('show_stage1_path').value):
-            path_msg = self._compute_stage1_path(self._current_pose, goal)
-            if path_msg is not None:
-                self._path_pub.publish(path_msg)
-                # Also publish unified waypoints topic (Path)
-                self._waypoints_pub.publish(path_msg)
-        # Compute and publish stage-2 goal/path as well
-        self._last_stage1_goal = goal
-        if bool(self.get_parameter('stage2_guided').value):
-            stage2_path = self._compute_stage2_path_guided(self._last_stage1_goal, self._open_slot_pose)
-            if stage2_path is not None:
-                self._stage2_path_pub.publish(stage2_path)
-                self._waypoints_pub.publish(stage2_path)
-        else:
-            stage2_goal = self._compute_stage2_goal(self._open_slot_pose)
-            if stage2_goal is not None:
-                self._stage2_goal_pub.publish(stage2_goal)
-                stage2_path = self._compute_stage2_path(self._last_stage1_goal, stage2_goal)
-                if stage2_path is not None:
-                    self._stage2_path_pub.publish(stage2_path)
-                    self._waypoints_pub.publish(stage2_path)
-                # Stage-3: define goal at slot center and plan from Stage-2 goal
-                stage3_goal = self._compute_stage3_goal(self._open_slot_pose)
-                if stage3_goal is not None:
-                    self._stage3_goal_pub.publish(stage3_goal)
-                    stage3_path = self._compute_stage3_path_from_stage2(stage2_goal, self._open_slot_pose)
-                    if stage3_path is not None and stage3_path.poses:
-                        self._stage3_path_pub.publish(stage3_path)
-                        self._waypoints_pub.publish(stage3_path)
 
-        # Stage-3 publish when inside slot and yaw mismatch (preview enabled)
-        if bool(self.get_parameter('stage3_preview').value) and self._current_pose is not None and self._open_slot_pose is not None:
+        # 현재 활성 스테이지 결정(외부 셀렉터 우선)
+        active_stage = self._stage
+
+        # 시작 자세: prefer odom
+        start_pose = self._get_start_pose()
+
+        publish_unified = bool(self.get_parameter('publish_unified_waypoints').value)
+
+        # Stage별 생성/퍼블리시
+        if active_stage == 1:
+            if start_pose is None:
+                return
+            if bool(self.get_parameter('show_stage1_path').value):
+                path_msg = self._compute_stage1_path(start_pose, stage1_goal)
+                if path_msg is not None:
+                    self._path_pub.publish(path_msg)
+                    self._publish_points(self._stage1_points_pub, path_msg)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path_msg)
+                        self._publish_points(self._waypoints_points_pub, path_msg)
+
+        elif active_stage == 2:
+            # 목표/경로 생성
+            if bool(self.get_parameter('stage2_guided').value):
+                path = self._compute_stage2_path_guided(start_pose, self._open_slot_pose) if start_pose is not None else None
+                if path is not None:
+                    self._stage2_path_pub.publish(path)
+                    self._publish_points(self._stage2_points_pub, path)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path)
+                        self._publish_points(self._waypoints_points_pub, path)
+                # guided라도 기준 goal은 참고용으로 발행
+                g2 = self._compute_stage2_goal(self._open_slot_pose)
+                if g2 is not None:
+                    self._last_stage2_goal = g2
+                    self._stage2_goal_pub.publish(g2)
+            else:
+                g2 = self._compute_stage2_goal(self._open_slot_pose)
+                if g2 is not None:
+                    self._last_stage2_goal = g2
+                    self._stage2_goal_pub.publish(g2)
+                    path = self._compute_stage2_path(start_pose, g2) if start_pose is not None else None
+                    if path is not None:
+                        self._stage2_path_pub.publish(path)
+                        self._publish_points(self._stage2_points_pub, path)
+                        if publish_unified:
+                            self._waypoints_pub.publish(path)
+                            self._publish_points(self._waypoints_points_pub, path)
+
+        elif active_stage == 3:
+            g3 = self._compute_stage3_goal(self._open_slot_pose)
+            if g3 is not None:
+                self._last_stage3_goal = g3
+                self._stage3_goal_pub.publish(g3)
+            if start_pose is not None:
+                yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
+                path3 = self._compute_stage3_path(start_pose, yaw_slot)
+                if path3 is not None and path3.poses:
+                    self._stage3_path_pub.publish(path3)
+                    self._publish_points(self._stage3_points_pub, path3)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path3)
+                        self._publish_points(self._waypoints_points_pub, path3)
+
+        # Preview는 스테이지 3에서만, 내부에 있을 때 옵션으로 유지
+        if active_stage == 3 and bool(self.get_parameter('stage3_preview').value) and start_pose is not None and self._open_slot_pose is not None:
             yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
             center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
             L, W = self._estimate_slot_dimensions(yaw_slot, center)
             margin = float(self.get_parameter('stage2_inside_margin').value)
-            if self._inside_slot(self._current_pose.pose.position.x,
-                                 self._current_pose.pose.position.y,
+            if self._inside_slot(start_pose.pose.position.x,
+                                 start_pose.pose.position.y,
                                  center, yaw_slot, L, W, margin):
-                path3 = self._compute_stage3_path(self._current_pose, yaw_slot)
+                path3 = self._compute_stage3_path(start_pose, yaw_slot)
                 if path3 is not None and path3.poses:
                     self._stage3_path_pub.publish(path3)
-                    self._waypoints_pub.publish(path3)
+                    self._publish_points(self._stage3_points_pub, path3)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path3)
+                        self._publish_points(self._waypoints_points_pub, path3)
+
+    def _get_start_pose(self) -> Optional[PoseStamped]:
+        prefer_odom = bool(self.get_parameter('prefer_odom').value)
+        if prefer_odom and self._odom is not None:
+            ps = PoseStamped()
+            ps.header = self._odom.header
+            ps.pose = self._odom.pose.pose
+            return ps
+        return self._current_pose
+
+    def _publish_points(self, pub, path: Path) -> None:
+        arr = PoseArray()
+        arr.header = path.header
+        for p in path.poses:
+            pose = Pose()
+            pose.position = p.pose.position
+            pose.orientation = p.pose.orientation
+            arr.poses.append(pose)
+        pub.publish(arr)
+
+    def _evaluate_and_advance_stage(self) -> bool:
+        """오돔 기반으로 현재 스테이지 완료를 평가하고 필요 시 다음 스테이지로 전환.
+        Returns True if stage was advanced."""
+        start_pose = self._get_start_pose()
+        if start_pose is None or self._open_slot_pose is None:
+            return False
+        pos_tol = float(self.get_parameter('stage_position_tolerance').value)
+        yaw_tol = math.radians(float(self.get_parameter('stage_yaw_tolerance_deg').value))
+
+        if self._stage == 1 and self._last_stage1_goal is not None:
+            if self._is_near_pose(start_pose, self._last_stage1_goal, pos_tol, yaw_tol):
+                self._stage = 2
+                self.get_logger().info('Stage-1 complete -> Stage-2')
+                return True
+
+        elif self._stage == 2:
+            if bool(self.get_parameter('stage2_guided').value):
+                yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
+                center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
+                L, W = self._estimate_slot_dimensions(yaw_slot, center)
+                margin = float(self.get_parameter('stage2_inside_margin').value)
+                if self._inside_slot(start_pose.pose.position.x, start_pose.pose.position.y, center, yaw_slot, L, W, margin):
+                    self._stage = 3
+                    self.get_logger().info('Stage-2 (guided) complete -> Stage-3')
+                    return True
+            else:
+                if self._last_stage2_goal is not None and self._is_near_pose(start_pose, self._last_stage2_goal, pos_tol, yaw_tol):
+                    self._stage = 3
+                    self.get_logger().info('Stage-2 complete -> Stage-3')
+                    return True
+
+        elif self._stage == 3:
+            # 목표: 슬롯 중심에서 yaw 정렬
+            g3 = self._last_stage3_goal or self._compute_stage3_goal(self._open_slot_pose)
+            if g3 is not None and self._is_near_pose(start_pose, g3, pos_tol, yaw_tol):
+                # 최종 완료. 여기서는 유지(또는 1로 리셋)
+                self.get_logger().info('Stage-3 complete (mission done)')
+                return False
+
+        return False
+
+    def _is_near_pose(self, a: PoseStamped, b: PoseStamped, pos_tol: float, yaw_tol: float) -> bool:
+        dx = a.pose.position.x - b.pose.position.x
+        dy = a.pose.position.y - b.pose.position.y
+        dist = math.hypot(dx, dy)
+        ya = quaternion_to_yaw(a.pose.orientation)
+        yb = quaternion_to_yaw(b.pose.orientation)
+        dyaw = abs(wrap_to_pi(ya - yb))
+        return (dist <= pos_tol) and (dyaw <= yaw_tol)
 
     # ───────────────────────────── Utilities ─────────────────────────────
     def _min_distance_to_walls(self, x: float, y: float) -> float:
