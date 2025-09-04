@@ -40,13 +40,39 @@ class SensorFusion(Node):
         #                                 gamma=np.radians(-5.5),
         #                                 tx=0.965, ty=0.218, tz=-0.965)
 
-        self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
-                                          [0., 558.033519869795, 221.832568485757, 0.],
+        # 0830
+        #self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
+        #                                  [0., 558.033519869795, 221.832568485757, 0.],
+        #                                 [0., 0., 1., 0.]])
+        #self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
+        #                                beta=np.radians(-49.7),
+        #                               gamma=np.radians(179.1),
+        #                               tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
+        #self.extrinsic_right = np.array([
+        #   [-0.646827193433469, -0.762331655475608,  0.0215645286245695, -0.707366566360487],
+        #   [ 0.0105802657440605, -0.0372435842785907, -0.999250205607619,  0.449338070735928],
+        #    [ 0.762563203814455,  -0.646114047587500,  0.0321558345923653, -0.260777068981733],
+        #    [ 0.0,                 0.0,                 0.0,                 1.0]
+        #])
+        # 새로운 파라미터 (역행렬로 사용할 것)
+        #self.extrinsic_right = np.array([
+        #    [-0.61872138,  0.00947078,  0.78555341, -0.73144129],
+        #    [-0.78552194, -0.02247129, -0.61842568, -0.53301979],
+        #    [ 0.01179542, -0.99970263,  0.02134297,  0.48576085],
+        #    [ 0.0,                 0.0,                 0.0,                 1.0]
+        #])
+
+        # 0904 (외부 파라미터는 역행렬로 사용 -> 오히려 역행렬이 아닐 때 더 잘나옴 -> 뭐지진짜)
+        self.intrinsic_right = np.array([[619.6081,   0., 314.5476, 0.],
+                                         [0., 619.7349, 224.2868, 0.],
                                          [0., 0., 1., 0.]])
-        self.extrinsic_right = self.rtlc(alpha=np.radians(-87.2),
-                                        beta=np.radians(-49.7),
-                                        gamma=np.radians(179.1),
-                                         tx=-0.707366566360487, ty=0.449338070735928, tz=-0.260777068981733)
+        self.extrinsic_right = np.array([
+            [-0.618721384543836,  -0.785521938769354,  0.011795423697079, -0.876986864685114],
+            [0.009470779095116, -0.022471287889330, -0.999702628567079, 0.480566072341194],
+            [0.785553405346505, -0.618425682626967,  0.021342971111821, 0.234585492330497],
+            [ 0.0,                 0.0,                 0.0,                 1.0]
+        ])
+        self.extrinsic_right = np.linalg.inv(self.extrinsic_right)
 
         # ROS
         # Subscriber
@@ -102,33 +128,17 @@ class SensorFusion(Node):
                                    f"y:[{np.nanmin(ys):.1f},{np.nanmax(ys):.1f}]")
             
         
+        # Sensor Fusion (Hungarian Algorithm)
+        #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
+        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
+
+
         # ★ 추가: 현재 프레임 한 번만 픽셀 평면 전역 이동으로 수평/수직 오차 제거
         # (bbox 중심이 (cx,cy)인 형태로 맞춤)
         bbs = np.asarray(right_bboxes, dtype=float)
         if bbs.ndim == 2 and bbs.shape[1] == 4:
             bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]
-
         pts = np.asarray(clusters_2d_right, dtype=float)
-        '''
-        if pts.size > 0 and bbs.size > 0 and not hasattr(self, "_px_shift_done"):
-            C = distance_matrix(pts, bbs)
-            r, c = linear_sum_assignment(C)
-            i, j = int(r[0]), int(c[0])
-
-            du = float(pts[i,0] - bbs[j,0])   # u 오차(px)
-            dv = float(pts[i,1] - bbs[j,1])   # v 오차(px)
-
-            # 전역 평행이동(한 번만 적용)
-            clusters_2d_right[:,0] -= du
-            clusters_2d_right[:,1] -= dv
-            self._px_shift_done = True
-            self.get_logger().info(f"[SF] pixel shift applied: Δu={du:.1f}px, Δv={dv:.1f}px")
-        '''
-        # Sensor Fusion (Hungarian Algorithm)
-        #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
-        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
-    
-
         if bbs.ndim == 2 and bbs.shape[1] == 4:
             bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]  # (M,2)
         if pts.size > 0 and bbs.size > 0:
@@ -213,8 +223,8 @@ class SensorFusion(Node):
                       [0, 0, 1, tz],
                       [0, 0, 0, 1]])
         #return Rzg @ Rxa @ Ryb @ Ry90 @ Rx90 @ T
-        #return Rzg @ Ryb @ Rxa @ Rx90 @ Rx90 @ T
         return Rzg @ Ryb @ Rxa @ T
+        #return Rzg @ Rxa @ Ryb @ Rx180 @ T
 
     def make_marker(self, color):
         marker = Marker()
