@@ -56,36 +56,26 @@ from std_msgs.msg import Int32MultiArray, String, Int32
 class SensorFusion(Node):
     def __init__(self):
         self.bridge = CvBridge()
-        # self.intrinsic = np.array([[515.19, 0.0, 333.26, 0.0],
-        #                         [0.0, 632.87, 271.89, 0.0],
-        #                         [0.0, 0.0, 1.0, 0.0]])
-
-        # self.extrinsic = self.rtlc(alpha = np.radians(0.2),
-        #                                         beta = np.radians(319.1),
-        #                                         gamma = np.radians(0.9), 
-        #                                         tx = 0.673, ty = -0.753, tz = -0.047)
         
-        # self.intrinsic = np.array([[683.45, 0.0, 327.82, 0.0],
-        #                        [0.0, 576.92, 247.73, 0.0],
-        #                        [0.0, 0.0, 1.0, 0.0]])
+        # 2024
+        #self.intrinsic = np.array([[378.68261719, 0.0, 328.19930137, 0.0],
+        #                                    [0.0, 443.68624878, 153.57524293, 0.0],
+        #                                    [0.0, 0.0, 1.0, 0.0]])
+        #
+        #self.extrinsic = self.rtlc(alpha = np.radians(2.2),
+        #                                        beta = np.radians(326.4),
+        #                                        gamma = np.radians(359.4), 
+        #                                        tx = 0.965, ty = 0.22, tz = -0.7)
 
-        # self.extrinsic = self.rtlc(alpha = np.radians(0.0),
-        #                                 beta = np.radians(336.6),
-        #                                 gamma = np.radians(0), 
-        #                                 tx = 2.46, ty = 0.826, tz = -0.083)
-
-        # self.intrinsic = np.array([[490.65, 0.0, 296.77, 0.0],
-        #                             [0.0, 433.57, 295.23, 0.0],
-        #                             [0.0, 0.0, 1.0, 0.0]])
-
-        self.intrinsic = np.array([[378.68261719, 0.0, 328.19930137, 0.0],
-                                            [0.0, 443.68624878, 153.57524293, 0.0],
-                                            [0.0, 0.0, 1.0, 0.0]])
-        
-        self.extrinsic = self.rtlc(alpha = np.radians(2.2),
-                                                beta = np.radians(326.4),
-                                                gamma = np.radians(359.4), 
-                                                tx = 0.965, ty = 0.22, tz = -0.7)
+        # 0904
+        self.intrinsic_right = np.array([[619.6081,   0., 314.5476, 0.],
+                                         [0., 619.7349, 224.2868, 0.],
+                                         [0., 0., 1., 0.]])
+        self.extrinsic_right = np.array([
+            [-0.618721384543836,  -0.785521938769354,  0.011795423697079, -0.876986864685114],
+            [0.009470779095116, -0.022471287889330, -0.999702628567079, 0.480566072341194],
+            [0.785553405346505, -0.618425682626967,  0.021342971111821, 0.234585492330497],
+            [ 0.0,                 0.0,                 0.0,                 1.0]])
 
         self.bboxes = None
         self.clusters_2d = None
