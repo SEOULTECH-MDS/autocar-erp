@@ -17,6 +17,7 @@ def generate_launch_description():
         'map_name',
         # default_value='kcity_v5',
         default_value='mirae_map',
+        # default_value='aerum_map',
         description='Name of the map folder in localization_core/data'
     )
     map_osm_file_arg = DeclareLaunchArgument(
@@ -28,12 +29,14 @@ def generate_launch_description():
         'map_origin_lat',
         # default_value='37.239205', # kcity 
         default_value='37.6301124677', # mirae 
+        # default_value='37.63003568893', # aerum
         description='Latitude of map origin for UTM projection'
     )
     map_origin_lon_arg = DeclareLaunchArgument(
         'map_origin_lon',
         # default_value='126.773193', # kcity
         default_value='127.08146372752', # mirae
+        # default_value='127.08055492835', # aerum
         description='Longitude of map origin for UTM projection'
     )
 
