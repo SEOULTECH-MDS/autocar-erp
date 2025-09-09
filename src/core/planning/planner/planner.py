@@ -6,10 +6,11 @@ from typing import List, Optional, Tuple
 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped, Point
-from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped, Point, PoseArray, Pose
+from nav_msgs.msg import Path, Odometry
 from visualization_msgs.msg import Marker, MarkerArray
-from planning_msgs.msg import ObstacleArray
+from planning_msgs.msg import ObstacleArray, ModeState
+from std_msgs.msg import Int32
 
 
 def wrap_to_pi(angle: float) -> float:
@@ -120,18 +121,48 @@ class PlannerNode(Node):
         self.declare_parameter('stage2_lookahead', 1.0)
         # Stage-3
         self.declare_parameter('stage3_preview', True)
+        # General stage control
+        self.declare_parameter('auto_advance', True)            # 오돔 기반 자동 스테이지 전환
+        self.declare_parameter('prefer_odom', True)             # 시작자세로 odom 우선 사용
+        self.declare_parameter('stage_position_tolerance', 0.25)  # [m]
+        self.declare_parameter('stage_yaw_tolerance_deg', 8.0)    # [deg]
+        self.declare_parameter('publish_unified_waypoints', True)  # 현재 스테이지만 /waypoints(및 points) 퍼블리시
+        # Delivery mission
+        self.declare_parameter('delivery_position_tolerance', 0.3)
+        self.declare_parameter('delivery_yaw_tolerance_deg', 12.0)
+        self.declare_parameter('delivery_stop_offset', 1.0)  # 표지판 앞 정지 오프셋 [m]
+        self.declare_parameter('delivery_auto_activate', False)  # delivery 토픽 수신 시 자동 전환 (기본 OFF)
+        self.declare_parameter('enable_delivery_planning', False)  # 배달 경로 생성 전체 활성화 토글 (기본 OFF)
+        # Frames
+        self.declare_parameter('frame_id', 'map')
 
         # State
         self._open_slot_pose: Optional[PoseStamped] = None
         self._current_pose: Optional[PoseStamped] = None
+        self._odom: Optional[Odometry] = None
         self._segments: List[Segment] = []
         self._lane_left_pts: List[Tuple[float, float]] = []
         self._lane_right_pts: List[Tuple[float, float]] = []
         self._last_stage1_goal: Optional[PoseStamped] = None
+        self._last_stage2_goal: Optional[PoseStamped] = None
+        self._last_stage3_goal: Optional[PoseStamped] = None
+        # Stage machine: 1,2,3
+        self._stage: int = 1
+        # External selector (overrides if provided)
+        self._selector_stage: Optional[int] = None
+        # Mission mode: 'parking' | 'delivery'
+        self._mission: str = 'parking'
+        # Delivery-specific state
+        self._delivery_spots: Optional[PoseArray] = None
+        self._delivery_target_sign: Optional[int] = None  # 3,4,5 -> B1,B2,B3
+        self._delivery_phase: str = 'pickup'  # 'pickup' then 'dropoff'
+        self._delivery_pick_target: Optional[PoseStamped] = None
+        self._delivery_drop_target: Optional[PoseStamped] = None
 
         # Publishers
         # MAIN topic: 컨트롤 파트가 구독할 표준 토픽 (활성 스테이지 최신 경로)
         self._waypoints_pub = self.create_publisher(Path, '/waypoints', 10)
+        self._waypoints_points_pub = self.create_publisher(PoseArray, '/waypoints_points', 10)
 
         # DEBUG topics: 스테이지별 Path/Goal 및 시각화 마커
         self._goal_pub = self.create_publisher(PoseStamped, '/stage1_goal', 10)
@@ -141,15 +172,37 @@ class PlannerNode(Node):
         self._stage2_path_pub = self.create_publisher(Path, '/stage2_path', 10)
         self._stage3_path_pub = self.create_publisher(Path, '/stage3_path', 10)
         self._stage3_goal_pub = self.create_publisher(PoseStamped, '/stage3_goal', 10)
+        # Stage-wise waypoints (PoseArray) publishing
+        self._stage1_points_pub = self.create_publisher(PoseArray, '/stage1_waypoints', 10)
+        self._stage2_points_pub = self.create_publisher(PoseArray, '/stage2_waypoints', 10)
+        self._stage3_points_pub = self.create_publisher(PoseArray, '/stage3_waypoints', 10)
+        # Delivery mission publishers
+        self._delivery_pick_path_pub = self.create_publisher(Path, '/delivery_pick_path', 10)
+        self._delivery_drop_path_pub = self.create_publisher(Path, '/delivery_drop_path', 10)
+        self._delivery_pick_points_pub = self.create_publisher(PoseArray, '/delivery_pick_waypoints', 10)
+        self._delivery_drop_points_pub = self.create_publisher(PoseArray, '/delivery_drop_waypoints', 10)
 
         # Subscribers
         self.create_subscription(PoseStamped, '/open_slot_pose', self._on_open_slot_pose, 10)
+        # Prefer stable pose if available
+        self.create_subscription(PoseStamped, '/open_slot_pose_stable', self._on_open_slot_pose, 10)
         self.create_subscription(ObstacleArray, '/virtual_walls', self._on_virtual_walls, 10)
         self.create_subscription(PoseStamped, '/current_pose', self._on_current_pose, 10)
         self.create_subscription(MarkerArray, '/road_markers', self._on_road_markers, 10)
+        # Odom for stage completion/starting pose
+        self.create_subscription(Odometry, '/odom', self._on_odom, 20)
+        # Optional stage selector interface (1,2,3)
+        self.create_subscription(Int32, '/stage_selector', self._on_stage_selector, 10)
+        # Mission selection and delivery inputs
+        self.create_subscription(ModeState, '/mode_state', self._on_mode_state, 10)
+        self.create_subscription(PoseArray, '/deliverysign_spot', self._on_delivery_spots, 10)
+        self.create_subscription(Int32, '/target_sign', self._on_target_sign, 10)
+        # Preferred: explicit targets from mode selector (map frame)
+        self.create_subscription(PoseStamped, '/delivery_pick_target', self._on_delivery_pick_target, 10)
+        self.create_subscription(PoseStamped, '/delivery_drop_target', self._on_delivery_drop_target, 10)
 
-        # Timer to re-evaluate goal periodically (in case only one topic updates)
-        self.create_timer(0.2, self._maybe_publish_goal)
+        # Timer to re-evaluate stage and publish paths
+        self.create_timer(0.2, self._on_timer)
 
         self.get_logger().info('Planner node started (Stage-1 goal computation).')
 
@@ -180,7 +233,98 @@ class PlannerNode(Node):
         self._lane_left_pts = left
         self._lane_right_pts = right
 
+    def _on_odom(self, msg: Odometry) -> None:
+        self._odom = msg
+        # 스테이지 완료 평가 및 자동 전환
+        try:
+            if bool(self.get_parameter('auto_advance').value):
+                if self._evaluate_and_advance_stage():
+                    # 전환되면 즉시 재계산/퍼블리시
+                    self._maybe_publish_goal()
+        except Exception as e:
+            self.get_logger().warn(f'Odometry stage evaluation error: {e}')
+
+    def _on_stage_selector(self, msg: Int32) -> None:
+        val = int(msg.data)
+        if val in (1, 2, 3):
+            self._selector_stage = val
+            self._stage = val
+            self.get_logger().info(f'Stage overridden by selector: {self._stage}')
+            self._maybe_publish_goal()
+
+    def _on_mode_state(self, msg: ModeState) -> None:
+        try:
+            if int(msg.current_mode) == int(ModeState.DELIVERY):
+                if self._mission != 'delivery':
+                    self.get_logger().info('Mission switched to DELIVERY')
+                self._mission = 'delivery'
+            elif int(msg.current_mode) == int(ModeState.PARKING):
+                if self._mission != 'parking':
+                    self.get_logger().info('Mission switched to PARKING')
+                self._mission = 'parking'
+        except Exception:
+            pass
+
+    def _on_delivery_spots(self, msg: PoseArray) -> None:
+        """센서퓨전에서 수신한 표지판 후보 좌표 배열.
+        - frame_id를 map으로 강제하여 일관성 유지.
+        - delivery_auto_activate=True일 경우, 이 토픽 수신만으로도 배달 미션으로 전환.
+        참고: enable_delivery_planning=False면 실제 경로 생성은 수행하지 않음.
+        """
+        # Force header to map for consistency
+        msg.header.frame_id = str(self.get_parameter('frame_id').value)
+        self._delivery_spots = msg
+        if bool(self.get_parameter('delivery_auto_activate').value) and self._mission != 'delivery':
+            self._mission = 'delivery'
+            self.get_logger().info('Auto-activated DELIVERY mission (spots received)')
+
+    def _on_target_sign(self, msg: Int32) -> None:
+        """모드 셀렉터/인지 노드에서 목표 B 표지판 식별자를 수신(3=B1, 4=B2, 5=B3).
+        - delivery_auto_activate=True일 때 배달 미션으로 자동 전환만 수행.
+        - 실제 목표 위치는 pick/drop 타겟 토픽 또는 spots로 보완됨.
+        """
+        try:
+            self._delivery_target_sign = int(msg.data)
+        except Exception:
+            self._delivery_target_sign = None
+        if bool(self.get_parameter('delivery_auto_activate').value) and self._mission != 'delivery':
+            self._mission = 'delivery'
+            self.get_logger().info('Auto-activated DELIVERY mission (target sign received)')
+
+    def _on_delivery_pick_target(self, msg: PoseStamped) -> None:
+        """모드 셀렉터가 산출한 상차 타겟 표지판 위치.
+        - 항상 map 프레임으로 강제 저장.
+        - delivery_auto_activate=True면 이 토픽만으로 배달 미션 활성화.
+        """
+        # enforce map frame
+        msg.header.frame_id = str(self.get_parameter('frame_id').value)
+        self._delivery_pick_target = msg
+        if bool(self.get_parameter('delivery_auto_activate').value) and self._mission != 'delivery':
+            self._mission = 'delivery'
+            self.get_logger().info('Auto-activated DELIVERY mission (pick target)')
+
+    def _on_delivery_drop_target(self, msg: PoseStamped) -> None:
+        """모드 셀렉터가 산출한 하차 타겟 표지판 위치.
+        - 항상 map 프레임으로 강제 저장.
+        - delivery_auto_activate=True면 이 토픽만으로 배달 미션 활성화.
+        """
+        # enforce map frame
+        msg.header.frame_id = str(self.get_parameter('frame_id').value)
+        self._delivery_drop_target = msg
+        if bool(self.get_parameter('delivery_auto_activate').value) and self._mission != 'delivery':
+            self._mission = 'delivery'
+            self.get_logger().info('Auto-activated DELIVERY mission (drop target)')
+
     # ───────────────────────────── Core Logic ────────────────────────────
+    def _on_timer(self) -> None:
+        """주기적으로 호출되는 메인 루프.
+        - enable_delivery_planning=True 이고 미션이 delivery일 때만 배달 경로 생성.
+        - 그 외에는 주차(파킹) 경로 생성 로직 수행.
+        """
+        if bool(self.get_parameter('enable_delivery_planning').value) and self._mission == 'delivery':
+            self._maybe_publish_delivery()
+        else:
+            self._maybe_publish_goal()
     def _parse_segments(self, msg: ObstacleArray) -> List[Segment]:
         segments: List[Segment] = []
         for obs in msg.obstacles:
@@ -374,59 +518,314 @@ class PlannerNode(Node):
         return goal, markers
 
     def _maybe_publish_goal(self) -> None:
+        # 입력 필요 확인
         if self._open_slot_pose is None:
             return
+        # Stage-1 goal/markers는 항상 갱신(디버그 가시화)
         try:
-            goal, markers = self._compute_stage1_goal(self._open_slot_pose)
+            stage1_goal, markers = self._compute_stage1_goal(self._open_slot_pose)
+            self._last_stage1_goal = stage1_goal
+            self._goal_pub.publish(stage1_goal)
+            self._vis_pub.publish(markers)
         except Exception as e:
             self.get_logger().warn(f'Stage-1 goal computation failed: {e}')
             return
-        self._goal_pub.publish(goal)
-        self._vis_pub.publish(markers)
-        # Optional: publish a straight+arc path from current pose
-        if bool(self.get_parameter('show_stage1_path').value):
-            path_msg = self._compute_stage1_path(self._current_pose, goal)
-            if path_msg is not None:
-                self._path_pub.publish(path_msg)
-                # Also publish unified waypoints topic (Path)
-                self._waypoints_pub.publish(path_msg)
-        # Compute and publish stage-2 goal/path as well
-        self._last_stage1_goal = goal
-        if bool(self.get_parameter('stage2_guided').value):
-            stage2_path = self._compute_stage2_path_guided(self._last_stage1_goal, self._open_slot_pose)
-            if stage2_path is not None:
-                self._stage2_path_pub.publish(stage2_path)
-                self._waypoints_pub.publish(stage2_path)
-        else:
-            stage2_goal = self._compute_stage2_goal(self._open_slot_pose)
-            if stage2_goal is not None:
-                self._stage2_goal_pub.publish(stage2_goal)
-                stage2_path = self._compute_stage2_path(self._last_stage1_goal, stage2_goal)
-                if stage2_path is not None:
-                    self._stage2_path_pub.publish(stage2_path)
-                    self._waypoints_pub.publish(stage2_path)
-                # Stage-3: define goal at slot center and plan from Stage-2 goal
-                stage3_goal = self._compute_stage3_goal(self._open_slot_pose)
-                if stage3_goal is not None:
-                    self._stage3_goal_pub.publish(stage3_goal)
-                    stage3_path = self._compute_stage3_path_from_stage2(stage2_goal, self._open_slot_pose)
-                    if stage3_path is not None and stage3_path.poses:
-                        self._stage3_path_pub.publish(stage3_path)
-                        self._waypoints_pub.publish(stage3_path)
 
-        # Stage-3 publish when inside slot and yaw mismatch (preview enabled)
-        if bool(self.get_parameter('stage3_preview').value) and self._current_pose is not None and self._open_slot_pose is not None:
+        # 현재 활성 스테이지 결정(외부 셀렉터 우선)
+        active_stage = self._stage
+
+        # 시작 자세: prefer odom
+        start_pose = self._get_start_pose()
+
+        publish_unified = bool(self.get_parameter('publish_unified_waypoints').value)
+
+        # Stage별 생성/퍼블리시
+        if active_stage == 1:
+            if start_pose is None:
+                return
+            if bool(self.get_parameter('show_stage1_path').value):
+                path_msg = self._compute_stage1_path(start_pose, stage1_goal)
+                if path_msg is not None:
+                    self._path_pub.publish(path_msg)
+                    self._publish_points(self._stage1_points_pub, path_msg)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path_msg)
+                        self._publish_points(self._waypoints_points_pub, path_msg)
+
+        elif active_stage == 2:
+            # 목표/경로 생성
+            if bool(self.get_parameter('stage2_guided').value):
+                path = self._compute_stage2_path_guided(start_pose, self._open_slot_pose) if start_pose is not None else None
+                if path is not None:
+                    self._stage2_path_pub.publish(path)
+                    self._publish_points(self._stage2_points_pub, path)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path)
+                        self._publish_points(self._waypoints_points_pub, path)
+                # guided라도 기준 goal은 참고용으로 발행
+                g2 = self._compute_stage2_goal(self._open_slot_pose)
+                if g2 is not None:
+                    self._last_stage2_goal = g2
+                    self._stage2_goal_pub.publish(g2)
+            else:
+                g2 = self._compute_stage2_goal(self._open_slot_pose)
+                if g2 is not None:
+                    self._last_stage2_goal = g2
+                    self._stage2_goal_pub.publish(g2)
+                    path = self._compute_stage2_path(start_pose, g2) if start_pose is not None else None
+                    if path is not None:
+                        self._stage2_path_pub.publish(path)
+                        self._publish_points(self._stage2_points_pub, path)
+                        if publish_unified:
+                            self._waypoints_pub.publish(path)
+                            self._publish_points(self._waypoints_points_pub, path)
+
+        elif active_stage == 3:
+            g3 = self._compute_stage3_goal(self._open_slot_pose)
+            if g3 is not None:
+                self._last_stage3_goal = g3
+                self._stage3_goal_pub.publish(g3)
+            if start_pose is not None:
+                yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
+                path3 = self._compute_stage3_path(start_pose, yaw_slot)
+                if path3 is not None and path3.poses:
+                    self._stage3_path_pub.publish(path3)
+                    self._publish_points(self._stage3_points_pub, path3)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path3)
+                        self._publish_points(self._waypoints_points_pub, path3)
+
+        # Preview는 스테이지 3에서만, 내부에 있을 때 옵션으로 유지
+        if active_stage == 3 and bool(self.get_parameter('stage3_preview').value) and start_pose is not None and self._open_slot_pose is not None:
             yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
             center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
             L, W = self._estimate_slot_dimensions(yaw_slot, center)
             margin = float(self.get_parameter('stage2_inside_margin').value)
-            if self._inside_slot(self._current_pose.pose.position.x,
-                                 self._current_pose.pose.position.y,
+            if self._inside_slot(start_pose.pose.position.x,
+                                 start_pose.pose.position.y,
                                  center, yaw_slot, L, W, margin):
-                path3 = self._compute_stage3_path(self._current_pose, yaw_slot)
+                path3 = self._compute_stage3_path(start_pose, yaw_slot)
                 if path3 is not None and path3.poses:
                     self._stage3_path_pub.publish(path3)
-                    self._waypoints_pub.publish(path3)
+                    self._publish_points(self._stage3_points_pub, path3)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path3)
+                        self._publish_points(self._waypoints_points_pub, path3)
+
+    # ───────────────────────────── Delivery Mission ──────────────────────
+    def _maybe_publish_delivery(self) -> None:
+        """배달 미션 경로 퍼블리시(상차→하차 단계).
+        - 상차 단계: pick 타겟(있으면 우선)을 사용, 없으면 spots에서 진행방향 앞 최근접 선택.
+        - 하차 단계: drop 타겟(있으면 우선)을 사용, 없으면 spots에서 진행방향 앞 최근접 선택.
+        - 각 단계에서 표지판 앞 delivery_stop_offset [m] 위치에 정지 목표 생성 후 직선 경로 샘플링.
+        - 완료 판정: 상차는 오프셋 목표 도달 시 dropoff로 전환. 하차는 target_sign이 설정된 뒤 오프셋 목표 도달 시 완료.
+        주의: enable_delivery_planning=False면 이 함수는 호출되지 않음.
+        """
+        start_pose = self._get_start_pose()
+        if start_pose is None:
+            return
+        publish_unified = bool(self.get_parameter('publish_unified_waypoints').value)
+        pos_tol = float(self.get_parameter('delivery_position_tolerance').value)
+        yaw_tol = math.radians(float(self.get_parameter('delivery_yaw_tolerance_deg').value))
+
+        goal: Optional[PoseStamped] = None
+        # Prefer explicit targets from selector, else fall back to fused spots
+        if self._delivery_phase == 'pickup' and self._delivery_pick_target is not None:
+            goal = self._delivery_pick_target
+        elif self._delivery_phase == 'dropoff' and self._delivery_drop_target is not None:
+            goal = self._delivery_drop_target
+        elif self._delivery_spots is not None and self._delivery_spots.poses:
+            goal = self._select_nearest_ahead_spot(start_pose, self._delivery_spots)
+
+        stop_offset = float(self.get_parameter('delivery_stop_offset').value)
+
+        if self._delivery_phase == 'pickup':
+            if goal is not None:
+                goal_off = self._compute_offset_goal(start_pose, goal, stop_offset)
+                path = self._compute_straight_path(start_pose, goal_off)
+                if path is not None and path.poses:
+                    self._delivery_pick_path_pub.publish(path)
+                    self._publish_points(self._delivery_pick_points_pub, path)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path)
+                        self._publish_points(self._waypoints_points_pub, path)
+                if self._is_near_pose(start_pose, goal_off, pos_tol, yaw_tol):
+                    self._delivery_phase = 'dropoff'
+                    self.get_logger().info('Delivery: pickup reached -> dropoff phase')
+                    return
+        else:
+            if goal is not None:
+                goal_off = self._compute_offset_goal(start_pose, goal, stop_offset)
+                path = self._compute_straight_path(start_pose, goal_off)
+                if path is not None and path.poses:
+                    self._delivery_drop_path_pub.publish(path)
+                    self._publish_points(self._delivery_drop_points_pub, path)
+                    if publish_unified:
+                        self._waypoints_pub.publish(path)
+                        self._publish_points(self._waypoints_points_pub, path)
+                # 종료 조건: B 표지판(타겟) 인지 이후 도달
+                if self._delivery_target_sign is not None and self._is_near_pose(start_pose, goal_off, pos_tol, yaw_tol):
+                    self.get_logger().info('Delivery: dropoff reached after target sign (mission done)')
+
+    def _select_nearest_ahead_spot(self, start_pose: PoseStamped, spots: PoseArray) -> Optional[PoseStamped]:
+        """진행 방향(현재 yaw) 앞쪽에 있는 후보들 중 최근접 표지판 위치를 선택.
+        - 앞쪽 후보가 없으면 전체 최근접으로 대체.
+        반환: PoseStamped(map 프레임), 헤딩은 현재 헤딩 유지.
+        """
+        if not spots.poses:
+            return None
+        sx = float(start_pose.pose.position.x)
+        sy = float(start_pose.pose.position.y)
+        yaw = quaternion_to_yaw(start_pose.pose.orientation)
+        fx = math.cos(yaw); fy = math.sin(yaw)
+        best = None
+        best_dist = None
+        for p in spots.poses:
+            gx = float(p.position.x)
+            gy = float(p.position.y)
+            dx = gx - sx; dy = gy - sy
+            ahead = (dx * fx + dy * fy) > 0.0
+            if not ahead:
+                continue
+            d = math.hypot(dx, dy)
+            if best is None or d < best_dist:
+                best = (gx, gy)
+                best_dist = d
+        if best is None:
+            for p in spots.poses:
+                gx = float(p.position.x); gy = float(p.position.y)
+                d = math.hypot(gx - sx, gy - sy)
+                if best is None or d < best_dist:
+                    best = (gx, gy); best_dist = d
+        if best is None:
+            return None
+        g = PoseStamped()
+        g.header = start_pose.header
+        g.header.frame_id = str(self.get_parameter('frame_id').value)
+        g.pose.position.x = best[0]
+        g.pose.position.y = best[1]
+        g.pose.position.z = 0.0
+        g.pose.orientation = yaw_to_quaternion(yaw)
+        return g
+
+    def _compute_straight_path(self, start_pose: PoseStamped, goal: PoseStamped) -> Optional[Path]:
+        """start→goal 직선 구간을 일정 간격(path_resolution)으로 샘플링하여 Path 생성.
+        - 포즈 방향은 순간 방향(atan2(dy,dx))으로 설정.
+        """
+        ds = float(self.get_parameter('path_resolution').value)
+        x0 = float(start_pose.pose.position.x)
+        y0 = float(start_pose.pose.position.y)
+        x1 = float(goal.pose.position.x)
+        y1 = float(goal.pose.position.y)
+        dx = x1 - x0; dy = y1 - y0
+        L = math.hypot(dx, dy)
+        n = max(1, int(L / max(ds, 1e-3)))
+        path = Path(); path.header = goal.header
+        for i in range(n + 1):
+            t = i / max(1, n)
+            px = x0 + t * dx
+            py = y0 + t * dy
+            pose = PoseStamped(); pose.header = path.header
+            pose.pose.position.x = px
+            pose.pose.position.y = py
+            yaw = math.atan2(dy, dx) if L > 1e-6 else quaternion_to_yaw(start_pose.pose.orientation)
+            pose.pose.orientation = yaw_to_quaternion(yaw)
+            path.poses.append(pose)
+        return path
+
+    def _compute_offset_goal(self, start_pose: PoseStamped, sign_pose: PoseStamped, offset_m: float) -> PoseStamped:
+        """표지판(sign_pose)까지 직진한다고 가정하고, 표지판 앞 offset_m 지점에 정지 목표 생성.
+        - 목표 헤딩은 start→sign 방향을 사용.
+        - 헤더 프레임은 map으로 유지.
+        """
+        sx = float(start_pose.pose.position.x)
+        sy = float(start_pose.pose.position.y)
+        gx = float(sign_pose.pose.position.x)
+        gy = float(sign_pose.pose.position.y)
+        dx = gx - sx
+        dy = gy - sy
+        L = math.hypot(dx, dy)
+        if L < 1e-6:
+            # 방향 정보를 잃은 경우: 현재 자세를 유지
+            return sign_pose
+        ux = dx / L; uy = dy / L
+        goal = PoseStamped()
+        goal.header = sign_pose.header
+        goal.pose.position.x = gx - offset_m * ux
+        goal.pose.position.y = gy - offset_m * uy
+        goal.pose.position.z = 0.0
+        yaw = math.atan2(dy, dx)
+        goal.pose.orientation = yaw_to_quaternion(yaw)
+        return goal
+
+    def _get_start_pose(self) -> Optional[PoseStamped]:
+        prefer_odom = bool(self.get_parameter('prefer_odom').value)
+        if prefer_odom and self._odom is not None:
+            ps = PoseStamped()
+            ps.header = self._odom.header
+            ps.pose = self._odom.pose.pose
+            return ps
+        return self._current_pose
+
+    def _publish_points(self, pub, path: Path) -> None:
+        arr = PoseArray()
+        arr.header = path.header
+        for p in path.poses:
+            pose = Pose()
+            pose.position = p.pose.position
+            pose.orientation = p.pose.orientation
+            arr.poses.append(pose)
+        pub.publish(arr)
+
+    def _evaluate_and_advance_stage(self) -> bool:
+        """오돔 기반으로 현재 스테이지 완료를 평가하고 필요 시 다음 스테이지로 전환.
+        Returns True if stage was advanced."""
+        start_pose = self._get_start_pose()
+        if start_pose is None or self._open_slot_pose is None:
+            return False
+        pos_tol = float(self.get_parameter('stage_position_tolerance').value)
+        yaw_tol = math.radians(float(self.get_parameter('stage_yaw_tolerance_deg').value))
+
+        if self._stage == 1 and self._last_stage1_goal is not None:
+            if self._is_near_pose(start_pose, self._last_stage1_goal, pos_tol, yaw_tol):
+                self._stage = 2
+                self.get_logger().info('Stage-1 complete -> Stage-2')
+                return True
+
+        elif self._stage == 2:
+            if bool(self.get_parameter('stage2_guided').value):
+                yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
+                center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
+                L, W = self._estimate_slot_dimensions(yaw_slot, center)
+                margin = float(self.get_parameter('stage2_inside_margin').value)
+                if self._inside_slot(start_pose.pose.position.x, start_pose.pose.position.y, center, yaw_slot, L, W, margin):
+                    self._stage = 3
+                    self.get_logger().info('Stage-2 (guided) complete -> Stage-3')
+                    return True
+            else:
+                if self._last_stage2_goal is not None and self._is_near_pose(start_pose, self._last_stage2_goal, pos_tol, yaw_tol):
+                    self._stage = 3
+                    self.get_logger().info('Stage-2 complete -> Stage-3')
+                    return True
+
+        elif self._stage == 3:
+            # 목표: 슬롯 중심에서 yaw 정렬
+            g3 = self._last_stage3_goal or self._compute_stage3_goal(self._open_slot_pose)
+            if g3 is not None and self._is_near_pose(start_pose, g3, pos_tol, yaw_tol):
+                # 최종 완료. 여기서는 유지(또는 1로 리셋)
+                self.get_logger().info('Stage-3 complete (mission done)')
+                return False
+
+        return False
+
+    def _is_near_pose(self, a: PoseStamped, b: PoseStamped, pos_tol: float, yaw_tol: float) -> bool:
+        dx = a.pose.position.x - b.pose.position.x
+        dy = a.pose.position.y - b.pose.position.y
+        dist = math.hypot(dx, dy)
+        ya = quaternion_to_yaw(a.pose.orientation)
+        yb = quaternion_to_yaw(b.pose.orientation)
+        dyaw = abs(wrap_to_pi(ya - yb))
+        return (dist <= pos_tol) and (dyaw <= yaw_tol)
 
     # ───────────────────────────── Utilities ─────────────────────────────
     def _min_distance_to_walls(self, x: float, y: float) -> float:
