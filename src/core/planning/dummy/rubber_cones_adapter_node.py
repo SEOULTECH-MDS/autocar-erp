@@ -58,11 +58,14 @@ class RubberConesAdapterNode(Node):
         self.declare_parameter('publish_markers', True)
         # time/TF
         self.declare_parameter('tf_timeout_sec', 1.0)
-        self.declare_parameter('tf_use_latest_on_fail', True)
+        self.declare_parameter('tf_use_latest_on_fail', False)
+        # 시간 불일치 대응 옵션: 최신 TF 강제 사용 및 퍼블리시 스탬프 소스 선택(message|tf|now)
+        self.declare_parameter('force_tf_latest', False)
+        self.declare_parameter('publish_stamp_source', 'message')
         # color_filter: all | yellow | blue | white
         self.declare_parameter('color_filter', 'all')
         # marker persistence (accumulate points in target_frame for RViz)
-        self.declare_parameter('marker_persist', True)
+        self.declare_parameter('marker_persist', False)
         self.declare_parameter('marker_merge_radius', 0.25)
         # vehicle odometry & side labeling
         self.declare_parameter('odom_topic', '/autocar/location')
@@ -126,31 +129,44 @@ class RubberConesAdapterNode(Node):
         # TF 획득 (가능하면 입력 메시지의 타임스탬프 사용)
         src_frame = msg.markers[0].header.frame_id if msg.markers else 'velodyne'
         stamp = msg.markers[0].header.stamp if msg.markers else self.get_clock().now().to_msg()
-        try:
-            tf = self._tf_buffer.lookup_transform(
-                target_frame,
-                src_frame,
-                stamp,
-                timeout=Duration(seconds=timeout_sec),
-            )
-        except Exception as e:
-            if bool(self.get_parameter('tf_use_latest_on_fail').value):
-                try:
-                    tf = self._tf_buffer.lookup_transform(
-                        target_frame,
-                        src_frame,
-                        Time(),  # 최신 TF
-                        timeout=Duration(seconds=timeout_sec),
-                    )
-                    self.get_logger().warn(
-                        f'TF 시각 외삽으로 최신 TF로 폴백 사용: {src_frame}→{target_frame} ({e})'
-                    )
-                except Exception as e2:
-                    self.get_logger().warn(f'TF 변환 실패(폴백 포함): {src_frame}→{target_frame}: {e2}')
-                    return
-            else:
-                self.get_logger().warn(f'TF 변환 실패: {src_frame}→{target_frame}: {e}')
+        use_latest = bool(self.get_parameter('force_tf_latest').value)
+        if use_latest:
+            try:
+                tf = self._tf_buffer.lookup_transform(
+                    target_frame,
+                    src_frame,
+                    Time(),  # 최신 TF 강제
+                    timeout=Duration(seconds=timeout_sec),
+                )
+            except Exception as e:
+                self.get_logger().warn(f'TF 최신 강제 사용 실패: {src_frame}→{target_frame}: {e}')
                 return
+        else:
+            try:
+                tf = self._tf_buffer.lookup_transform(
+                    target_frame,
+                    src_frame,
+                    stamp,
+                    timeout=Duration(seconds=timeout_sec),
+                )
+            except Exception as e:
+                if bool(self.get_parameter('tf_use_latest_on_fail').value):
+                    try:
+                        tf = self._tf_buffer.lookup_transform(
+                            target_frame,
+                            src_frame,
+                            Time(),  # 최신 TF
+                            timeout=Duration(seconds=timeout_sec),
+                        )
+                        self.get_logger().warn(
+                            f'TF 시각 외삽으로 최신 TF로 폴백 사용: {src_frame}→{target_frame} ({e})'
+                        )
+                    except Exception as e2:
+                        self.get_logger().warn(f'TF 변환 실패(폴백 포함): {src_frame}→{target_frame}: {e2}')
+                        return
+                else:
+                    self.get_logger().warn(f'TF 변환 실패: {src_frame}→{target_frame}: {e}')
+                    return
 
         tx = float(tf.transform.translation.x)
         ty = float(tf.transform.translation.y)
@@ -194,6 +210,15 @@ class RubberConesAdapterNode(Node):
                 mx, my, mz = apply_tf(x, y, z)
                 pts_map.append((mx, my, mz))
 
+        # 퍼블리시 타임스탬프 소스 결정
+        pub_src = str(self.get_parameter('publish_stamp_source').value).lower().strip()
+        if pub_src == 'tf':
+            pub_stamp = tf.header.stamp
+        elif pub_src == 'now':
+            pub_stamp = self.get_clock().now().to_msg()
+        else:
+            pub_stamp = stamp
+
         # 2) 차량 기준 좌/우 라벨링
         labels = None
         if pts_map and bool(self.get_parameter('enable_side_label').value):
@@ -203,14 +228,14 @@ class RubberConesAdapterNode(Node):
 
         # 3) ObstacleArray로 퍼블리시 (z는 무시하고 2D로 투영)
         if pts_map:
-            self._publish_obstacles(pts_map, target_frame, stamp, labels)
+            self._publish_obstacles(pts_map, target_frame, pub_stamp, labels)
             if bool(self.get_parameter('publish_markers').value):
-                self._publish_markers(pts_map, target_frame, stamp)
+                self._publish_markers(pts_map, target_frame, pub_stamp)
         # 4) vehicle pose republish/visualize in target frame
         if bool(self.get_parameter('publish_vehicle_pose').value):
-            self._maybe_publish_vehicle_pose(target_frame, stamp)
+            self._maybe_publish_vehicle_pose(target_frame, pub_stamp)
         if bool(self.get_parameter('publish_vehicle_marker').value):
-            self._maybe_publish_vehicle_marker(target_frame, stamp)
+            self._maybe_publish_vehicle_marker(target_frame, pub_stamp)
 
     # ───────────────────────────── 퍼블리시 유틸 ─────────────────────────────
     def _publish_obstacles(self, points: List[Tuple[float, float, float]], frame: str, stamp, labels: List[str] = None) -> None:
