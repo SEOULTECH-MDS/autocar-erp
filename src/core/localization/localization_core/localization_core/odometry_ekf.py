@@ -93,6 +93,7 @@ class OdometryNode(Node):
         self.last_time = self.get_clock().now()
         self.gps_pose = Odometry()
         self.gps_pose.header.frame_id = 'world'
+        self.gps_pose.child_frame_id = 'base_link'
         self.global_yaw = 0.0
         self.encoder_speed = 0.0
         self.speed = 0.0
@@ -168,6 +169,7 @@ class OdometryNode(Node):
         self.ekf.predict(dt)
 
         # EKF 상태를 Odometry 메시지로 변환
+        self.gps_pose.header.stamp = current_time.to_msg()
         self.gps_pose.pose.pose.position.x = self.ekf.state[0]
         self.gps_pose.pose.pose.position.y = self.ekf.state[1]
         self.gps_pose.pose.pose.orientation = yaw_to_quaternion(self.ekf.state[2])

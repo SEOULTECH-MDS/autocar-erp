@@ -32,6 +32,10 @@ def generate_launch_description():
     declare_min_z_arg = DeclareLaunchArgument('min_z', default_value='-0.5')
     declare_max_z_arg = DeclareLaunchArgument('max_z', default_value='0.0')
     declare_inside_mode_arg = DeclareLaunchArgument('inside_mode', default_value='false')
+    declare_use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time', default_value='false',
+        description='Use simulation clock if available.'
+    )
 
     # Get launch configuration
     sensor_model = LaunchConfiguration('sensor_model')
@@ -53,6 +57,7 @@ def generate_launch_description():
             {'min_z': LaunchConfiguration('min_z')},
             {'max_z': LaunchConfiguration('max_z')},
             {'inside_mode': LaunchConfiguration('inside_mode')},
+            {'use_sim_time': LaunchConfiguration('use_sim_time')},
         ],
     )
 
@@ -78,7 +83,8 @@ def generate_launch_description():
                         'y_axis_max': 6.0,
                         'z_axis_min': -0.60,
                         'z_axis_max': 0.5,
-                        'tolerance_offset': 0.15
+                        'tolerance_offset': 0.15,
+                        'use_sim_time': LaunchConfiguration('use_sim_time')
                     }],
                     remappings=[
                         ("velodyne_points", LaunchConfiguration('filtered_topic')),
@@ -103,6 +109,7 @@ def generate_launch_description():
         declare_min_z_arg,
         declare_max_z_arg,
         declare_inside_mode_arg,
+        declare_use_sim_time_arg,
         region_filter_node,
         container
     ]) 

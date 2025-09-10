@@ -4,6 +4,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from ackermann_msgs.msg import AckermannDriveStamped
 import math
+from rclpy.clock import Clock, ClockType
 
 class StatePublisherNode(Node):
 
@@ -12,6 +13,10 @@ class StatePublisherNode(Node):
 
         # --- Parameters ---
         self.wheel_radius = 0.28  # From URDF
+
+        # Clocks for explicit stamping
+        self._ros_clock = Clock(clock_type=ClockType.ROS_TIME)
+        self._sys_clock = Clock(clock_type=ClockType.SYSTEM_TIME)
 
         # --- State Variables ---
         self.steering_angle = 0.0
@@ -58,7 +63,13 @@ class StatePublisherNode(Node):
 
         # Create JointState message
         joint_state_msg = JointState()
-        joint_state_msg.header.stamp = self.get_clock().now().to_msg()
+        # Explicitly choose ROS time or system time based on use_sim_time
+        try:
+            use_sim = self.get_parameter('use_sim_time').get_parameter_value().bool_value
+        except Exception:
+            use_sim = False
+        now_msg = (self._ros_clock.now() if use_sim else self._sys_clock.now()).to_msg()
+        joint_state_msg.header.stamp = now_msg
         
         # These names MUST match the joint names in your URDF
         joint_state_msg.name = [

@@ -61,7 +61,8 @@ class AutocarTFPublisher(Node):
     def location_callback(self, msg):
         # Publish dynamic transform from 'map' to 'base_link'
         t = TransformStamped()
-        t.header.stamp = self.get_clock().now().to_msg()
+        # Use odometry timestamp for consistency with pose
+        t.header.stamp = msg.header.stamp
         t.header.frame_id = "map"
         t.child_frame_id = "base_link"
         
