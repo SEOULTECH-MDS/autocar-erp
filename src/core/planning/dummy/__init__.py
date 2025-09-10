@@ -1,4 +1,4 @@
-# Dummy package for testing cones visualization
+# dummy package marker for ament_python packaging
 
 
 
