@@ -72,7 +72,7 @@ class SensorFusion(Node):
             [0.785553405346505, -0.618425682626967,  0.021342971111821, 0.234585492330497],
             [ 0.0,                 0.0,                 0.0,                 1.0]
         ])
-        self.extrinsic_right = np.linalg.inv(self.extrinsic_right)
+        #self.extrinsic_right = np.linalg.inv(self.extrinsic_right)
 
         # ROS
         # Subscriber
