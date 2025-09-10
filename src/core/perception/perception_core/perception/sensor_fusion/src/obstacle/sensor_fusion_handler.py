@@ -14,7 +14,7 @@ def cluster_for_fusion(cluster_msg):
     
     clusters = np.empty((0,4), float) # 4 columns for x, y, z, 1.0
     for cluster in cluster_msg.markers:
-        points = np.array([(point.x, point.y, point.z+0.3) for point in cluster.points])
+        points = np.array([(point.x, point.y, point.z-0.10) for point in cluster.points])
         center = np.average(points, axis=0)
         center = np.append(center, 1.0)
             
@@ -50,7 +50,7 @@ def projection_3d_to_2d(clusters, intrinsic, extrinsic):
     
     clusters_2d = np.vstack([center_x, center_y]).T
 
-    return clusters_2d, valid_indicies
+    return clusters_2d, valid_indicies, points_c
 
 def hungarian_match(clusters_2d, bboxes, bbox_labels, distance_threshold = 80):
     cost = distance_matrix(clusters_2d, bboxes)
@@ -68,15 +68,10 @@ def hungarian_match(clusters_2d, bboxes, bbox_labels, distance_threshold = 80):
     #     else:
     #         matched.append((c, bb))
 
-    # matched = [-1] * len(clusters_2d)    
-    # for c, bb in zip(assigned_clusters, assigned_bboxes):
-    #     if cost[c,bb] < distance_threshold:
-    #         matched[c] =  bbox_labels[bb]
-    # return matched
-    matched = []
+    matched = [-1] * len(clusters_2d)    
     for c, bb in zip(assigned_clusters, assigned_bboxes):
-        if cost[c, bb] < distance_threshold:
-            matched.append((c, bb))
+        if cost[c,bb] < distance_threshold:
+            matched[c] =  bbox_labels[bb]
     return matched
 
 def get_label(matched, valid_indicies):

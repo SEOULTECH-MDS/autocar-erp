@@ -43,13 +43,13 @@ class YoloCarNode(Node):
 
         # DISPLAY 유무 확인(헤드리스면 imshow 생략)
         self.display_ok = bool(os.environ.get('DISPLAY'))
-        if not self.display_ok:
-            self.get_logger().warn("DISPLAY 환경변수가 없어 화면 표시(cv2.imshow)를 생략합니다.")
+        # if not self.display_ok:
+        #     self.get_logger().warn("DISPLAY 환경변수가 없어 화면 표시(cv2.imshow)를 생략합니다.")
 
         # 디바이스/half 설정
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.half = self.device != 'cpu'
-        self.get_logger().info(f"Using device: {self.device}")
+        # self.get_logger().info(f"Using device: {self.device}")
 
         # 모델 로드
         self.model = YOLO(WEIGHTS)
@@ -65,15 +65,15 @@ class YoloCarNode(Node):
 
         # 색상 팔레트(클래스별 고정 색) — 여기선 car 한 색상만 필요하지만 통일
         self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.names))]
-        if CAR_CLASS_ID >= len(self.names):
-            self.get_logger().warn(f"CAR_CLASS_ID {CAR_CLASS_ID}가 model.names 길이({len(self.names)})를 벗어납니다.")
+        # if CAR_CLASS_ID >= len(self.names):
+        #     self.get_logger().warn(f"CAR_CLASS_ID {CAR_CLASS_ID}가 model.names 길이({len(self.names)})를 벗어납니다.")
 
         # GPU 워밍업
         if self.device != 'cpu':
             dummy = np.zeros((IMG_SIZE, IMG_SIZE, 3), dtype=np.uint8)
             _ = self.model(dummy, imgsz=IMG_SIZE, conf=CONF_THRES, iou=IOU_THRES, augment=AUGMENT, classes=[CAR_CLASS_ID])
 
-        self.get_logger().info("YOLO Car Detector node has been started.")
+        # self.get_logger().info("YOLO Car Detector node has been started.")
 
     def callback_img(self, img_msg: Image):
         t0 = time.perf_counter()
@@ -82,7 +82,7 @@ class YoloCarNode(Node):
         try:
             frame = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
         except Exception as e:
-            self.get_logger().error(f"CV Bridge error: {e}")
+            # self.get_logger().error(f"CV Bridge error: {e}")
             return
 
         # 추론 (Ultralytics가 리사이즈/전처리/NMS 내부 처리)
@@ -107,7 +107,7 @@ class YoloCarNode(Node):
                 cv2.waitKey(1)
             # 빈 PoseArray도 퍼블리시(구독자 동기화용)
             self.pose_pub.publish(pose_array)
-            self.get_logger().info("No car detected.")
+            # self.get_logger().info("No car detected.")
             return
 
         # 박스 그리기 & PoseArray 구성 & 로그 출력
@@ -125,9 +125,9 @@ class YoloCarNode(Node):
             xmin, ymin, xmax, ymax = [int(v) for v in xyxy]
 
             # 로그: 클래스 이름/신뢰도/좌표
-            self.get_logger().info(
-                f"[car] conf={conf:.2f}  bbox(xmin,ymin,xmax,ymax)=({xmin},{ymin},{xmax},{ymax})  name={cls_name}"
-            )
+            # self.get_logger().info(
+            #     f"[car] conf={conf:.2f}  bbox(xmin,ymin,xmax,ymax)=({xmin},{ymin},{xmax},{ymax})  name={cls_name}"
+            # )
 
             # 시각화
             label = f"{cls_name} {conf:.2f}"
@@ -161,7 +161,7 @@ class YoloCarNode(Node):
             self.get_logger().warn(f"Failed to publish annotated image: {e}")
         '''
         t_elapsed = time.perf_counter() - t0
-        self.get_logger().info(f"Inference time: {t_elapsed:.4f}s  (cars: {len(pose_array.poses)})")
+        # self.get_logger().info(f"Inference time: {t_elapsed:.4f}s  (cars: {len(pose_array.poses)})")
 
 
 def main(args=None):

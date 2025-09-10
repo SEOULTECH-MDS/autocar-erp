@@ -60,7 +60,7 @@ class YOLO(Node):
         # YOLO 모델 초기화: 장치 선택, 모델 로딩, 이미지 사이즈 등 설정
         self.device = select_device(DEVICE)
         self.half = self.device.type != 'cpu'  # GPU 사용 시 half precision 적용
-        self.get_logger().info(f"Using device: {self.device}")
+        # self.get_logger().info(f"Using device: {self.device}")
 
         # 모델 로딩
         self.model = attempt_load(WEIGHTS, map_location=self.device)
@@ -81,7 +81,7 @@ class YOLO(Node):
         # 필수 패키지 요구사항 확인
         check_requirements(exclude=('pycocotools', 'thop'))
 
-        self.get_logger().info("YOLO Detector node has been started.")
+        # self.get_logger().info("YOLO Detector node has been started.")
 
     def image_callback(self, image_msg):
         with torch.no_grad():
@@ -91,7 +91,7 @@ class YOLO(Node):
             try:
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding="bgr8")
             except Exception as e:
-                self.get_logger().error(f"CV Bridge error: {e}")
+                # self.get_logger().error(f"CV Bridge error: {e}")
                 return
             
             # 객체 검출 수행
@@ -133,11 +133,11 @@ class YOLO(Node):
                 pose.orientation.z = float(rubber[3])  # xmax
                 pose.orientation.w = float(rubber[4])  # ymax
 
-                self.get_logger().info(
-                    f"(color, reliability)=({pose.position.x:.1f}, {pose.position.y:.0f})"
-                    f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
-                    f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
-                )
+                # self.get_logger().info(
+                #     f"(color, reliability)=({pose.position.x:.1f}, {pose.position.y:.0f})"
+                #     f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
+                #     f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
+                # )
                 
                 pose_array.poses.append(pose)
             
@@ -145,7 +145,7 @@ class YOLO(Node):
             self.pose_array_pub.publish(pose_array)
             
             elapsed_time = time.perf_counter() - start_time
-            self.get_logger().info(f"YOLO detection time: {elapsed_time:.5f} seconds")
+            # self.get_logger().info(f"YOLO detection time: {elapsed_time:.5f} seconds")
     
     def detect(self, img0):
         # 이미지 전처리: letterbox로 크기 조정 및 패딩 추가
