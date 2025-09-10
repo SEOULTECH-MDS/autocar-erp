@@ -42,8 +42,8 @@ setup(
             'camera_traffic = perception.yolov11.camera_traffic:main',
             'trafficlight = perception.yolov11.trafficlight:main',
 
-            # 장애물
-            'camera_obstacle = perception.yolov11.camera_obstacle:main',
+            # 라바콘 (주차)
+            #'camera_obstacle = perception.yolov11.camera_obstacle:main',
             "left_camera = perception.yolov11.obstacle_camera.left_camera:main",
             "right_camera = perception.yolov11.obstacle_camera.right_camera:main",
             'combined_camera = perception.yolov11.obstacle_camera.combined_camera:main',
@@ -53,7 +53,10 @@ setup(
             "object_tracker3D = perception.tracker.src.object_tracker3D:main",
             "rubber_visualizer = perception.rubber_visualizer.src.rubber_visualizer:main",
 
+            # 장애물 (차)
+            'camera_car = perception.yolov11.camera_car:main',
             "car_detect = perception.yolov11.car_detect:main",
+            "sensor_fusion_obstacle = perception.sensor_fusion.src.obstacle.sensor_fusion:main",
 
             # 표지판
             'camera_sign = perception.yolov11.camera_sign:main',

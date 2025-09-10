@@ -5,11 +5,12 @@ from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, Vector3, PoseStamped, Pose, Quaternion, TransformStamped
 from std_msgs.msg import ColorRGBA, Int32
-from planning_msgs.msg import ObstacleArray, Obstacle
+from planning_msgs.msg import ObstacleArray, Obstacle, ConeMapMsg, ConeInfo
 from builtin_interfaces.msg import Duration
 import tf2_ros
 import numpy as np
-from typing import List, Tuple
+import math
+from typing import List, Tuple, Optional
 
 
 
@@ -58,35 +59,70 @@ class ParkingAreaNode(Node):
         super().__init__('parking_area_node')
         
         # ──── ❶ 파라미터 선언 ───────────────────────────────────────────────
-        self.declare_parameter('slot_origin_x', 0.0)      # X 기준선 (도로 가장자리)
-        self.declare_parameter('slot_origin_y', 0.0)      # 가장 아래 슬롯의 y 하단
-        self.declare_parameter('SLOT_LEN', 5.0)           # L : 세로 길이
-        self.declare_parameter('SLOT_GAP', 0.01)           # G : 슬롯 간 간격
-        self.declare_parameter('SLOT_WIDTH', 2.5)         # W : 가로 폭
-        self.declare_parameter('EPS_X', 0.3)              # 좌/우 여유 허용치
-        self.declare_parameter('EPS_Y', 0.01)              # 상/하 여유 허용치
+        self.declare_parameter('slot_origin_x', 0.0)      # X 기준선(도로 가장자리 x). 슬롯 좌우 경계와 라인 추정의 기준이 됩니다.
+        self.declare_parameter('slot_origin_y', 0.0)      # 가장 아래 슬롯의 y 하단. 슬롯 y-밴드 경계의 기준이 됩니다.
+        self.declare_parameter('SLOT_LEN', 5.0)           # 슬롯 세로 길이 L(기본 템플릿). 일렬 얼라인 시 관측 스팬으로 갱신됩니다.
+        self.declare_parameter('SLOT_GAP', 0.01)           # 슬롯 간 간격 G. 슬롯 y-밴드 분리를 위한 여유 간격입니다.
+        self.declare_parameter('SLOT_WIDTH', 2.5)         # 슬롯 가로 폭 W. 일렬 얼라인 사용 시에도 고정 유지됩니다.
+        self.declare_parameter('EPS_X', 0.3)              # x 경계 여유 허용치. 경계 포함/누락 판정을 완화합니다.
+        self.declare_parameter('EPS_Y', 0.01)              # y 경계 여유 허용치. 슬롯 y-밴드 판정을 완화합니다.
         # Recognition mode and sequential settings
-        self.declare_parameter('recognition_mode', 'sequential')  # pattern | dynamic | sequential
+        self.declare_parameter('recognition_mode', 'sequential')  # 인식 모드 선택(pattern|dynamic|sequential). 부분 관측 대응에는 sequential 권장.
+        # 일렬 콘만으로 템플릿 얼라인 여부(폭은 고정 유지)
+        self.declare_parameter('align.use_line_only', False)   # 도로측 일렬 콘만으로 템플릿 정렬(L만 갱신, W는 고정 유지). 활성화
+        self.declare_parameter('align.min_span_y', 1.0)  # 일렬 관측 y-스팬 최소 보장값(너무 짧을 때 L 산정 하한).
+        self.declare_parameter('align.lock_width', False)  # 관측 폭이 작거나 라인만 관측 시 W(폭) 고정 유지
+        self.declare_parameter('align.min_width_span', 1.0)  # 폭 갱신을 허용하는 최소 x 스팬
+        self.declare_parameter('align.disable', False)   # 템플릿 얼라인 활성화 (콘 위치에 맞춰 회전)
         # Sequential mode parameters
-        self.declare_parameter('seq.buffer_window_sec', 2.0)
-        self.declare_parameter('seq.cone_timeout_sec', 2.5)
-        self.declare_parameter('seq.confirm_threshold', 0.8)
-        self.declare_parameter('seq.release_threshold', 0.7)
-        self.declare_parameter('seq.stable_hold_sec', 0.8)
-        self.declare_parameter('seq.ema_alpha', 0.5)
-        self.declare_parameter('seq.publish_stable_only', True)
-        self.declare_parameter('seq.logging_enabled', True)
-        self.declare_parameter('seq.log_path', '/tmp/parking_area_seq.csv')
-        self.declare_parameter('seq.map_cache_ttl_sec', 5.0)
+        # time/clock
+        self.declare_parameter('seq.buffer_window_sec', 15.0)  # 최근 이 시간(초) 윈도의 콘만 버퍼링(부분 관측 누적 창 크기). (확대)
+        self.declare_parameter('seq.cone_timeout_sec', 10000000000.0)   # 캐시된 콘의 유효 시간(초). 초과 시 제거합니다.
+        self.declare_parameter('seq.confirm_threshold', 0.1)  # EMA 점수 확정 임계값. 높을수록 보수적으로 확정합니다.
+        self.declare_parameter('seq.release_threshold', 0.9)  # EMA 점수 해제 임계값. 낮을수록 상태 유지가 강합니다.
+        self.declare_parameter('seq.stable_hold_sec', 0.8)    # 확정 후 유지해야 하는 최소 시간(깜빡임 방지).
+        self.declare_parameter('seq.ema_alpha', 0.5)          # EMA 가중치. 높을수록 최신 관측 반영이 큽니다.
+        self.declare_parameter('seq.publish_stable_only', False)  # True면 안정 결과만 퍼블리시(실시간 변동 억제).
+        self.declare_parameter('seq.logging_enabled', False)       # 시퀀스 로그 기록 on/off.
+        self.declare_parameter('seq.log_path', '/tmp/parking_area_seq.csv')  # 시퀀스 로그 파일 경로.
+        self.declare_parameter('seq.map_cache_ttl_sec', 30.0)     # 라벨/맵 캐시 TTL(초). 오래된 항목을 자동 삭제합니다. (확대)
         # Robustness controls against frame drops / oscillation
-        self.declare_parameter('seq.skip_on_drop', True)
-        self.declare_parameter('seq.min_score_delta', 0.08)
-        self.declare_parameter('seq.provisional_dwell_sec', 0.4)
-        self.declare_parameter('seq.release_grace_sec', 0.8)
+        self.declare_parameter('seq.skip_on_drop', False)      # 버퍼 크기 급감 시 업데이트 건너뜀(진동 억제).
+        self.declare_parameter('seq.min_score_delta', 0.08)    # 모드 전환 최소 점수 차이. 클수록 전환 둔감.
+        self.declare_parameter('seq.provisional_dwell_sec', 0.4)  # 임시 우승 모드 유지 필요 시간(전환 안정화).
+        self.declare_parameter('seq.release_grace_sec', 0.8)      # 해제 조건 지속 필요 시간(불안정 기간 허용).
         # Road-side line extraction params
-        self.declare_parameter('line.quantile', 0.3)           # 좌측 q-분위 범위로 대표 x 추정
-        self.declare_parameter('line.x_tolerance', 0.35)       # 대표 x 주변 허용 오차 (m)
-        self.declare_parameter('line.min_points', 3)           # 일렬로 인정할 최소 포인트 수
+        self.declare_parameter('line.quantile', 0.2)           # 일렬 대표 x 추정 시 좌측 분위수(도로측 선택 정도).
+        self.declare_parameter('line.x_tolerance', 0.35)       # 대표 x 주변 허용 오차(m). 일렬 포인트 판정 폭.
+        self.declare_parameter('line.min_points', 2)           # 일렬로 인정할 최소 포인트 수.
+        # PCA/RANSAC line fit params
+        self.declare_parameter('line.use_pca', False)           # PCA로 주성분(도로측 라인) 추정 사용
+        self.declare_parameter('line.distance_tolerance', 0.5)  # 라인으로부터 허용 거리(일렬로 채택 기준) - 완화
+        self.declare_parameter('line.use_ransac', False)       # RANSAC 사용 여부(옵션)
+        # Gap-based open-slot detection
+        self.declare_parameter('gap.use', False)                # s-축 연속 점들 간 큰 간격을 열린 구역으로 판정
+        self.declare_parameter('gap.min_length', 2.5)        # 열린 구역으로 간주할 최소 갭 길이(m) - 부분 관측 대응
+        self.declare_parameter('gap.pick_strategy', 'largest') # largest | first
+        # Simple mode (경량 판정 전용 경로)
+        self.declare_parameter('simple.enabled', True)        # True면 단순 파이프라인만 수행
+        self.declare_parameter('simple.side', 'all')         # right|left|all
+        self.declare_parameter('simple.gap_min', 2.5)          # 갭 기반 열린 슬롯 임계(m)
+        self.declare_parameter('simple.width', 2.5)            # 슬롯 폭 가정(중심 오프셋 계산용)
+        self.declare_parameter('simple.distance_tolerance', 0.5)  # 라인 법선 허용 거리
+        # Persistent cone map (미션 종료까지 보존)
+        self.declare_parameter('persist.enable', False)          # 영속 맵 사용 여부
+        self.declare_parameter('persist.merge_radius', 0.3)     # 같은 콘으로 병합하는 반경(m)
+        self.declare_parameter('persist.use_for_decision', False)  # 의사결정에 영속 맵 우선 사용 - 부분 관측 대응
+        self.declare_parameter('persist.freeze_after_confirm', False) # 안정 확정 후 갱신 정지
+        self.declare_parameter('persist.reset_topic', '/parking/reset_map') # 맵 리셋 토픽(Empty)
+        # 디버그/시각화 파라미터
+        self.declare_parameter('debug.publish_line_cones', False)    # 도로측 라인 콘 시각화 퍼블리시
+        self.declare_parameter('debug.line_cones_topic', '/debug/line_cones')  # 라인 콘 시각화 토픽
+        # 노이즈 필터링 파라미터
+        self.declare_parameter('filter.enable_noise_removal', True) # 노이즈 콘 제거 활성화
+        self.declare_parameter('filter.max_distance_from_vehicle', 15.0)  # 차량으로부터 최대 거리 (m)
+        self.declare_parameter('filter.min_cluster_size', 2)        # 클러스터 최소 크기
+        self.declare_parameter('filter.cluster_radius', 1.5)       # 클러스터링 반경 (m)
         
         # 파라미터 로드
         self.slot_origin_x = self.get_parameter('slot_origin_x').value
@@ -97,11 +133,11 @@ class ParkingAreaNode(Node):
         self.EPS_X = self.get_parameter('EPS_X').value
         self.EPS_Y = self.get_parameter('EPS_Y').value
         
-        # 구독자
-        self.cone_sub = self.create_subscription(
-            ObstacleArray,
-            '/cones_obstacles',
-            self.process_cones,
+        # 구독자 - 콘 맵 기반으로 변경
+        self.cone_map_sub = self.create_subscription(
+            ConeMapMsg,
+            '/cone_map',
+            self.process_cone_map,
             10
         )
         
@@ -131,6 +167,13 @@ class ParkingAreaNode(Node):
             '/open_slot_pose',
             10
         )
+        # Debug visualization publisher (line cones)
+        self.line_cones_debug_pub = self.create_publisher(
+            MarkerArray,
+            str(self.get_parameter('debug.line_cones_topic').value),
+            10
+        )
+        
         # Stable topic publishers (sequential mode)
         self.open_slot_pose_stable_pub = self.create_publisher(
             PoseStamped,
@@ -144,7 +187,7 @@ class ParkingAreaNode(Node):
         )
         
         # TF 브로드캐스터 추가
-        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
         
         # ──── 패턴 데이터 정의 (cones_node.py와 동기화) ───────────────────────────────
         # 3가지 경우의 수에 따른 예상 콘 위치 패턴 (상대 좌표)
@@ -179,7 +222,7 @@ class ParkingAreaNode(Node):
         }
         
         # 패턴 매칭 임계값
-        self.PATTERN_MATCH_THRESHOLD = 0.5  # 70% 이상 일치
+        self.PATTERN_MATCH_THRESHOLD = 0.7  # 70% 이상 일치
         self.CONE_MATCH_TOLERANCE = 0.3     # 30cm 허용 오차
         
         # 구역 정보 초기화
@@ -199,6 +242,11 @@ class ParkingAreaNode(Node):
         self._seq_prov_candidate = None
         self._seq_prov_since = None
         self._seq_release_below_since = None
+        # Persistent cones (TTL 없음, 리셋 전까지 보존)
+        self._persist_cones = []   # [{'x':..,'y':..}]
+        self._persist_frozen = False
+        from std_msgs.msg import Empty
+        self.create_subscription(Empty, str(self.get_parameter('persist.reset_topic').value), self._on_reset_persist, 10)
         
         # 타이머 설정 (10Hz로 시각화 업데이트)
         self.timer = self.create_timer(0.1, self.publish_visualization)
@@ -283,8 +331,10 @@ class ParkingAreaNode(Node):
         self.slot_origin_x = min_x
         self.slot_origin_y = min_y
         
-        # 크기 정보 업데이트
-        self.SLOT_WIDTH = max_x - min_x
+        # 크기 정보 업데이트 (폭 잠금/최소 스팬 보호)
+        x_span = max_x - min_x
+        if (not bool(self.get_parameter('align.lock_width').value)) and (x_span >= float(self.get_parameter('align.min_width_span').value)):
+            self.SLOT_WIDTH = x_span
         total_length = max_y - min_y
         self.SLOT_LEN = total_length / 3.0
         
@@ -294,15 +344,124 @@ class ParkingAreaNode(Node):
             self.get_logger().info('📍 실제 콘 위치로 파라미터 조정:')
             self.get_logger().info(f'  기준점: ({old_origin_x:.2f}, {old_origin_y:.2f}) → ({self.slot_origin_x:.2f}, {self.slot_origin_y:.2f})')
             self.get_logger().info(f'  크기: {self.SLOT_WIDTH:.2f} × {total_length:.2f}')
+
+    def adjust_parameters_to_line(self, line_cones: List[Tuple[float, float]]):
+        """도로측 일렬 콘만으로 슬롯 템플릿을 얼라인
+        - SLOT_WIDTH는 기존 파라미터를 유지(가로 폭은 고정)
+        - SLOT_LEN은 관측된 y 범위를 3등분해서 설정(최소 스팬 보장)
+        - slot_origin_x는 일렬 콘의 대표 x(중앙값 근사: 평균)로 설정
+        - slot_origin_y는 관측 y의 최솟값으로 설정
+        """
+        if not line_cones:
+            return
+        ys = [p[1] for p in line_cones]
+        xs = [p[0] for p in line_cones]
+        min_y, max_y = min(ys), max(ys)
+        span_y = max(max_y - min_y, float(self.get_parameter('align.min_span_y').value))
+        rep_x = sum(xs) / float(len(xs))
+
+        old_origin_x = self.slot_origin_x
+        old_origin_y = self.slot_origin_y
+
+        self.slot_origin_x = rep_x
+        self.slot_origin_y = min_y
+        self.SLOT_LEN = span_y / 3.0
+
+        if (abs(old_origin_x - self.slot_origin_x) > 0.1 or 
+            abs(old_origin_y - self.slot_origin_y) > 0.1):
+            self.get_logger().info('📍 일렬 콘 기준 템플릿 얼라인:')
+            self.get_logger().info(f'  기준점: ({old_origin_x:.2f}, {old_origin_y:.2f}) → ({self.slot_origin_x:.2f}, {self.slot_origin_y:.2f})')
+            self.get_logger().info(f'  길이(L): {self.SLOT_LEN*3.0:.2f} (슬롯당 {self.SLOT_LEN:.2f}), 폭(W 고정): {self.SLOT_WIDTH:.2f}')
+    
+    def process_cone_map(self, cone_map: ConeMapMsg):
+        """콘 맵 데이터를 ObstacleArray로 변환하여 기존 로직 활용"""
+        if not cone_map.coordinate_system_ready:
+            self.get_logger().warn("⚠️ 콘 맵 좌표계가 아직 준비되지 않음")
+            return
+        
+        # 신뢰도 높은 콘만 필터링
+        reliable_cones = [cone for cone in cone_map.cones if cone.confidence >= 1.5]
+        
+        self.get_logger().info(f"🗺️ 콘 맵 수신: 총 {len(cone_map.cones)}개, 신뢰도 높은 콘: {len(reliable_cones)}개")
+        self.get_logger().info(f"   좌표계: 원점=({cone_map.origin.x:.2f}, {cone_map.origin.y:.2f}), 회전={math.degrees(cone_map.rotation_angle):.1f}°")
+        
+        if len(reliable_cones) == 0:
+            self.get_logger().warn("⚠️ 신뢰도 높은 콘이 없습니다!")
+            return
+        
+        # ConeMapMsg를 ObstacleArray로 변환 (기존 로직 재사용을 위해)
+        obstacle_array = ObstacleArray()
+        obstacle_array.header = cone_map.header
+        obstacle_array.header.frame_id = 'cone_map_normalized'  # 정규화된 좌표계 표시
+        
+        for cone in reliable_cones:
+            obstacle = Obstacle()
+            obstacle.id = cone.id
+            
+            # 정규화된 좌표계가 준비되었으면 정규화된 좌표 사용, 아니면 원본 좌표 사용
+            if cone_map.coordinate_system_ready:
+                obstacle.center.x = cone.position.x
+                obstacle.center.y = cone.position.y
+                # 디버깅: 좌표 변환 로그
+                if abs(cone.position.x) > 0.01 or abs(cone.position.y) > 0.01:
+                    self.get_logger().debug(f"정규화 좌표 사용 - 콘[{cone.id}]: 정규화=({cone.position.x:.2f}, {cone.position.y:.2f}), 원본=({cone.original_position.x:.2f}, {cone.original_position.y:.2f})")
+            else:
+                obstacle.center.x = cone.original_position.x
+                obstacle.center.y = cone.original_position.y
+                self.get_logger().debug(f"원본 좌표 사용 - 콘[{cone.id}]: ({cone.original_position.x:.2f}, {cone.original_position.y:.2f})")
+            
+            obstacle.center.z = 0.0
+            
+            # 메타데이터 추가 (기존 코드와 호환되도록 side_label만 사용)
+            obstacle.description = cone.side_label
+            
+            obstacle_array.obstacles.append(obstacle)
+        
+        # 기존 process_cones 로직 호출
+        self.process_cones(obstacle_array)
     
     def process_cones(self, cone_obstacles: ObstacleArray):
         """라바콘 위치 정보를 처리하여 구역을 정의하고 분석"""
+        
+        # 1단계: 입력 데이터 확인 로그
+        self.get_logger().info(f"🔍 콘 데이터 수신: {len(cone_obstacles.obstacles)}개 콘")
+        self.get_logger().info(f"   프레임: {cone_obstacles.header.frame_id}")
+        self.get_logger().info(f"   타임스탬프: {cone_obstacles.header.stamp.sec}.{cone_obstacles.header.stamp.nanosec}")
+        
+        # 각 콘 정보 출력 (최대 5개)
+        for i, cone in enumerate(cone_obstacles.obstacles[:5]):
+            desc = getattr(cone, 'description', 'none')
+            self.get_logger().info(f"   콘[{i}]: id={cone.id} pos=({cone.center.x:.2f}, {cone.center.y:.2f}) desc='{desc}'")
+        
+        if len(cone_obstacles.obstacles) == 0:
+            self.get_logger().warn("⚠️ 콘 데이터가 비어있습니다!")
+            return
+        
+        # 경량 모드: 가장 단순한 라인+갭 기반 판정만 수행
+        if bool(self.get_parameter('simple.enabled').value):
+            self.get_logger().info("🎯 단순 모드로 처리 중...")
+            try:
+                self.process_cones_simple(cone_obstacles)
+            except Exception as e:
+                self.get_logger().error(f"단순 모드 처리 오류: {e}")
+            return
+        
         mode = str(self.get_parameter('recognition_mode').value).lower()
+        self.get_logger().info(f"📋 인식 모드: {mode}")
         if mode == 'sequential':
             return self.process_cones_sequential(cone_obstacles)
 
         # 라바콘 위치 추출 (pattern/dynamic 기존 방식)
-        cone_positions = [(obs.center.x, obs.center.y) for obs in cone_obstacles.obstacles]
+        # 차량 기준 오른쪽 콘만 사용 (어댑터에서 description='left/right/center' 제공 시)
+        cone_positions = []
+        for obs in cone_obstacles.obstacles:
+            try:
+                if hasattr(obs, 'description') and obs.description:
+                    if str(obs.description).strip().lower() != 'right':
+                        continue
+            except Exception:
+                pass
+            cone_positions.append((obs.center.x, obs.center.y))
         
         # ──── ❷ 패턴 매칭 기반 콘 콜백 처리 ───────────────────────────────────────────────
         # STEP 1: 패턴 매칭 시도
@@ -345,6 +504,88 @@ class ParkingAreaNode(Node):
         # STEP 7: 결과 퍼블리시
         self.publish_results()
 
+    def process_cones_simple(self, cone_obstacles: ObstacleArray) -> None:
+        """단순 파이프라인: 우측(또는 지정) 콘만으로 PCA 라인→s-갭으로 열린 슬롯 판정 후 포즈만 퍼블리시"""
+        # 1) 입력 콘 수집 + 측면 선택
+        side = str(self.get_parameter('simple.side').value).lower().strip()
+        self.get_logger().info(f"🎯 단순 모드: {side} 측면 콘 선택")
+        
+        cones = []
+        filtered_count = 0
+        for obs in cone_obstacles.obstacles:
+            desc = (obs.description or '').lower().strip() if hasattr(obs, 'description') else ''
+            self.get_logger().info(f"   콘 검사: pos=({obs.center.x:.2f}, {obs.center.y:.2f}) desc='{desc}' side='{side}'")
+            
+            if side == 'right' and desc and desc != 'right':
+                self.get_logger().info(f"      → 필터됨 (right 모드인데 desc='{desc}')")
+                filtered_count += 1
+                continue
+            if side == 'left' and desc and desc != 'left':
+                self.get_logger().info(f"      → 필터됨 (left 모드인데 desc='{desc}')")
+                filtered_count += 1
+                continue
+            
+            self.get_logger().info(f"      → 선택됨")
+            cones.append((float(obs.center.x), float(obs.center.y)))
+        
+        self.get_logger().info(f"📊 선택된 콘: {len(cones)}개, 필터된 콘: {filtered_count}개")
+        if len(cones) < 2:
+            return
+        xs = np.array([p[0] for p in cones], dtype=float)
+        ys = np.array([p[1] for p in cones], dtype=float)
+        cx, cy = float(np.mean(xs)), float(np.mean(ys))
+        X = np.stack([xs - cx, ys - cy], axis=0)
+        C = np.cov(X)
+        eigvals, eigvecs = np.linalg.eig(C)
+        v = eigvecs[:, int(np.argmax(eigvals))]  # 진행방향(s)
+        n = np.array([-v[1], v[0]])
+        s = v[0] * (xs - cx) + v[1] * (ys - cy)
+        d = n[0] * (xs - cx) + n[1] * (ys - cy)
+        tol = float(self.get_parameter('simple.distance_tolerance').value)
+        mask = np.abs(d) <= tol
+        if not np.any(mask):
+            return
+        s_in = np.sort(s[mask])
+        if s_in.size < 2:
+            return
+        diffs = np.diff(s_in)
+        gap_min = float(self.get_parameter('simple.gap_min').value)
+        idx = np.where(diffs >= gap_min)[0]
+        if idx.size == 0:
+            return
+        gi = int(idx[np.argmax(diffs[idx])])  # 가장 큰 갭 선택
+        s_mid = float(0.5 * (s_in[gi] + s_in[gi + 1]))
+        # 2) 슬롯 ID 추정(3등분)
+        s_min, s_max = float(np.min(s_in)), float(np.max(s_in))
+        span = max(1e-6, s_max - s_min)
+        band = span / 3.0
+        sid = int(np.clip(np.floor((s_mid - s_min) / band), 0, 2))
+        # 3) 포즈 계산: 라인 중앙(s_mid)에서 슬롯 내부로 폭/2 만큼 법선 방향 이동
+        px_line = cx + v[0] * s_mid
+        py_line = cy + v[1] * s_mid
+        width = float(self.get_parameter('simple.width').value)
+        px = px_line + n[0] * (width * 0.5)
+        py = py_line + n[1] * (width * 0.5)
+        yaw = math.atan2(v[1], v[0])
+        # 4) 퍼블리시: open_area_id + pose만
+        self.open_area_id = sid
+        # 열린 구역 ID 퍼블리시
+        area_msg = Int32()
+        area_msg.data = sid
+        self.open_area_pub.publish(area_msg)
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = float(px)
+        pose.pose.position.y = float(py)
+        pose.pose.position.z = 0.0
+        q = Quaternion()
+        q.x = 0.0; q.y = 0.0
+        q.z = float(np.sin(yaw * 0.5))
+        q.w = float(np.cos(yaw * 0.5))
+        pose.pose.orientation = q
+        self.open_slot_pose_pub.publish(pose)
+
     def _seq_log(self, t: float, cone_id: int, x: float, y: float, status: str) -> None:
         if not bool(self.get_parameter('seq.logging_enabled').value):
             return
@@ -361,6 +602,51 @@ class ParkingAreaNode(Node):
 
     def _now_sec(self) -> float:
         return self.get_clock().now().nanoseconds * 1e-9
+
+    # ───────────── Persistent cones map (no TTL) ─────────────
+    def _on_reset_persist(self, _msg) -> None:
+        self._persist_cones.clear()
+        self._persist_frozen = False
+        self.get_logger().info('🧹 Persistent cone map reset.')
+
+    def _persist_update_from_obs(self, msg: ObstacleArray) -> None:
+        if not bool(self.get_parameter('persist.enable').value):
+            return
+        if self._persist_frozen and bool(self.get_parameter('persist.freeze_after_confirm').value):
+            return
+        merge_r = float(self.get_parameter('persist.merge_radius').value)
+        mr2 = merge_r * merge_r
+        for obs in msg.obstacles:
+            # 차량 기준 오른쪽 콘만 유지(상위 필터와 일치) - 임시 비활성화
+            # try:
+            #     if hasattr(obs, 'description') and obs.description:
+            #         if str(obs.description).strip().lower() != 'right':
+            #             continue
+            # except Exception:
+            #     pass
+            px = float(obs.center.x); py = float(obs.center.y)
+            # 반경 내 가장 가까운 저장 콘과 병합
+            best_i = -1; best_d2 = 1e9
+            for i, c in enumerate(self._persist_cones):
+                dx = c['x'] - px; dy = c['y'] - py
+                d2 = dx*dx + dy*dy
+                if d2 < best_d2:
+                    best_d2 = d2; best_i = i
+            if best_d2 <= mr2 and best_i >= 0:
+                c = self._persist_cones[best_i]
+                c['x'] = 0.7 * c['x'] + 0.3 * px
+                c['y'] = 0.7 * c['y'] + 0.3 * py
+            else:
+                self._persist_cones.append({'x': px, 'y': py})
+        
+        # 디버그: 영속 맵 상태 로그
+        if len(self._persist_cones) > 0:
+            self.get_logger().info(f"영속 맵 콘 개수: {len(self._persist_cones)}")
+
+    def _persist_get_cones(self) -> List[Tuple[float, float]]:
+        if not bool(self.get_parameter('persist.enable').value):
+            return []
+        return [(c['x'], c['y']) for c in self._persist_cones]
 
     def _seq_update_cache(self, msg: ObstacleArray) -> None:
         now_s = self._now_sec()
@@ -387,8 +673,30 @@ class ParkingAreaNode(Node):
         return cones
 
     def process_cones_sequential(self, cone_obstacles: ObstacleArray):
-        # Update cache and build buffered cones
+        # 노이즈 필터링 적용
+        if bool(self.get_parameter('filter.enable_noise_removal').value):
+            cone_obstacles = self._filter_noise_cones(cone_obstacles)
+        
+        # 새로운 접근법: 최소 정보 기반 단순 주차
+        simple_result = self._find_parking_minimal(cone_obstacles)
+        if simple_result is not None:
+            parking_pose, method = simple_result
+            self.get_logger().info(f"🎯 단순 주차: 위치 ({parking_pose[0]:.2f}, {parking_pose[1]:.2f}), 방법: {method}")
+            self._publish_simple_result(parking_pose, method)
+            return
+        
+        # Fallback: 간단한 Gap-based 주차 스팟 감지 시도
+        gap_result = self._detect_parking_gap_simple(cone_obstacles)
+        if gap_result is not None:
+            gap_center, gap_id = gap_result
+            self.get_logger().info(f"🎯 Gap 감지: 위치 ({gap_center[0]:.2f}, {gap_center[1]:.2f}), 슬롯 {gap_id}")
+            # 간단한 구역 생성 및 퍼블리시
+            self._publish_gap_based_result(gap_center, gap_id)
+            return
+        
+        # 기존 sequential 로직 (fallback)
         self._seq_update_cache(cone_obstacles)
+        self._persist_update_from_obs(cone_obstacles)
         buffered_cones = self._seq_get_buffered_cones()
         now_s = self._now_sec()
         buf_count = len(buffered_cones)
@@ -399,15 +707,30 @@ class ParkingAreaNode(Node):
             return None
 
         # 우선: 도로측 일렬 콘 기반 오픈 슬롯 판정 시도 (부분 관측 대응)
+        # 의사결정에 사용할 콘 집합 선택(영속 우선)
+        cones_for_decision = buffered_cones
+        if bool(self.get_parameter('persist.use_for_decision').value):
+            pcones = self._persist_get_cones()
+            if pcones:
+                cones_for_decision = pcones
+
         try:
-            line_open_id = self.find_open_slot_line(buffered_cones)
+            line_open_id = self.find_open_slot_line(cones_for_decision)
         except Exception:
             line_open_id = None
 
         if line_open_id is not None:
             # Geometry 재계산 및 안정 토픽 퍼블리시
-            self.adjust_parameters_to_actual_cones(buffered_cones)
-            areas = self.build_parking_areas(buffered_cones)
+            try:
+                line_cones = self._extract_roadside_line_cones(cones_for_decision)
+                self._publish_line_cones_debug(line_cones)  # 시각화 추가
+            except Exception:
+                line_cones = []
+            if bool(self.get_parameter('align.use_line_only').value) and line_cones:
+                self.adjust_parameters_to_line(line_cones)
+            else:
+                self.adjust_parameters_to_actual_cones(cones_for_decision)
+            areas = self.build_parking_areas(cones_for_decision)
             for i, area in enumerate(areas):
                 area.is_open = (i == line_open_id)
             virtual_walls = []
@@ -417,6 +740,8 @@ class ParkingAreaNode(Node):
                 if not area.is_open:
                     virtual_walls.extend(self.make_rectangular_walls(area))
             self.publish_results_stable(areas, line_open_id, virtual_walls)
+            if bool(self.get_parameter('persist.freeze_after_confirm').value):
+                self._persist_frozen = True
             self._seq_prev_buffer_count = buf_count
             return None
 
@@ -704,6 +1029,49 @@ class ParkingAreaNode(Node):
         line_cones.sort(key=lambda p: p[1])
         return line_cones
 
+    def _publish_line_cones_debug(self, line_cones: List[Tuple[float, float]]) -> None:
+        """도로측 라인 콘들을 MarkerArray로 시각화"""
+        if not bool(self.get_parameter('debug.publish_line_cones').value):
+            return
+        
+        marker_array = MarkerArray()
+        
+        # 기존 마커 삭제
+        delete_marker = Marker()
+        delete_marker.header.frame_id = "map"
+        delete_marker.header.stamp = self.get_clock().now().to_msg()
+        delete_marker.ns = "line_cones"
+        delete_marker.action = Marker.DELETEALL
+        marker_array.markers.append(delete_marker)
+        
+        # 라인 콘들을 빨간 구체로 시각화
+        for i, (x, y) in enumerate(line_cones):
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "line_cones"
+            marker.id = i
+            marker.type = Marker.SPHERE
+            marker.action = Marker.ADD
+            
+            marker.pose.position.x = float(x)
+            marker.pose.position.y = float(y)
+            marker.pose.position.z = 0.2
+            marker.pose.orientation.w = 1.0
+            
+            marker.scale.x = 0.3
+            marker.scale.y = 0.3
+            marker.scale.z = 0.3
+            
+            marker.color.a = 1.0
+            marker.color.r = 1.0  # 빨간색
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            
+            marker_array.markers.append(marker)
+        
+        self.line_cones_debug_pub.publish(marker_array)
+
     def _count_in_y_band(self, cones_line: List[Tuple[float, float]], y_bottom: float, y_top: float) -> int:
         """일렬 콘 집합에서 y-구간에 포함되는 포인트 수"""
         if not cones_line:
@@ -722,29 +1090,137 @@ class ParkingAreaNode(Node):
     # ──── ❺ 열린 슬롯 탐색 (핵심 로직) ───────────────────────────────────────────────
     def find_open_slot(self, cones: List[Tuple[float, float]]) -> int:
         """열린 슬롯 탐색"""
+        k = int(self.get_parameter('slot.cones_per_closed_band').value)
         for sid in [0, 1, 2]:  # 아래→위 순서
-            if self.left_cone_count(cones, sid) < 3:  # 0,1,2개 → open
+            if self.left_cone_count(cones, sid) < k:  # 0..k-1개 → open
                 return sid
         return -1  # 예외: 모든 슬롯이 콘 3개 → 전부 닫힘
     
     def find_open_slot_line(self, cones: List[Tuple[float, float]]):
         """도로측 일렬 콘만으로 열린 슬롯 탐색 (실패 시 None)
-        - 규칙: 각 슬롯 y-대역에서 일렬 콘 개수 < 3 이면 open
+        - 규칙(A): (축정렬) 각 슬롯 y-대역에서 일렬 콘 개수 < K 이면 open (K 파라미터)
+        - 규칙(B): (PCA 정렬) s-축으로 3등분한 밴드에서 개수 < K 이면 open
         - 일렬 추출 실패 시 None 반환 (상위 로직이 폴백 처리)
         """
+        use_pca = bool(self.get_parameter('line.use_pca').value)
+        tol = float(self.get_parameter('line.distance_tolerance').value)
+        k = int(self.get_parameter('slot.cones_per_closed_band').value)
         line_cones = self._extract_roadside_line_cones(cones)
+        self._publish_line_cones_debug(line_cones)  # 시각화 추가
         if not line_cones:
             return None
+
+        if not use_pca:
+            for sid in [0, 1, 2]:
+                if self.left_cone_count_line(line_cones, sid) < k:
+                    return sid
+            return -1
+
+        # PCA 기반: 라인 방향(s)과 법선(n) 축으로 회전
+        # 1) 평균 제거
+        xs = np.array([p[0] for p in line_cones], dtype=float)
+        ys = np.array([p[1] for p in line_cones], dtype=float)
+        cx, cy = xs.mean(), ys.mean()
+        X = np.stack([xs - cx, ys - cy], axis=0)  # 2 x N
+        # 2) 공분산 및 고유벡터(주성분)
+        C = np.cov(X)
+        eigvals, eigvecs = np.linalg.eig(C)  # 2x2
+        i_max = int(np.argmax(eigvals))
+        v = eigvecs[:, i_max]   # 진행방향(s)
+        n = np.array([-v[1], v[0]])  # 법선
+        # 3) 각 점을 s,n 좌표로 투영
+        s = v[0] * (xs - cx) + v[1] * (ys - cy)
+        d = n[0] * (xs - cx) + n[1] * (ys - cy)
+        # 4) 라인에서 tol 초과하는 이상치는 제외
+        mask = np.abs(d) <= tol
+        if not np.any(mask):
+            return -1
+        s_in = s[mask]
+        # 5) (선택) 갭 기반 열린 구역 판정: 큰 간격이 있는 밴드를 open
+        if bool(self.get_parameter('gap.use').value):
+            s_sorted = np.sort(s_in)
+            diffs = np.diff(s_sorted)
+            if diffs.size > 0:
+                min_gap = float(self.get_parameter('gap.min_length').value)
+                # 후보 갭 인덱스
+                cand_idx = np.where(diffs >= min_gap)[0]
+                if cand_idx.size > 0:
+                    strategy = str(self.get_parameter('gap.pick_strategy').value)
+                    if strategy == 'first':
+                        gi = int(cand_idx[0])
+                    else:
+                        gi = int(cand_idx[np.argmax(diffs[cand_idx])])
+                    # 갭 중앙 s
+                    s_mid = float(0.5 * (s_sorted[gi] + s_sorted[gi+1]))
+                    # 3등분된 밴드로 매핑하여 해당 슬롯을 open으로 반환
+                    s_min, s_max = float(np.min(s_in)), float(np.max(s_in))
+                    span = max(1e-6, s_max - s_min)
+                    band = span / 3.0
+                    sid = int(np.clip(np.floor((s_mid - s_min) / band), 0, 2))
+                    return sid
+
+        # 6) s-축을 3등분한 밴드로 개수 판정
+        s_min, s_max = float(np.min(s_in)), float(np.max(s_in))
+        span = max(1e-6, s_max - s_min)
+        band = span / 3.0
+        def count_in_band(idx):
+            b0 = s_min + idx * band
+            b1 = b0 + band
+            return int(np.sum((s_in >= b0) & (s_in <= b1)))
         for sid in [0, 1, 2]:
-            if self.left_cone_count_line(line_cones, sid) < 3:
+            if count_in_band(sid) < k:
                 return sid
         return -1
     
     # ──── ❻ 구역 객체 채우기 ───────────────────────────────────────────────
     def build_parking_areas(self, cones: List[Tuple[float, float]]) -> List[ParkingArea]:
-        """구역 객체 채우기"""
+        """구역 객체 채우기 - 라인 콘 방향에 맞춰 회전된 구역 생성"""
         areas = []
         
+        # 라인 콘 방향 계산 (라인 기반 정렬이 활성화된 경우)
+        if bool(self.get_parameter('align.use_line_only').value):
+            try:
+                # 일단 모든 콘으로 전체 방향 계산 (임시)
+                line_cones = self._extract_roadside_line_cones(cones)
+                if len(line_cones) < 2 and len(cones) >= 2:
+                    # 라인 추출 실패 시 모든 콘으로 시도
+                    line_cones = cones
+                    self.get_logger().info("⚠️ 라인 추출 실패, 모든 콘으로 방향 계산")
+                
+                if len(line_cones) >= 2:
+                    # 더 간단하고 직관적인 라인 방향 계산
+                    xs = [p[0] for p in line_cones]
+                    ys = [p[1] for p in line_cones]
+                    
+                    # 최소제곱법으로 직선 기울기 계산
+                    n = len(line_cones)
+                    sum_x = sum(xs)
+                    sum_y = sum(ys)
+                    sum_xy = sum(x*y for x, y in zip(xs, ys))
+                    sum_x2 = sum(x*x for x in xs)
+                    
+                    # 분모가 0에 가까우면 수직선 (기울기 무한대)
+                    denominator = n * sum_x2 - sum_x * sum_x
+                    if abs(denominator) < 1e-6:
+                        line_angle = math.pi / 2  # 90도 (수직선)
+                    else:
+                        slope = (n * sum_xy - sum_x * sum_y) / denominator
+                        line_angle = math.atan(slope)
+                    
+                    # 디버깅 정보 출력
+                    self.get_logger().info(f"🔄 라인 방향: {math.degrees(line_angle):.1f}도")
+                    self.get_logger().info(f"   라인 콘 개수: {len(line_cones)}")
+                    self.get_logger().info(f"   콘 좌표: {line_cones[:5]}...")  # 처음 5개만
+                    
+                    # 각도가 유의미한 경우에만 회전 적용 (5도 이상)
+                    if abs(math.degrees(line_angle)) > 5.0:
+                        return self._build_rotated_areas(cones, line_angle)
+                    else:
+                        self.get_logger().info("   각도가 작아 기본 구역 사용")
+            except Exception as e:
+                self.get_logger().warn(f"라인 방향 계산 실패: {e}")
+        
+        # 기본 방식: X/Y 축 평행 구역
         for sid in [0, 1, 2]:
             y_bottom, y_top = self.slot_bounds(sid)
             
@@ -760,6 +1236,390 @@ class ParkingAreaNode(Node):
             cones_in_slot = [(x, y) for x, y in cones
                             if (self.slot_origin_x <= x <= self.slot_origin_x + self.SLOT_WIDTH and
                                 y_bottom <= y <= y_top)]
+            
+            area = ParkingArea(sid, boundary, cones_in_slot)
+            areas.append(area)
+        
+        return areas
+    
+    def _filter_noise_cones(self, cone_obstacles: ObstacleArray) -> ObstacleArray:
+        """노이즈 콘 제거: 거리 필터링 + 클러스터링 기반 아웃라이어 제거"""
+        if not cone_obstacles.obstacles:
+            return cone_obstacles
+        
+        max_dist = float(self.get_parameter('filter.max_distance_from_vehicle').value)
+        min_cluster_size = int(self.get_parameter('filter.min_cluster_size').value)
+        cluster_radius = float(self.get_parameter('filter.cluster_radius').value)
+        
+        # 1. 거리 필터링 (차량으로부터 너무 먼 콘 제거)
+        filtered_obstacles = []
+        for obs in cone_obstacles.obstacles:
+            dist = math.sqrt(obs.center.x**2 + obs.center.y**2)
+            if dist <= max_dist:
+                filtered_obstacles.append(obs)
+        
+        if len(filtered_obstacles) < 2:
+            cone_obstacles.obstacles = filtered_obstacles
+            return cone_obstacles
+        
+        # 2. 클러스터링 기반 아웃라이어 제거
+        positions = [(obs.center.x, obs.center.y) for obs in filtered_obstacles]
+        clusters = self._simple_clustering(positions, cluster_radius)
+        
+        # 3. 큰 클러스터의 콘들만 유지
+        valid_indices = set()
+        for cluster in clusters:
+            if len(cluster) >= min_cluster_size:
+                valid_indices.update(cluster)
+        
+        final_obstacles = [filtered_obstacles[i] for i in sorted(valid_indices)]
+        
+        if len(final_obstacles) != len(cone_obstacles.obstacles):
+            self.get_logger().info(f"🧹 노이즈 필터링: {len(cone_obstacles.obstacles)} → {len(final_obstacles)} 콘")
+        
+        cone_obstacles.obstacles = final_obstacles
+        return cone_obstacles
+    
+    def _simple_clustering(self, positions: List[Tuple[float, float]], radius: float) -> List[List[int]]:
+        """간단한 거리 기반 클러스터링"""
+        n = len(positions)
+        visited = [False] * n
+        clusters = []
+        
+        for i in range(n):
+            if visited[i]:
+                continue
+            
+            # 새로운 클러스터 시작
+            cluster = []
+            stack = [i]
+            
+            while stack:
+                curr = stack.pop()
+                if visited[curr]:
+                    continue
+                
+                visited[curr] = True
+                cluster.append(curr)
+                
+                # 반경 내 이웃들 찾기
+                for j in range(n):
+                    if not visited[j]:
+                        dist = math.sqrt((positions[curr][0] - positions[j][0])**2 + 
+                                       (positions[curr][1] - positions[j][1])**2)
+                        if dist <= radius:
+                            stack.append(j)
+            
+            if cluster:
+                clusters.append(cluster)
+        
+        return clusters
+    
+    def _find_parking_minimal(self, cone_obstacles: ObstacleArray) -> Optional[Tuple[Tuple[float, float, float], str]]:
+        """현실적 접근: 최소 정보로 주차 위치 결정"""
+        
+        # 1. 사전 정의된 주차 구역 (대회장 고정 위치)
+        predefined_zones = [
+            (3.0, -3.0, 0.0),    # 구역 0: 가까운 곳
+            (7.0, -3.0, 0.0),    # 구역 1: 중간
+            (11.0, -3.0, 0.0)    # 구역 2: 먼 곳
+        ]
+        
+        # 2. 콘 개수별 전략
+        cone_count = len(cone_obstacles.obstacles)
+        
+        if cone_count == 0:
+            # 콘 없음: 기본 위치 사용
+            return (predefined_zones[0], "기본위치")
+        
+        elif cone_count == 1:
+            # 콘 1개: 그 콘 기준 상대 위치
+            cone = cone_obstacles.obstacles[0]
+            x = cone.center.x + 2.0  # 콘에서 2m 앞
+            y = cone.center.y - 1.5  # 콘에서 1.5m 우측
+            return ((x, y, 0.0), "1콘기준")
+        
+        elif cone_count == 2:
+            # 콘 2개: 중점 기준
+            cone1 = cone_obstacles.obstacles[0]
+            cone2 = cone_obstacles.obstacles[1]
+            x = (cone1.center.x + cone2.center.x) / 2 + 1.0
+            y = (cone1.center.y + cone2.center.y) / 2 - 0.5
+            return ((x, y, 0.0), "2콘중점")
+        
+        else:
+            # 콘 3개 이상: 가장 가까운 2개만 사용
+            distances = [(i, cone.center.x**2 + cone.center.y**2) 
+                        for i, cone in enumerate(cone_obstacles.obstacles)]
+            distances.sort(key=lambda x: x[1])
+            
+            closest_indices = [distances[0][0], distances[1][0]]
+            cone1 = cone_obstacles.obstacles[closest_indices[0]]
+            cone2 = cone_obstacles.obstacles[closest_indices[1]]
+            
+            x = (cone1.center.x + cone2.center.x) / 2 + 1.0
+            y = (cone1.center.y + cone2.center.y) / 2 - 0.5
+            return ((x, y, 0.0), "근접2콘")
+    
+    def _publish_simple_result(self, parking_pose: Tuple[float, float, float], method: str):
+        """단순 결과 퍼블리시"""
+        x, y, theta = parking_pose
+        
+        # 1. 슬롯 ID 계산 (x 위치 기반)
+        if x < 5.0:
+            slot_id = 0
+        elif x < 9.0:
+            slot_id = 1
+        else:
+            slot_id = 2
+        
+        # 2. 열린 구역 ID 퍼블리시
+        area_msg = Int32()
+        area_msg.data = slot_id
+        self.open_area_pub.publish(area_msg)
+        
+        # 3. 주차 포즈 생성
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+        pose.pose.position.z = 0.0
+        pose.pose.orientation.w = 1.0  # 0도 방향
+        
+        # 4. 결과 퍼블리시
+        self.open_slot_pose_pub.publish(pose)
+        self.open_slot_pose_stable_pub.publish(pose)
+        
+        self.get_logger().info(f"✅ 단순 주차 포즈: ({x:.2f}, {y:.2f}) by {method}")
+    
+    def _find_parking_spot_direct(self, cone_obstacles: ObstacleArray) -> Optional[Tuple[Tuple[float, float, float], float]]:
+        """Occupancy Grid 기반 직접 주차 스팟 탐색"""
+        if not cone_obstacles.obstacles:
+            return None
+        
+        # 1. 차량 및 탐색 영역 파라미터
+        car_length = 4.5  # 차량 길이 + 안전 여유
+        car_width = 2.0   # 차량 폭 + 안전 여유
+        search_range_x = (0, 12)  # x 탐색 범위
+        search_range_y = (-6, 1)  # y 탐색 범위 (우측)
+        grid_resolution = 0.3     # 격자 해상도
+        
+        # 2. 콘 위치 추출
+        cone_positions = [(obs.center.x, obs.center.y) for obs in cone_obstacles.obstacles]
+        
+        # 3. 격자 기반 탐색
+        best_pose = None
+        best_score = 0.0
+        
+        x_range = np.arange(search_range_x[0], search_range_x[1], grid_resolution)
+        y_range = np.arange(search_range_y[0], search_range_y[1], grid_resolution)
+        
+        for x in x_range:
+            for y in y_range:
+                for theta in [0, math.pi/6, -math.pi/6]:  # 0°, ±30°
+                    score = self._evaluate_parking_pose(x, y, theta, cone_positions, car_length, car_width)
+                    if score > best_score:
+                        best_score = score
+                        best_pose = (x, y, theta)
+        
+        # 4. 최소 신뢰도 체크
+        if best_score > 0.5:  # 50% 이상 신뢰도
+            return (best_pose, best_score)
+        
+        return None
+    
+    def _evaluate_parking_pose(self, x: float, y: float, theta: float, 
+                              cones: List[Tuple[float, float]], 
+                              car_length: float, car_width: float) -> float:
+        """주차 포즈의 타당성 점수 계산 (0~1)"""
+        
+        # 차량 네 모서리 계산
+        cos_t, sin_t = math.cos(theta), math.sin(theta)
+        half_l, half_w = car_length/2, car_width/2
+        
+        corners = [
+            (x + cos_t*half_l - sin_t*half_w, y + sin_t*half_l + cos_t*half_w),  # 우상
+            (x + cos_t*half_l + sin_t*half_w, y + sin_t*half_l - cos_t*half_w),  # 좌상  
+            (x - cos_t*half_l + sin_t*half_w, y - sin_t*half_l - cos_t*half_w),  # 좌하
+            (x - cos_t*half_l - sin_t*half_w, y - sin_t*half_l + cos_t*half_w),  # 우하
+        ]
+        
+        # 1. 충돌 검사 (가장 중요)
+        min_clearance = float('inf')
+        for corner_x, corner_y in corners:
+            for cone_x, cone_y in cones:
+                dist = math.sqrt((corner_x - cone_x)**2 + (corner_y - cone_y)**2)
+                min_clearance = min(min_clearance, dist)
+        
+        if min_clearance < 0.5:  # 0.5m 미만이면 충돌
+            return 0.0
+        
+        # 2. 점수 계산
+        clearance_score = min(1.0, min_clearance / 2.0)  # 2m 이상이면 만점
+        
+        # 3. 위치 선호도 (차량에서 가까운 곳 선호)
+        distance_from_car = math.sqrt(x*x + y*y)
+        distance_score = max(0, 1.0 - distance_from_car / 10.0)  # 10m 이상이면 0점
+        
+        # 4. 각도 선호도 (직진 선호)
+        angle_score = max(0, 1.0 - abs(theta) / (math.pi/3))  # 60도 이상이면 0점
+        
+        # 가중 평균
+        total_score = (clearance_score * 0.6 + distance_score * 0.3 + angle_score * 0.1)
+        
+        return total_score
+    
+    def _publish_direct_result(self, parking_pose: Tuple[float, float, float], confidence: float):
+        """직접 탐색 결과 퍼블리시"""
+        x, y, theta = parking_pose
+        
+        # 1. 슬롯 ID 계산 (x 위치 기반)
+        if x < 4.0:
+            slot_id = 0
+        elif x < 8.0:
+            slot_id = 1
+        else:
+            slot_id = 2
+        
+        # 2. 열린 구역 ID 퍼블리시
+        self.open_area_id = slot_id
+        area_msg = Int32()
+        area_msg.data = slot_id
+        self.open_area_pub.publish(area_msg)
+        
+        # 3. 주차 포즈 생성
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+        pose.pose.position.z = 0.0
+        
+        # 쿼터니언 생성 (theta 회전)
+        pose.pose.orientation.z = math.sin(theta / 2)
+        pose.pose.orientation.w = math.cos(theta / 2)
+        
+        # 4. 결과 퍼블리시
+        self.open_slot_pose_pub.publish(pose)
+        self.open_slot_pose_stable_pub.publish(pose)
+        
+        self.get_logger().info(f"✅ 직접 탐색 주차 포즈: ({x:.2f}, {y:.2f}, {math.degrees(theta):.1f}°)")
+    
+    def _detect_parking_gap_simple(self, cone_obstacles: ObstacleArray) -> Optional[Tuple[Tuple[float, float], int]]:
+        """이전 대회 방식: 차량 기준 우측 콘들의 간격으로 주차 스팟 감지"""
+        if not cone_obstacles.obstacles:
+            return None
+        
+        # 1. 차량 우측 콘만 필터링 (y < 0, 즉 차량 오른쪽)
+        right_cones = []
+        for obs in cone_obstacles.obstacles:
+            if obs.center.y < 0:  # 차량 오른쪽
+                right_cones.append((obs.center.x, obs.center.y))
+        
+        if len(right_cones) < 2:
+            return None
+        
+        # 2. x 좌표 기준 정렬 (차량에서 가까운 순)
+        right_cones.sort(key=lambda p: p[0])
+        
+        # 3. 연속된 콘 간격 계산
+        min_gap = float(self.get_parameter('gap.min_length').value)  # 2.5m
+        for i in range(len(right_cones) - 1):
+            x1, y1 = right_cones[i]
+            x2, y2 = right_cones[i + 1]
+            
+            # 거리 계산
+            gap_distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+            
+            if gap_distance >= min_gap:
+                # 주차 스팟 중심점 계산
+                gap_center = ((x1 + x2) / 2, (y1 + y2) / 2)
+                
+                # 간단한 슬롯 ID 계산 (x 위치 기반)
+                if gap_center[0] < 3.0:
+                    slot_id = 0  # 가까운 슬롯
+                elif gap_center[0] < 6.0:
+                    slot_id = 1  # 중간 슬롯
+                else:
+                    slot_id = 2  # 먼 슬롯
+                
+                self.get_logger().info(f"   콘 간격: {gap_distance:.2f}m ({x1:.1f},{y1:.1f}) ↔ ({x2:.1f},{y2:.1f})")
+                return (gap_center, slot_id)
+        
+        return None
+    
+    def _publish_gap_based_result(self, gap_center: Tuple[float, float], slot_id: int):
+        """Gap 기반 간단한 결과 퍼블리시"""
+        # 1. 열린 구역 ID 퍼블리시
+        self.open_area_id = slot_id
+        area_msg = Int32()
+        area_msg.data = slot_id
+        self.open_area_pub.publish(area_msg)
+        
+        # 2. 간단한 주차 포즈 계산 (gap_center 기준)
+        x_offset = 1.0  # 1m 앞으로
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = gap_center[0] + x_offset
+        pose.pose.position.y = gap_center[1]
+        pose.pose.position.z = 0.0
+        pose.pose.orientation.w = 1.0  # 0도 방향
+        
+        # 3. 결과 퍼블리시
+        self.open_slot_pose_pub.publish(pose)
+        self.open_slot_pose_stable_pub.publish(pose)
+        
+        self.get_logger().info(f"✅ Gap 기반 주차 포즈: ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f})")
+    
+    def _build_rotated_areas(self, cones: List[Tuple[float, float]], line_angle: float) -> List[ParkingArea]:
+        """라인 방향에 맞춰 회전된 구역 생성"""
+        areas = []
+        cos_a, sin_a = math.cos(line_angle), math.sin(line_angle)
+        
+        self.get_logger().info(f"🏗️ 회전된 구역 생성: {math.degrees(line_angle):.1f}도")
+        self.get_logger().info(f"   cos={cos_a:.3f}, sin={sin_a:.3f}")
+        self.get_logger().info(f"   기준점: ({self.slot_origin_x:.2f}, {self.slot_origin_y:.2f})")
+        
+        for sid in [0, 1, 2]:
+            y_bottom, y_top = self.slot_bounds(sid)
+            
+            # 로컬 좌표계에서 사각형 꼭짓점 정의 (slot_origin 기준)
+            local_corners = [
+                (0, y_bottom - self.slot_origin_y),                    # 좌하
+                (self.SLOT_WIDTH, y_bottom - self.slot_origin_y),      # 우하
+                (self.SLOT_WIDTH, y_top - self.slot_origin_y),         # 우상
+                (0, y_top - self.slot_origin_y)                        # 좌상
+            ]
+            
+            # 회전 변환 적용 후 글로벌 좌표로 변환
+            boundary = []
+            for lx, ly in local_corners:
+                # 회전 변환 (시계방향)
+                rx = lx * cos_a - ly * sin_a
+                ry = lx * sin_a + ly * cos_a
+                # 평행 이동
+                gx = rx + self.slot_origin_x
+                gy = ry + self.slot_origin_y
+                boundary.append((gx, gy))
+            
+            # 디버깅: 첫 번째 구역의 경계점 출력
+            if sid == 0:
+                self.get_logger().info(f"   구역 {sid} 경계점: {[(f'{x:.2f}', f'{y:.2f}') for x, y in boundary]}")
+            
+            # 회전된 바운딩 박스 내 콘 필터링 (간단한 근사)
+            cones_in_slot = []
+            for x, y in cones:
+                # 글로벌 좌표를 로컬 좌표로 역변환
+                dx, dy = x - self.slot_origin_x, y - self.slot_origin_y
+                lx = dx * cos_a + dy * sin_a
+                ly = -dx * sin_a + dy * cos_a
+                
+                # 로컬 좌표계에서 범위 체크
+                if (0 <= lx <= self.SLOT_WIDTH and 
+                    y_bottom - self.slot_origin_y <= ly <= y_top - self.slot_origin_y):
+                    cones_in_slot.append((x, y))
             
             area = ParkingArea(sid, boundary, cones_in_slot)
             areas.append(area)

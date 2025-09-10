@@ -212,14 +212,14 @@ private:
     int num_rings_of_interest_;
     std::string cloud_topic = "/velodyne_points";
     std::string frame_id_ = "velodyne";
-    double sensor_height_ =  1.0;
-    double th_seeds_ = 0.3;
-    double th_dist_ = 0.4;
+    double sensor_height_ =  0.7;
+    double th_seeds_ = 0.5;
+    double th_dist_ = 0.6;
     double th_seeds_v_ = 0.25;
     double th_dist_v_ = 0.1;
     double max_range_ = 80.0;
     double min_range_ = 0.0;
-    double uprightness_thr_ =  0.707;
+    double uprightness_thr_ =  0.9;
     double adaptive_seed_selection_margin_;
     double min_range_z2_ = 12.3625; // 12.3625
     double min_range_z3_ = 22.025; // 22.025

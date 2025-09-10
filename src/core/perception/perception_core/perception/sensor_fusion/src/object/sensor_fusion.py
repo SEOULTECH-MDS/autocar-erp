@@ -4,6 +4,7 @@ import numpy as np
 import time
 
 from scipy.spatial import distance_matrix
+from scipy.optimize import linear_sum_assignment
 
 #from motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
 #from motrackers.utils import draw_tracks
@@ -22,23 +23,6 @@ class SensorFusion(Node):
     def __init__(self):
         super().__init__('sensor_fusion')
         self.bridge = CvBridge()
-
-        #self.intrinsic_left = np.array([[381.18310547,   0., 319.02992935, 0.],
-        #                                 [0., 448.0055542, 207.31755552, 0.],
-        #                                 [0., 0., 1., 0.]])
-
-        # self.extrinsic_left = self.rtlc(alpha=np.radians(38.0),
-        #                                 beta=np.radians(26.0),
-        #                                 gamma=np.radians(4.9),
-        #                                 tx=0.965, ty=-0.23, tz=-0.95)
-        
-        #self.intrinsic_right = np.array([[378.68261719,   0., 328.19930137, 0.],
-        #                                  [0., 443.68624878, 153.57524293, 0.],
-        #                                 [0., 0., 1., 0.]])
-        #self.extrinsic_right = self.rtlc(alpha=np.radians(36.8),
-        #                                beta=np.radians(-29.4),
-        #                                 gamma=np.radians(-5.5),
-        #                                 tx=0.965, ty=0.218, tz=-0.965)
 
         # 0830
         #self.intrinsic_right = np.array([[557.806489985562,   0., 313.278798427776, 0.],
@@ -62,7 +46,7 @@ class SensorFusion(Node):
         #    [ 0.0,                 0.0,                 0.0,                 1.0]
         #])
 
-        # 0904 (외부 파라미터는 역행렬로 사용 -> 오히려 역행렬이 아닐 때 더 잘나옴 -> 뭐지진짜)
+        # 0904
         self.intrinsic_right = np.array([[619.6081,   0., 314.5476, 0.],
                                          [0., 619.7349, 224.2868, 0.],
                                          [0., 0., 1., 0.]])
@@ -72,13 +56,11 @@ class SensorFusion(Node):
             [0.785553405346505, -0.618425682626967,  0.021342971111821, 0.234585492330497],
             [ 0.0,                 0.0,                 0.0,                 1.0]
         ])
-        #self.extrinsic_right = np.linalg.inv(self.extrinsic_right)
 
         # ROS
         # Subscriber
-        self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/markers')
+        self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
         self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/tracked')
-        # self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/markers')
 
         self.sync = message_filters.ApproximateTimeSynchronizer(
             [self.cluster_sub, self.bbox_sub], queue_size=10,
@@ -105,7 +87,7 @@ class SensorFusion(Node):
         #clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
         clusters_2d_right, valid_right = projection_3d_to_2d(clusters, self.intrinsic_right, self.extrinsic_right)
         
-
+        # 디버깅
         self.get_logger().info(f"[SF] valid_right: {np.count_nonzero(valid_right)}/{len(valid_right)}")
         try:
             P = np.c_[clusters.T[:,:3], np.ones((clusters.shape[1], 1))]
@@ -115,13 +97,6 @@ class SensorFusion(Node):
                                    f"(minZ={Zc.min():.3f}, maxZ={Zc.max():.3f})")
         except Exception as e:
             self.get_logger().warn(f"[SF] cam-space debug skipped: {e}")
-
-        #idx_img  = np.where(valid_right)[0]          # in-frame 원본 인덱스들
-        #mask_pos = Xc[idx_img, 2] > 0                # 그중 Zc>0만
-        #lusters_2d_right = clusters_2d_right[mask_pos]
-        #valid_right = np.zeros_like(valid_right, dtype=bool); valid_right[idx_img[mask_pos]] = True
-
-
         if clusters_2d_right.size > 0:
             xs, ys = clusters_2d_right[:,0], clusters_2d_right[:,1]
             self.get_logger().info(f"[SF] clusters_2d_right x:[{np.nanmin(xs):.1f},{np.nanmax(xs):.1f}] "
@@ -133,8 +108,7 @@ class SensorFusion(Node):
         matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
 
 
-        # ★ 추가: 현재 프레임 한 번만 픽셀 평면 전역 이동으로 수평/수직 오차 제거
-        # (bbox 중심이 (cx,cy)인 형태로 맞춤)
+        # 디버깅
         bbs = np.asarray(right_bboxes, dtype=float)
         if bbs.ndim == 2 and bbs.shape[1] == 4:
             bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]
@@ -143,7 +117,7 @@ class SensorFusion(Node):
             bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]  # (M,2)
         if pts.size > 0 and bbs.size > 0:
             cost = distance_matrix(pts, bbs)              # 중심점 L2 거리
-            rows, cols = linear_sum_assignment(cost)      # 동일한 규칙으로 할당만 재현(로깅용)
+            rows, cols = linear_sum_assignment(cost)      # 동일한 규칙으로 할당만 재현
             lines = []
             for i, j in zip(rows, cols):
                 lines.append(
@@ -167,6 +141,7 @@ class SensorFusion(Node):
 
         # ROS Publish (Result of sensor fusion)
         fusion_markers = MarkerArray()
+        
         # fusion_unmatched_markers = MarkerArray()
         blue_marker   = self.make_marker((0.0, 0.0, 1.0))
         yellow_marker = self.make_marker((1.0, 1.0, 0.0))
@@ -174,7 +149,7 @@ class SensorFusion(Node):
 
         label_clusters(clusters.T[:,:3], labels, blue_marker, yellow_marker, white_marker)
 
-
+        # 디버깅
         self.get_logger().info(f"[SF] blue:{len(blue_marker.points)} "
                        f"yellow:{len(yellow_marker.points)} white:{len(white_marker.points)}")
         

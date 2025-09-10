@@ -27,8 +27,8 @@ def generate_launch_description():
     # Region filter parameters
     declared_args.append(DeclareLaunchArgument("min_x", default_value="-1.8"))
     declared_args.append(DeclareLaunchArgument("max_x", default_value="-0.5"))
-    declared_args.append(DeclareLaunchArgument("min_y", default_value="-0.6"))
-    declared_args.append(DeclareLaunchArgument("max_y", default_value="0.6"))
+    declared_args.append(DeclareLaunchArgument("min_y", default_value="-0.8"))
+    declared_args.append(DeclareLaunchArgument("max_y", default_value="0.8"))
     declared_args.append(DeclareLaunchArgument("min_z", default_value="-0.5"))
     declared_args.append(DeclareLaunchArgument("max_z", default_value="0.0"))
     # inside_mode: true => 박스 내부 유지(기본값: 전체 유지 = 무필터), false => 박스 내부 제거
@@ -44,14 +44,15 @@ def generate_launch_description():
                 'cloud_topic': LaunchConfiguration("filtered_topic"),
                 'frame_id': 'velodyne',
                 'sensor_height': 0.70,
-                'num_iter': 3,
-                'num_lpr': 20,
-                'num_min_pts': 10,
-                'th_seeds': 0.4,
-                'th_dist': 0.125,
-                'max_r': 80.0,
-                'min_r': 1.0,
-                'uprightness_thr': 0.707,
+                'num_iter': 4,
+                'num_lpr': 30,
+                'num_min_pts': 20,
+                'th_seeds': 0.55,
+                'th_dist': 0.50,
+                'max_range': 80.0,
+                'min_range': 0.5,
+                'uprightness_thr': 0.92,
+                'adaptive_seed_selection_margin': 0.1,
                 'verbose': False,
             }],
             remappings=[
@@ -67,9 +68,9 @@ def generate_launch_description():
             name='adaptive_clustering_node',
             parameters=[{
                 'sensor_model': "VLP-16",
-                'cluster_size_min': 3,
+                'cluster_size_min': 10,
                 'cluster_size_max': 10000,
-                'tolerance_offset': 0.1,
+                'tolerance_offset': 0.11,
             }],
             remappings=[
                 ("velodyne_points_ground_removed", "/patchwork/nonground"),
