@@ -243,6 +243,30 @@ class ConeMapNode(Node):
         
         if new_cones_count > 0:
             self.get_logger().info(f"🔍 새 콘 {new_cones_count}개 추가, 총 {len(self.cone_map.cones)}개 콘 저장")
+            
+            # 좌표계가 이미 준비된 상태에서 새로 추가된 콘들 정규화
+            if self.cone_map.coordinate_system_ready:
+                self.get_logger().info(f"🔧 새 콘 {new_cones_count}개 정규화 시작...")
+                normalized_count = 0
+                for cone_id, cone in self.cone_map.cones.items():
+                    if (cone.position == (0.0, 0.0) and 
+                        (cone.original_position[0] != 0.0 or cone.original_position[1] != 0.0)):
+                        # 원점 기준으로 이동
+                        x = cone.original_position[0] - self.cone_map.origin[0]
+                        y = cone.original_position[1] - self.cone_map.origin[1]
+                        
+                        # 회전 변환
+                        cos_angle = math.cos(-self.cone_map.rotation_angle)
+                        sin_angle = math.sin(-self.cone_map.rotation_angle)
+                        rotated_x = x * cos_angle - y * sin_angle
+                        rotated_y = x * sin_angle + y * cos_angle
+                        
+                        # 업데이트
+                        cone.position = (rotated_x, rotated_y)
+                        normalized_count += 1
+                
+                if normalized_count > 0:
+                    self.get_logger().info(f"✅ 새 콘 정규화 완료: {normalized_count}개")
     
     def publish_cone_map(self):
         """콘 맵 퍼블리싱"""
