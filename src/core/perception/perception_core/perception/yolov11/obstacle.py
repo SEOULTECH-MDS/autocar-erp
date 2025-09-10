@@ -105,8 +105,19 @@ class YOLO(Node):
             # 검출 결과를 바탕으로 원본 이미지에 바운딩 박스 그리기
             for det in rubbers:
                 cls, xmin, ymin, xmax, ymax, conf = det
-                label = f'{self.names[cls]} {conf:.2f}'
-                plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls], line_thickness=2)
+                cls_id = int(cls)
+                
+                # 안전한 클래스 이름 조회
+                def safe_name(names, cid):
+                    if isinstance(names, dict):
+                        return names.get(cid, f'cls_{cid}')
+                    if isinstance(names, (list, tuple)):
+                        return names[cid] if 0 <= cid < len(names) else f'cls_{cid}'
+                    return f'cls_{cid}'
+                
+                name = safe_name(self.names, cls_id)
+                label = f'{name} {conf:.2f}'
+                plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls_id % len(self.colors)], line_thickness=2)
             
             # 결과 이미지를 실시간으로 디스플레이
             cv2.imshow("YOLO Rubber Detection", cv_image)
