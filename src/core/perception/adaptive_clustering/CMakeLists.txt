@@ -65,6 +65,12 @@ install(
 )
 
 install(
+  PROGRAMS
+    scripts/restamp_pointcloud.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
     DIRECTORY msg
     DESTINATION share/${PROJECT_NAME}/
 )

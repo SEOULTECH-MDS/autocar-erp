@@ -4,6 +4,7 @@ import sys
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy
+import signal
 
 import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QGraphicsView, QGraphicsScene, QLabel, QHBoxLayout)
@@ -91,6 +92,9 @@ class LaneletClickPlanner(QMainWindow):
         self.timer.timeout.connect(self.spin_once)
         self.timer.start(100) # 100ms
         
+        # Ensure clean shutdown on SIGINT/SIGTERM
+        self._setup_signal_handlers()
+        
         # Load map directly
         self.load_map_from_file()
         
@@ -159,12 +163,54 @@ class LaneletClickPlanner(QMainWindow):
         layout.addWidget(self.map_canvas)
 
     def spin_once(self):
-        rclpy.spin_once(self.node, timeout_sec=0.01)
+        # If ROS context is already shutting down, stop timer and quit GUI to avoid RCLError
+        if not rclpy.ok():
+            try:
+                self.node.get_logger().info('ROS context invalid. Stopping timer and quitting GUI...')
+            except Exception:
+                pass
+            self._stop_and_quit()
+            return
+        try:
+            rclpy.spin_once(self.node, timeout_sec=0.01)
+        except Exception as e:
+            try:
+                self.node.get_logger().warn(f'spin_once exception: {e}. Quitting GUI...')
+            except Exception:
+                pass
+            self._stop_and_quit()
 
     def on_quit(self):
         self.node.get_logger().info('Shutting down ROS node.')
+        try:
+            self.timer.stop()
+        except Exception:
+            pass
         self.node.destroy_node()
         # rclpy.shutdown() is handled in main
+
+    # ───────────────── helpers ─────────────────
+    def _setup_signal_handlers(self):
+        def handler(sig, frame):
+            try:
+                self.node.get_logger().info(f'Received signal {sig}. Quitting...')
+            except Exception:
+                pass
+            self._stop_and_quit()
+        try:
+            signal.signal(signal.SIGINT, handler)
+            signal.signal(signal.SIGTERM, handler)
+        except Exception:
+            pass
+
+    def _stop_and_quit(self):
+        try:
+            self.timer.stop()
+        except Exception:
+            pass
+        app = QApplication.instance()
+        if app is not None:
+            app.quit()
 
     def load_map_from_file(self):
         map_path = self.node.get_parameter('lanelet2_map_path').get_parameter_value().string_value

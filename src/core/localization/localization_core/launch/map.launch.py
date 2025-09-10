@@ -15,8 +15,8 @@ def generate_launch_description():
     # --- Launch Arguments ---
     map_name_arg = DeclareLaunchArgument(
         'map_name',
-        # default_value='kcity_v5',
-        default_value='mirae_map',
+        default_value='kcity_v5',
+        # default_value='mirae_map',
         # default_value='aerum_map',
         description='Name of the map folder in localization_core/data'
     )
@@ -27,17 +27,23 @@ def generate_launch_description():
     )
     map_origin_lat_arg = DeclareLaunchArgument(
         'map_origin_lat',
-        # default_value='37.239205', # kcity 
-        default_value='37.6301124677', # mirae 
+        default_value='37.239205', # kcity 
+        # default_value='37.6301124677', # mirae 
         # default_value='37.63003568893', # aerum
         description='Latitude of map origin for UTM projection'
     )
     map_origin_lon_arg = DeclareLaunchArgument(
         'map_origin_lon',
-        # default_value='126.773193', # kcity
-        default_value='127.08146372752', # mirae
+        default_value='126.773193', # kcity
+        # default_value='127.08146372752', # mirae
         # default_value='127.08055492835', # aerum
         description='Longitude of map origin for UTM projection'
+    )
+
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation clock if available'
     )
 
     # Define the path to the map file using substitutions
@@ -57,7 +63,7 @@ def generate_launch_description():
     robot_description_xml = doc.toxml()
     robot_description_content = ParameterValue(robot_description_xml, value_type=str)
     
-    robot_description_params = {'robot_description': robot_description_content, 'use_sim_time': False}
+    robot_description_params = {'robot_description': robot_description_content, 'use_sim_time': LaunchConfiguration('use_sim_time')}
 
     return LaunchDescription([
         # --- Arguments ---
@@ -65,6 +71,7 @@ def generate_launch_description():
         map_osm_file_arg,
         map_origin_lat_arg,
         map_origin_lon_arg,
+        use_sim_time_arg,
         DeclareLaunchArgument(
             'lanelet2_map_path',
             default_value=map_path_substitution,
@@ -79,7 +86,8 @@ def generate_launch_description():
             name='autocar_tf_publisher',
             parameters=[{
                 'map_origin_lat': LaunchConfiguration('map_origin_lat'),
-                'map_origin_lon': LaunchConfiguration('map_origin_lon')
+                'map_origin_lon': LaunchConfiguration('map_origin_lon'),
+                'use_sim_time': LaunchConfiguration('use_sim_time')
             }]
         ),
 
@@ -92,7 +100,8 @@ def generate_launch_description():
                 'lanelet2_map_path': LaunchConfiguration('lanelet2_map_path'),
                 "map_projector_type": "UTM",
                 "latitude": LaunchConfiguration('map_origin_lat'),
-                "longitude": LaunchConfiguration('map_origin_lon')
+                "longitude": LaunchConfiguration('map_origin_lon'),
+                'use_sim_time': LaunchConfiguration('use_sim_time')
             }]
         ),
 
@@ -101,7 +110,7 @@ def generate_launch_description():
             package='autoware_lanelet2_map_visualizer',
             executable='lanelet2_map_visualization',
             name='lanelet2_map_visualizer',
-            parameters=[{'map_frame': 'world'}],
+            parameters=[{'map_frame': 'world', 'use_sim_time': LaunchConfiguration('use_sim_time')}],
             remappings=[
                 ('input/lanelet2_map', '/map/vector_map'),
                 ('output/lanelet2_map_marker', '/map/lanelet2_map_viz'),
@@ -114,14 +123,18 @@ def generate_launch_description():
             package='robot_state_publisher',
             executable='robot_state_publisher',
             output='screen',
-            parameters=[robot_description_params]
+            parameters=[
+                robot_description_params,
+                {'use_sim_time': LaunchConfiguration('use_sim_time')}
+            ]
         ),
         
         # 5. Ackermann to Joint States for vehicle model
         Node(
             package='erp42_visualizer',
             executable='ackermann_to_joint_states.py',
-            name='ackermann_to_joint_state_publisher'
+            name='ackermann_to_joint_state_publisher',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         ),
 
         # 6. Lanelet Click Planner
@@ -133,7 +146,8 @@ def generate_launch_description():
                 'map_origin.lat': LaunchConfiguration('map_origin_lat'),
                 'map_origin.lon': LaunchConfiguration('map_origin_lon'),
                 'lanelet2_map_path': LaunchConfiguration('lanelet2_map_path'),
-                'allowed_lanelet_subtypes': ['road']
+                'allowed_lanelet_subtypes': ['road'],
+                'use_sim_time': LaunchConfiguration('use_sim_time')
             }],
             output='screen'
         ),
@@ -148,7 +162,8 @@ def generate_launch_description():
                 'map_origin.lon': LaunchConfiguration('map_origin_lon'),
                 'lanelet2_map_path': LaunchConfiguration('lanelet2_map_path'),
                 'allowed_lanelet_subtypes': ['road'],
-                'max_select_distance': 3.0
+                'max_select_distance': 3.0,
+                'use_sim_time': LaunchConfiguration('use_sim_time')
             }],
             output='screen'
         ),
@@ -158,6 +173,7 @@ def generate_launch_description():
             package='rviz2',
             executable='rviz2',
             name='rviz2',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
             arguments=['-d', rviz_config_path],
             output='screen'
         )

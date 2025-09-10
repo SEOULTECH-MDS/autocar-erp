@@ -1,9 +1,17 @@
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
 
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time', default_value='false',
+        description='Use simulation clock if available'
+    )
+
     return LaunchDescription([
+        use_sim_time_arg,
         #Node(
         #    package='perception',
         #    executable='camera_obstacle',
@@ -43,7 +51,8 @@ def generate_launch_description():
             package='perception',
             executable='obstacle',
             name='obstacle',
-            output='screen'
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         ),
 
         Node(
@@ -51,6 +60,7 @@ def generate_launch_description():
             executable='sensor_fusion_object',
             name='sensor_fusion_object',
             output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
             remappings=[('/markers', '/adaptive_clustering/markers')],
         ),
 
@@ -58,20 +68,23 @@ def generate_launch_description():
             package='perception',
             executable='bbox_tracker',
             name='bbox_tracker',
-            output='screen'
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         ),
 
         Node(
             package='perception',
             executable='object_tracker3D',
             name='object_tracker3D',
-            output='screen'
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         ),
 
         Node(
             package='perception',
             executable='rubber_visualizer',
             name='rubber_visualizer',
-            output='screen'
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         )
     ])
