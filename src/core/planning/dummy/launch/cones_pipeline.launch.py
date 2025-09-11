@@ -33,6 +33,10 @@ def generate_launch_description():
                 '-p', ['target_frame:=', target_frame],
                 '-p', 'enable_side_label:=true',
                 '-p', ['use_sim_time:=', use_sim_time],
+                # TF 시간 외삽 완화 설정
+                '-p', 'force_tf_latest:=true',
+                '-p', 'tf_use_latest_on_fail:=true',
+                '-p', 'publish_stamp_source:=now',
                 '-r', ['/sensor_fusion/tracked_rubber_cones:=', input_markers],
                 '-r', ['/cones_obstacles:=', output_obstacles],
             ],

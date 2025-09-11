@@ -38,6 +38,20 @@ def generate_launch_description():
             ]
         ),
         
+        # Cone Map Node (관측 → 정규화된 콘 맵)
+        Node(
+            package='dummy',
+            executable='cone_map_node',
+            name='cone_map_node',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'input_topic': '/cones_obstacles',
+                'output_topic': '/cone_map',
+                'visualization_topic': '/cone_map_markers'
+            }]
+        ),
+
         # Parking Area Node (주차 구역 분석)
         Node(
             package='dummy',

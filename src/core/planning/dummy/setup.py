@@ -1,15 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 package_name = 'dummy'
 
 setup(
     name=package_name,
     version='0.0.0',
-    # ament_python이 lib/<pkg> 구조와 런치에서 찾는 libexec 경로를 생성할 수 있도록 패키지를 설치
-    packages=[package_name],
-    package_dir={
-        package_name: '.',
-    },
+    # 현재 디렉터리 자체를 패키지 'dummy'로 설치
+    packages=['dummy'],
+    package_dir={'dummy': '.'},
     # 모듈은 패키지(dummy) 네임스페이스 하위로 설치됩니다
     data_files=[
         # ament index 패키지 마커
