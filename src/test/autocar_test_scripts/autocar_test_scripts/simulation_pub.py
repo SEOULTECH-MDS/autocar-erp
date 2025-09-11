@@ -17,7 +17,7 @@ import termios
 import tty
 from autocar_utils.euler_from_quaternion import euler_from_quaternion
 from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, Pose, PoseArray
 from ackermann_msgs.msg import AckermannDriveStamped
 from pyproj import Proj, Transformer
 
@@ -30,7 +30,8 @@ class SimulationPub(Node):
         self.publisher_gps = self.create_publisher(NavSatFix, '/ublox_gps_node/fix', 10)
         self.publisher_imu = self.create_publisher(Imu, '/imu/data', 10)
 
-        self.obstacle_marker_pub = self.create_publisher(MarkerArray, '/obstacles/markers', 10)
+        # self.obstacle_marker_pub = self.create_publisher(MarkerArray, '/obstacles/markers', 10)
+        self.obstacle_pose_pub = self.create_publisher(PoseArray, '/sensor_fusion/obstacle', 10)
         self.stopline_marker_pub = self.create_publisher(MarkerArray, '/stoplines/markers', 10)
         # 장애물 정보 설정
         # self.obstacle_lat = 37.62999526
@@ -70,14 +71,14 @@ class SimulationPub(Node):
             {
                 'x': self.obstacle1_x,
                 'y': self.obstacle1_y,
-                'color': ColorRGBA(r=1.0, g=0.0, b=0.0, a=0.5),  # 빨간색
-                'scale': {'x': 1.0, 'y': 1.0, 'z': 0.5}
+                'z' : 0.0,
+                'label': 0
             },
             {
                 'x': self.obstacle2_x,
                 'y': self.obstacle2_y,
-                'color': ColorRGBA(r=1.0, g=0.5, b=0.0, a=0.5),  # 주황색
-                'scale': {'x': 1.0, 'y': 1.0, 'z': 0.5}
+                'z': 0.0,
+                'label': 0
             }
         ]
 
@@ -260,7 +261,8 @@ class SimulationPub(Node):
             imu_msg.angular_velocity.z = 0.0
             
         self.publisher_imu.publish(imu_msg)
-        self.publish_obstacle_marker()
+        # self.publish_obstacle_marker()
+        self.publish_obstacle_posearray()
         self.publish_stopline_marker()
 
         # 모드 변경 시에만 로그 출력
@@ -271,36 +273,63 @@ class SimulationPub(Node):
 
 
 
-    def publish_obstacle_marker(self):
-        marker_array = MarkerArray()
+    # def publish_obstacle_marker(self):
+    #     marker_array = MarkerArray()
         
-        # for문으로 장애물 마커들 생성
-        for i, obstacle in enumerate(self.obstacles):
-            marker = Marker()
-            marker.header.frame_id = "world"
-            marker.header.stamp = self.get_clock().now().to_msg()
-            marker.ns = "obstacles"
-            marker.id = i
-            marker.type = Marker.SPHERE
-            marker.action = Marker.ADD
+    #     # for문으로 장애물 마커들 생성
+    #     for i, obstacle in enumerate(self.obstacles):
+    #         marker = Marker()
+    #         marker.header.frame_id = "world"
+    #         marker.header.stamp = self.get_clock().now().to_msg()
+    #         marker.ns = "obstacles"
+    #         marker.id = i
+    #         marker.type = Marker.SPHERE
+    #         marker.action = Marker.ADD
+            
+    #         # 위치 설정
+    #         marker.pose.position.x = obstacle['x']
+    #         marker.pose.position.y = obstacle['y']
+    #         marker.pose.position.z = 0.0
+            
+    #         # 크기 설정
+    #         marker.scale.x = obstacle['scale']['x']
+    #         marker.scale.y = obstacle['scale']['y']
+    #         marker.scale.z = obstacle['scale']['z']
+            
+    #         # 색상 설정
+    #         marker.color = obstacle['color']
+            
+    #         marker_array.markers.append(marker)
+        
+    #     self.obstacle_marker_pub.publish(marker_array)
+
+    def publish_obstacle_posearray(self):
+        """장애물을 PoseArray로 퍼블리시"""
+        pose_array = PoseArray()
+        pose_array.header.frame_id = "world"  # 또는 "map"
+        pose_array.header.stamp = self.get_clock().now().to_msg()
+        
+        # 각 장애물을 Pose로 변환
+        for obstacle in self.obstacles:
+            pose = Pose()
             
             # 위치 설정
-            marker.pose.position.x = obstacle['x']
-            marker.pose.position.y = obstacle['y']
-            marker.pose.position.z = 0.0
+            pose.position.x = float(obstacle['x'])
+            pose.position.y = float(obstacle['y'])
+            pose.position.z = float(obstacle['z'])
             
-            # 크기 설정
-            marker.scale.x = obstacle['scale']['x']
-            marker.scale.y = obstacle['scale']['y']
-            marker.scale.z = obstacle['scale']['z']
+            # 방향 설정 (기본값: 단위 쿼터니언)
+            pose.orientation.x = 0.0
+            pose.orientation.y = 0.0
+            pose.orientation.z = 0.0
+            pose.orientation.w = 1.0
             
-            # 색상 설정
-            marker.color = obstacle['color']
+            # 라벨 정보는 orientation.z에 저장 (다른 곳에서 이렇게 사용하는 것으로 보임)
+            # pose.orientation.z = float(obstacle['label'])  # 필요시 사용
             
-            marker_array.markers.append(marker)
+            pose_array.poses.append(pose)
         
-        self.obstacle_marker_pub.publish(marker_array)
-        
+        self.obstacle_pose_pub.publish(pose_array)
         # 로그에 장애물 정보 추가 (로그 출력 제거)
         # 장애물 마커만 발행하고 로그는 출력하지 않음
 
