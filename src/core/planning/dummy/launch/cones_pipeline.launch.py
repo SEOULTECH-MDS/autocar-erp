@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# 작동 제대로 안됨 다시 만들어야 함.
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess
