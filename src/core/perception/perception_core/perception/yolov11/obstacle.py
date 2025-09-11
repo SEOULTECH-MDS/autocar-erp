@@ -136,7 +136,7 @@ class YOLO(Node):
             for rubber in rubbers:
                 pose = Pose()
                 # 각 필드에 검출 결과 할당 (클래스, 바운딩 박스 좌표, 신뢰도)(ROS msg 타입은 float이어야 함)
-                pose.position.x = float(rubber[0])  # 클래스 인덱스 # 0 blue or 1 yellow
+                pose.position.x = float(rubber[0])  # 클래스 인덱스 # 0 blue or 1 yellow 
                 pose.position.y = float(rubber[5])  # 신뢰도
                 # pose.position.z 는 0으로 유지됨
                 pose.orientation.x = float(rubber[1])  # xmin

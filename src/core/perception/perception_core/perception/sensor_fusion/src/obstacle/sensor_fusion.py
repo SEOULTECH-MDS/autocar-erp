@@ -9,7 +9,7 @@ from scipy.optimize import linear_sum_assignment
 #from motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
 #from motrackers.utils import draw_tracks
 
-from perception.sensor_fusion.src.object.sensor_fusion_handler import *
+from perception.sensor_fusion.src.obstacle.sensor_fusion_handler import *
 
 import rclpy
 from rclpy.node import Node
@@ -37,10 +37,11 @@ class SensorFusion(Node):
         # ROS
         # Subscriber
         self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
-        self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber')
+        self.bbox_sub_rubber = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber')
+        self.bbox_sub_car = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/car")
 
         self.sync = message_filters.ApproximateTimeSynchronizer(
-            [self.cluster_sub, self.bbox_sub], queue_size=10,
+            [self.cluster_sub, self.bbox_sub_rubber, self.bbox_sub_car], queue_size=10,
             slop=0.5, allow_headerless=True)
         self.sync.registerCallback(self.callback_fusion)
 
@@ -50,15 +51,30 @@ class SensorFusion(Node):
 
         self.get_logger().info('🚀  Camera & 3D LiDAR fusion node started.')
 
-    def callback_fusion(self, cluster_msg, bbox_msg):        
+    def callback_fusion(self, cluster_msg, bbox_msg_rubber, bbox_msg_car):        
         first_time = time.perf_counter()
 
         # Clustering points to np array
         clusters = cluster_for_fusion(cluster_msg) # 클러스터링 중점을 계산 (3D)
 
         # 2D bounding boxes
-        rubber_bboxes, rubber_labels = bounding_boxes(bbox_msg)
-        
+        rubber_bboxes, rubber_labels = bounding_boxes(bbox_msg_rubber)
+        car_bboxes, car_labels = bounding_boxes(bbox_msg_car)
+
+        # 두 bbox 데이터를 합치기
+        if rubber_bboxes.size > 0 and car_bboxes.size > 0:
+            all_bboxes = np.vstack([rubber_bboxes, car_bboxes])
+            all_labels = rubber_labels + car_labels
+        elif rubber_bboxes.size > 0:
+            all_bboxes = rubber_bboxes
+            all_labels = rubber_labels
+        elif car_bboxes.size > 0:
+            all_bboxes = car_bboxes
+            all_labels = car_labels
+        else:
+            all_bboxes = np.empty((0, 2))
+            all_labels = []
+
         # 3D BBOX to Pixel Frame
         clusters_2d, valid_indicies = projection_3d_to_2d(clusters, self.intrinsic, self.extrinsic)
         
@@ -78,10 +94,11 @@ class SensorFusion(Node):
                                    f"y:[{np.nanmin(ys):.1f},{np.nanmax(ys):.1f}]")
              
         # Sensor Fusion (Hungarian Algorithm)
-        matched = hungarian_match(clusters_2d, rubber_bboxes, rubber_labels, distance_threshold=30)
-        
+        #matched = hungarian_match(clusters_2d, rubber_bboxes, rubber_labels, distance_threshold=30)
+        matched = hungarian_match(clusters_2d, all_bboxes, all_labels, distance_threshold=30)
+
         # 디버깅
-        bbs = np.asarray(rubber_bboxes, dtype=float)
+        bbs = np.asarray(all_bboxes, dtype=float)
         if bbs.ndim == 2 and bbs.shape[1] == 4:
             bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]
         pts = np.asarray(clusters_2d, dtype=float)
@@ -98,9 +115,9 @@ class SensorFusion(Node):
                     f"ctr=({bbs[j,0]:.1f},{bbs[j,1]:.1f})"
                 )
             self.get_logger().info("[SF] assignments: " + " | ".join(lines))
-        self.get_logger().info(f"[SF] #right_bboxes={len(rubber_bboxes)}, labels={set(rubber_labels)}")
+        self.get_logger().info(f"[SF] #right_bboxes={len(all_bboxes)}, labels={set(all_labels)}")
         self.get_logger().info(f"[SF] matched_right len={len(matched)}")
-        self.get_logger().info(f"shape={rubber_bboxes.shape}")
+        self.get_logger().info(f"shape={all_bboxes.shape}")
 
 
         labels = get_label(matched, valid_indicies)
@@ -111,17 +128,18 @@ class SensorFusion(Node):
         fusion_markers = MarkerArray()
         
         # fusion_unmatched_markers = MarkerArray()
-        blue_marker   = self.make_marker((0.0, 0.0, 1.0))
-        yellow_marker = self.make_marker((1.0, 1.0, 0.0))
-        white_marker  = self.make_marker((1.0, 1.0, 1.0))
+        blue_marker   = self.make_marker((0.0, 0.0, 1.0), "blue", 1)
+        yellow_marker = self.make_marker((1.0, 1.0, 0.0), "yellow", 2)
+        green_marker  = self.make_marker((0.0, 1.0, 0.0), "green", 3)
+        white_marker  = self.make_marker((1.0, 1.0, 1.0), "white", 4)
 
-        label_clusters(clusters.T[:,:3], labels, blue_marker, yellow_marker, white_marker)
+        label_clusters(clusters.T[:,:3], labels, blue_marker, yellow_marker, green_marker, white_marker)
 
         # 디버깅
-        self.get_logger().info(f"[SF] blue:{len(blue_marker.points)} "
-                       f"yellow:{len(yellow_marker.points)} white:{len(white_marker.points)}")
-        
-        fusion_markers.markers.extend([blue_marker, yellow_marker, white_marker])
+        # self.get_logger().info(f"[SF] blue:{len(blue_marker.points)} "
+        #                f"yellow:{len(yellow_marker.points)} green:{len(green_marker.points)} white:{len(white_marker.points)}")
+
+        fusion_markers.markers.extend([blue_marker, yellow_marker, green_marker, white_marker])
         self.fusion_pub.publish(fusion_markers)
 
         # ROS Publish (Projected clusters to 2D frame) 
@@ -160,14 +178,16 @@ class SensorFusion(Node):
                       [0, 0, 0, 1]])
         return Rzg @ Rxa @ Ryb @ Ry90 @ Rx90 @ T
 
-    def make_marker(self, color):
+    def make_marker(self, color, ns, mid):
         marker = Marker()
         marker.action = Marker.ADD
         marker.type = Marker.POINTS
         marker.header.frame_id = 'velodyne'
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.lifetime = rclpy.duration.Duration(seconds=0.1).to_msg()
-        marker.id = int(sum(color) * 10000)
+        # marker.id = int(sum(color) * 10000)
+        marker.ns = ns
+        marker.id = mid * 10000
         marker.scale.x = marker.scale.y = marker.scale.z = 0.2
         marker.color.a = 1.0
         marker.color.r, marker.color.g, marker.color.b = color

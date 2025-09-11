@@ -50,7 +50,7 @@ def projection_3d_to_2d(clusters, intrinsic, extrinsic):
     
     clusters_2d = np.vstack([center_x, center_y]).T
 
-    return clusters_2d, valid_indicies, points_c
+    return clusters_2d, valid_indicies
 
 def hungarian_match(clusters_2d, bboxes, bbox_labels, distance_threshold = 80):
     cost = distance_matrix(clusters_2d, bboxes)
@@ -118,13 +118,17 @@ def get_label(matched, valid_indicies):
 #             yellows.append(point)
 #     return blues, yellows
 
-def label_clusters(clusters_3d, labels, blue_marker, white_marker):
+def label_clusters(clusters_3d, labels, blue_marker, yellow_marker, green_marker, white_marker):
     for i in range(len(clusters_3d)):
         point = Point()
         point.x, point.y, point.z = clusters_3d[i, 0], clusters_3d[i, 1], clusters_3d[i, 2]
         
         if labels[i] == 0:
-            blue_marker.points.append(point)
+            blue_marker.points.append(point) # 파란색 라바콘
+        elif labels[i] == 1:
+            yellow_marker.points.append(point) # 노란색 라바콘
+        elif labels[i] == 2:
+            green_marker.points.append(point) # 자동차
         else:
             white_marker.points.append(point)
     return
