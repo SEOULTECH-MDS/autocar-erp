@@ -52,7 +52,8 @@ class Control(Node):
 
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
-        self.obstacle_sub = self.create_subscription(PoseArray, '/sensor_fusion/obstacle', self.obstacle_cb, 10)
+        # self.obstacle_sub = self.create_subscription(PoseArray, '/sensor_fusion/obstacle', self.obstacle_cb, 10)
+        self.obstacle_sub = self.create_subscription(MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10)
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
 
         # 변수 초기화
@@ -301,13 +302,13 @@ class Control(Node):
         """ 
         장애물 위치 업데이트 
         """
-        if len(msg.poses) == 0:
+        if len(msg.markers) == 0:
             self.get_logger().warn("장애물 데이터가 없습니다.")
             # 장애물이 없을 때는 멀리 있는 가상 위치로 설정
-            self.obs1_x = -1e4
-            self.obs1_y = -1e4
-            self.obs2_x = -1e4
-            self.obs2_y = -1e4
+            self.obs1_x = 1e4
+            self.obs1_y = 1e4
+            self.obs2_x = 1e4
+            self.obs2_y = 1e4
             return
         
         if self.map_origin_x is None or self.map_origin_y is None:
@@ -319,11 +320,11 @@ class Control(Node):
             transformed_obstacles = []
             
             # 모든 장애물을 순차적으로 변환
-            for i, pose in enumerate(msg.poses):
+            for i, marker in enumerate(msg.markers):
                 obs_map = self.velodyne_to_map(
-                    pose.position.x, 
-                    pose.position.y, 
-                    pose.position.z, 
+                    marker.pose.position.x,
+                    marker.pose.position.y,
+                    marker.pose.position.z,
                     current_time
                 )
                 if obs_map is not None:
@@ -346,10 +347,10 @@ class Control(Node):
                 self.get_logger().info("장애물 1개만 감지됨. 두 번째를 첫 번째와 동일하게 설정")
             else:
                 # 모든 변환이 실패했으면 멀리 설정
-                self.obs1_x = -1e4
-                self.obs1_y = -1e4
-                self.obs2_x = -1e4
-                self.obs2_y = -1e4
+                self.obs1_x = 1e4
+                self.obs1_y = 1e4
+                self.obs2_x = 1e4
+                self.obs2_y = 1e4
                 self.get_logger().warn("모든 장애물 변환 실패. 장애물 위치를 멀리 설정")
                 return
             
@@ -358,10 +359,10 @@ class Control(Node):
         except Exception as e:
             self.get_logger().error(f"장애물 위치 변환 중 오류 발생: {str(e)}")
             # 오류 발생시 안전한 기본값 설정
-            self.obs1_x = 1000.0
-            self.obs1_y = 1000.0
-            self.obs2_x = 1000.0
-            self.obs2_y = 1000.0
+            self.obs1_x = 1e4
+            self.obs1_y = 1e4
+            self.obs2_x = 1e4
+            self.obs2_y = 1e4
 
     def velodyne_to_map(self, x_velodyne, y_velodyne, z_velodyne, timestamp):
         try:
