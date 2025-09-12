@@ -306,10 +306,6 @@ class Control(Node):
         if len(msg.markers) == 0:
             self.get_logger().warn("장애물 데이터가 없습니다.")
             # 장애물이 없을 때는 멀리 있는 가상 위치로 설정
-            self.obs1_x = 1e4
-            self.obs1_y = 1e4
-            self.obs2_x = 1e4
-            self.obs2_y = 1e4
             return
         
         if self.map_origin_x is None or self.map_origin_y is None:
@@ -545,7 +541,8 @@ class Control(Node):
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \
             \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f}) \
-            \n weights: {self.current_weights}"
+            \n weights: {self.current_weights} \
+            \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}) "
 
 
         self.overlay_pub.publish(text_msg)

@@ -15,10 +15,10 @@ class ObstacleMap(Node):
         super().__init__('obstacle_map_node')
 
         # 파라미터 설정
-        self.declare_parameter('velodyne_x_offset', -1.3)  # velodyne -> base_link: x축 오프셋
+        self.declare_parameter('velodyne_x_offset', 1.3)  # velodyne -> base_link: x축 오프셋
         self.declare_parameter('merge_radius', 0.2)        # 미터: 이 반경 내에서 병합
         self.declare_parameter('smoothing_alpha', 0.2)    # 매칭된 장애물의 EMA 평활화 계수
-        self.declare_parameter('max_age_sec', 10.0)         # 이 시간동안 관측되지 않으면 제거
+        self.declare_parameter('max_age_sec', 5.0)         # 이 시간동안 관측되지 않으면 제거
         self.declare_parameter('marker_scale', 0.3)        # RViz 포인트 크기
 
         self.velodyne_x_offset = float(self.get_parameter('velodyne_x_offset').value)
@@ -46,22 +46,25 @@ class ObstacleMap(Node):
         now = self.get_clock().now()
         points_map = []
 
-        # 들어오는 마커에서 모든 포인트 수집 (velodyne 좌표계 위치)
-        for mk in msg.markers:
-            # 마커 헤더 스탬프가 있으면 사용, 없으면 현재 시간 사용
-            stamp = mk.header.stamp if mk.header.stamp.sec != 0 or mk.header.stamp.nanosec != 0 else now.to_msg()
-            # 각 포인트 변환: velodyne -> base_link (x += offset) -> map (TF)
-            for p in mk.points:
-                x_base = float(p.x) + self.velodyne_x_offset
-                y_base = float(p.y)
-                z_base = float(p.z)
+        # 0번째 마커만 사용
+        if not msg.markers:
+            self.remove_old(now)
+            self.publish_obstacles()
+            return
 
-                pm = self._transform_base_to_map(x_base, y_base, z_base, stamp)
-                if pm is not None:
-                    points_map.append(pm)
+        mk = msg.markers[0]
+        stamp = mk.header.stamp if mk.header.stamp.sec != 0 or mk.header.stamp.nanosec != 0 else now.to_msg()
+
+        for p in mk.points:
+            x_base = float(p.x) + self.velodyne_x_offset
+            y_base = float(p.y)
+            z_base = float(p.z)
+
+            pm = self._transform_base_to_map(x_base, y_base, z_base, stamp)
+            if pm is not None:
+                points_map.append(pm)
 
         if not points_map:
-            # 이번 주기에 유효한 변환이 없음
             self.remove_old(now)
             self.publish_obstacles()
             return
@@ -70,10 +73,8 @@ class ObstacleMap(Node):
         for x_map, y_map, _ in points_map:
             idx = self._find_nearest(x_map, y_map, self.merge_radius)
             if idx is None:
-                # 새로운 장애물 추가
                 self.tracked.append({'x': x_map, 'y': y_map, 'last_seen': now})
             else:
-                # 새로운 측정값으로 EMA 평활화
                 ox = self.tracked[idx]['x']
                 oy = self.tracked[idx]['y']
                 a = self.smoothing_alpha
@@ -81,10 +82,7 @@ class ObstacleMap(Node):
                 self.tracked[idx]['y'] = (1.0 - a) * oy + a * y_map
                 self.tracked[idx]['last_seen'] = now
 
-        # 오래된 장애물 제거
         self.remove_old(now)
-
-        # 현재 추적된 장애물 퍼블리시
         self.publish_obstacles()
 
     def _transform_base_to_map(self, x_base: float, y_base: float, z_base: float, stamp):
@@ -97,10 +95,10 @@ class ObstacleMap(Node):
         ps.point.z = z_base
 
         try:
-            # 변환 가능 여부 확인
-            if not self.tf_buffer.can_transform('map', 'base_link', rclpy.time.Time.from_msg(stamp), timeout=Duration(seconds=0.2)):
+            # 변환 가능 여부 확인 (timeout 증가)
+            if not self.tf_buffer.can_transform('map', 'base_link', rclpy.time.Time.from_msg(stamp), timeout=Duration(seconds=0.5)):
                 return None
-            pm = self.tf_buffer.transform(ps, 'map', timeout=Duration(seconds=0.2))
+            pm = self.tf_buffer.transform(ps, 'map', timeout=Duration(seconds=0.5))
             return (pm.point.x, pm.point.y, pm.point.z)
         except Exception as e:
             self.get_logger().debug(f'tf 변환 실패: {e}')
@@ -169,7 +167,9 @@ class ObstacleMap(Node):
             
             ma.markers.append(m)
         
+        self.get_logger().debug(f'퍼블리시 장애물: {len(ma.markers)} 개')
         self.obstacle_map_pub.publish(ma)
+        
 
 
 def main(args=None):
