@@ -10,6 +10,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        
+        ('share/' + package_name + '/launch', [
+            'launch/mpc_obstacle_map.launch.py'
+        ]),
     ],
     install_requires=['setuptools', 'autocar_utils'],
     zip_safe=True,
@@ -22,6 +26,7 @@ setup(
             'mpc_acados_control = main_control.mpc_acados:main',
             'mpc_acados_control_sp = main_control.mpc_acados_sp:main',
             'mpc_acados_control_sp_traffic = main_control.mpc_acados_sp_traffic:main',
+            'obstacle_map_node = main_control.obstacle_map_node:main',
 
         ],
     },

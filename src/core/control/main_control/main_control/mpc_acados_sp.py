@@ -53,7 +53,8 @@ class Control(Node):
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
         # self.obstacle_sub = self.create_subscription(PoseArray, '/sensor_fusion/obstacle', self.obstacle_cb, 10)
-        self.obstacle_sub = self.create_subscription(MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10)
+        # self.obstacle_sub = self.create_subscription(MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10)
+        self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10)
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
 
         # 변수 초기화
@@ -75,10 +76,10 @@ class Control(Node):
         self.control_frequency = 20.0 # HZ
         self.dt = T / N
 
-        self.obs1_x = None
-        self.obs1_y = None
-        self.obs2_x = None
-        self.obs2_y = None
+        self.obs1_x = 1e4
+        self.obs1_y = 1e4
+        self.obs2_x = 1e4
+        self.obs2_y = 1e4
 
         self.stopline_distance = 1e6
 
@@ -300,7 +301,7 @@ class Control(Node):
 
     def obstacle_cb(self, msg):
         """ 
-        장애물 위치 업데이트 
+        obstacle_map_node에서 변환된 장애물 위치 업데이트 (이미 map 좌표계)
         """
         if len(msg.markers) == 0:
             self.get_logger().warn("장애물 데이터가 없습니다.")
@@ -316,93 +317,42 @@ class Control(Node):
             return
 
         try:
-            current_time = self.get_clock().now()
-            transformed_obstacles = []
+            obstacles = []
             
-            # 모든 장애물을 순차적으로 변환
-            for i, marker in enumerate(msg.markers):
-                obs_map = self.velodyne_to_map(
-                    marker.pose.position.x,
-                    marker.pose.position.y,
-                    marker.pose.position.z,
-                    current_time
-                )
-                if obs_map is not None:
-                    obs_x = obs_map[0]
-                    obs_y = obs_map[1]
-                    transformed_obstacles.append((obs_x, obs_y))
-                    self.get_logger().debug(f"장애물 {i}: ({obs_x:.2f}, {obs_y:.2f})")
-                else:
-                    self.get_logger().warn(f"장애물 {i} 좌표 변환 실패")
+            # 각 CYLINDER 마커에서 위치 추출 (이미 map 좌표계)
+            for marker in msg.markers:
+                if marker.type == Marker.CYLINDER:
+                    obs_x = marker.pose.position.x
+                    obs_y = marker.pose.position.y
+                    obstacles.append((obs_x, obs_y))
+                    self.get_logger().debug(f"장애물: ({obs_x:.2f}, {obs_y:.2f})")
             
-            # 변환된 장애물 개수에 따른 처리
-            if len(transformed_obstacles) >= 2:
-                # 2개 이상이면 처음 2개 사용
-                self.obs1_x, self.obs1_y = transformed_obstacles[0]
-                self.obs2_x, self.obs2_y = transformed_obstacles[1]
-            elif len(transformed_obstacles) == 1:
-                # 1개만 있으면 복사
-                self.obs1_x, self.obs1_y = transformed_obstacles[0]
-                self.obs2_x, self.obs2_y = transformed_obstacles[0]
-                self.get_logger().info("장애물 1개만 감지됨. 두 번째를 첫 번째와 동일하게 설정")
+            # MPC용 장애물 설정 (최대 2개)
+            if len(obstacles) >= 2:
+                self.obs1_x, self.obs1_y = obstacles[0]
+                self.obs2_x, self.obs2_y = obstacles[1]
+                self.get_logger().info(f"장애물 2개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), "
+                                      f"obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f})")
+            elif len(obstacles) == 1:
+                self.obs1_x, self.obs1_y = obstacles[0]
+                self.obs2_x, self.obs2_y = obstacles[0]  # 두 번째 장애물을 첫 번째와 동일하게 설정
+                self.get_logger().info(f"장애물 1개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), "
+                                      f"obs2: 동일 위치")
             else:
-                # 모든 변환이 실패했으면 멀리 설정
+                # 장애물이 없거나 모든 변환이 실패한 경우
                 self.obs1_x = 1e4
                 self.obs1_y = 1e4
                 self.obs2_x = 1e4
                 self.obs2_y = 1e4
-                self.get_logger().warn("모든 장애물 변환 실패. 장애물 위치를 멀리 설정")
-                return
-            
-            self.get_logger().info(f"최종 장애물 위치 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f})")
+                self.get_logger().warn("유효한 장애물이 없습니다. 가상 위치로 설정")
 
         except Exception as e:
-            self.get_logger().error(f"장애물 위치 변환 중 오류 발생: {str(e)}")
-            # 오류 발생시 안전한 기본값 설정
+            self.get_logger().error(f"장애물 처리 중 오류: {str(e)}")
+            # 오류 발생시 안전한 기본값으로 설정
             self.obs1_x = 1e4
             self.obs1_y = 1e4
             self.obs2_x = 1e4
             self.obs2_y = 1e4
-
-    def velodyne_to_map(self, x_velodyne, y_velodyne, z_velodyne, timestamp):
-        try:
-            # velodyne 좌표계 -> base_link 좌표계 translation 변환 
-            x_base = x_velodyne - 1.3 # velodyne 좌표계에서 base_link 까지 뒤로 1.3m
-            y_base = y_velodyne
-            z_base = z_velodyne
-            
-            point_base = PointStamped()
-            point_base.header.frame_id = "base_link"
-            point_base.header.stamp = timestamp
-            point_base.point.x = float(x_base)
-            point_base.point.y = float(y_base)
-            point_base.point.z = float(z_base)
-
-            if not self.tf_buffer.can_transform(
-                "map", "base_link", timestamp, timeout=rclpy.duration.Duration(seconds=0.1)
-            ):
-                self.get_logger().warn("TF 변환을 사용할 수 없습니다: base_link -> map")
-                return None
-
-            # base_link 좌표계 -> map 좌표계 tf 변환
-            point_map = self.tf_buffer.transform(
-                point_base, "map", timeout=rclpy.duration.Duration(seconds=0.1)
-            )
-
-            return [point_map.point.x, point_map.point.y, point_map.point.z]
-
-        except tf2_ros.LookupException as e:
-            self.get_logger().debug(f"Transform lookup 실패: {str(e)}")
-            return None
-        except tf2_ros.ConnectivityException as e:
-            self.get_logger().debug(f"Transform connectivity 오류: {str(e)}")
-            return None
-        except tf2_ros.ExtrapolationException as e:
-            self.get_logger().debug(f"Transform extrapolation 오류: {str(e)}")
-            return None
-        except Exception as e:
-            self.get_logger().error(f"Transform 중 예상치 못한 오류: {str(e)}")
-            return None
 
     def stopline_cb(self, msg):
         """ 
