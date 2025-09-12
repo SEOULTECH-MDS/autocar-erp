@@ -28,11 +28,9 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
-                'velodyne_x_offset': -1.3,    # velodyne -> base_link 오프셋
-                'merge_radius': 0.2,          # 장애물 병합 반경 (m)
-                'smoothing_alpha': 0.2,       # EMA 평활화 계수
+                'merge_radius': 0.4,          # 장애물 병합 반경 (m)
+                'smoothing_alpha': 0.9,       # EMA 평활화 계수
                 'max_age_sec': 10.0,          # 장애물 만료 시간 (초)
-                'marker_scale': 0.3           # 마커 크기
             }],
             arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],            
         ),
