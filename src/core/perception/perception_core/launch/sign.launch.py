@@ -4,12 +4,12 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     return LaunchDescription([
-        Node(
-            package='perception',
-            executable='camera_sign',
-            name='camera_sign',
-            output='screen'
-        ),
+        # Node(
+        #     package='perception',
+        #     executable='camera_sign',
+        #     name='camera_sign',
+        #     output='screen'
+        # ),
 
         Node(
             package='perception',

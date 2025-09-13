@@ -33,6 +33,7 @@ from geometry_msgs.msg import Pose, PoseArray
 # 설정 값
 package_share = get_package_share_directory('perception')
 WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'best_표지판.pt')
+# WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'delivery_t.pt')
 IMG_SIZE = 640
 DEVICE = ''
 AUGMENT = False
@@ -63,7 +64,8 @@ class YOLOv11(Node):
         self.target_sign_pub = self.create_publisher(Int32, "/target_sign", 10)
         
         self.create_subscription(String, "/driving_mode", self.callback_mode, 10)
-        self.create_subscription(Image, "/camera_sign/image_raw", self.callback_img, 10)
+        self.create_subscription(Image, "/usb_cam_1/image_raw", self.callback_img, 10)
+        # self.create_subscription(Image, "/camera_sign/image_raw", self.callback_img, 10)
         # self.create_subscription(Image, "/carla/ego_vehicle/rgb_right/image", self.callback_img, 10)
 
         self.img_width = IMG_SIZE
@@ -137,12 +139,12 @@ class YOLOv11(Node):
 
                 poses.poses.append(pose)
             self.boungingboxes_pub.publish(poses)
-            # cv2.imshow("Real-time Result", result)
+            cv2.imshow("Real-time Result", result)
         else:
             image_message = bridge.cv2_to_imgmsg(cap, encoding="bgr8")
-            # cv2.imshow("Real-time Result", cap) 
+            cv2.imshow("Real-time Result", cap) 
 
-        # cv2.waitKey(1)
+        cv2.waitKey(1)
 
         # header stamp 갱신
         image_message.header.stamp = self.get_clock().now().to_msg()

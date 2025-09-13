@@ -27,10 +27,14 @@ sys.modules['models'] = models
 # [✓] Modified: "utils" alias 추가
 import perception.yolov11.utils as utils
 sys.modules['utils'] = utils
+# # [✓] Modified: "models.common" alias 추가
+# import perception.yolov11.models.common as models_common
+# sys.modules['models.common'] = models_common
 
 # 하이퍼파라미터 및 설정
 package_share = get_package_share_directory('perception')
 WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_new.pt')
+# WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_ver2.pt') # github 라바콘 pt
 IMG_SIZE = 640
 DEVICE = ''
 AUGMENT = False

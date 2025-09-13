@@ -68,10 +68,10 @@ class SensorFusion(Node):
         #                                        tx = 0.965, ty = 0.22, tz = -0.7)
 
         # 0904
-        self.intrinsic_right = np.array([[619.6081,   0., 314.5476, 0.],
+        self.intrinsic = np.array([[619.6081,   0., 314.5476, 0.],
                                          [0., 619.7349, 224.2868, 0.],
                                          [0., 0., 1., 0.]])
-        self.extrinsic_right = np.array([
+        self.extrinsic = np.array([
             [-0.618721384543836,  -0.785521938769354,  0.011795423697079, -0.876986864685114],
             [0.009470779095116, -0.022471287889330, -0.999702628567079, 0.480566072341194],
             [0.785553405346505, -0.618425682626967,  0.021342971111821, 0.234585492330497],
@@ -84,7 +84,7 @@ class SensorFusion(Node):
         # ROS
         super().__init__('sensor_fusion')
 
-        self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/markers')
+        self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
         self.bbox_sub = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/deliver")
 
         self.sync = message_filters.ApproximateTimeSynchronizer([self.cluster_sub, self.bbox_sub], queue_size=10, slop=0.5, allow_headerless=True)
@@ -118,6 +118,7 @@ class SensorFusion(Node):
 
         # Clustering points to np array
         clusters = cluster_for_fusion(cluster_msg) # 클러스터링 중점을 계산 (3D)
+        # self.get_logger().info(f'Clusters: {clusters.T[:,:3]}')
         
         # 2D bounding boxes
         bboxes, bboxes_label = bounding_boxes(bbox_msg)
@@ -125,14 +126,15 @@ class SensorFusion(Node):
         # 3D BBOX to Pixel Frame
         clusters_2d, valid_indicies = projection_3d_to_2d(clusters, self.intrinsic, self.extrinsic)
         self.clusters_2d = clusters_2d
+        # self.get_logger().info(f"Clusters 2D: {clusters_2d}, Valid indices: {valid_indicies}")
 
         # Sensor Fusion (Hungarian Algorithm)
         matched = hungarian_match(clusters_2d, bboxes, bboxes_label, distance_threshold=30)
-        self.get_logger().debug(f'Matched indices: {matched}')
+        self.get_logger().info(f'Matched indices: {matched}')
         
         labels = get_label(matched, valid_indicies)
-        self.get_logger().debug(f'Labels: {labels}')
-        
+        self.get_logger().info(f'Labels: {labels}')
+
         target_clusters = []
         delivery_pose_array = PoseArray()
         delivery_pose_array.header.frame_id = 'velodyne'
@@ -147,7 +149,7 @@ class SensorFusion(Node):
             elif id == self.target_sign:
                 target_clusters.append(clusters.T[:,:3][idx])    
             
-        self.get_logger().debug(f'Target clusters: {target_clusters}')
+        self.get_logger().info(f'Target clusters: {target_clusters}')
 
 
         if target_clusters:
