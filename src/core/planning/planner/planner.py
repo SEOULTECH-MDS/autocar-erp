@@ -9,8 +9,10 @@ from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped, Point, PoseArray, Pose
 from nav_msgs.msg import Path, Odometry
 from visualization_msgs.msg import Marker, MarkerArray
-from planning_msgs.msg import ObstacleArray, ModeState
+from planning_msgs.msg import ObstacleArray, Obstacle, ModeState
 from std_msgs.msg import Int32
+import tf2_ros
+import tf2_geometry_msgs
 
 
 def wrap_to_pi(angle: float) -> float:
@@ -35,35 +37,7 @@ def yaw_to_quaternion(yaw: float):
     return quat
 
 
-@dataclass
-class Segment:
-    x1: float
-    y1: float
-    x2: float
-    y2: float
-    width: float
-
-    @property
-    def length(self) -> float:
-        return math.hypot(self.x2 - self.x1, self.y2 - self.y1)
-
-    @property
-    def angle(self) -> float:
-        return math.atan2(self.y2 - self.y1, self.x2 - self.x1)
-
-    def distance_to_point(self, px: float, py: float) -> float:
-        """Minimum distance from segment to point (px, py)."""
-        vx = self.x2 - self.x1
-        vy = self.y2 - self.y1
-        wx = px - self.x1
-        wy = py - self.y1
-        seg_len2 = vx * vx + vy * vy
-        if seg_len2 <= 1e-9:
-            return math.hypot(px - self.x1, py - self.y1)
-        t = max(0.0, min(1.0, (wx * vx + wy * vy) / seg_len2))
-        proj_x = self.x1 + t * vx
-        proj_y = self.y1 + t * vy
-        return math.hypot(px - proj_x, py - proj_y)
+# Segment 클래스 제거 - 가상 벽 대신 콘 기반 충돌 회피 사용
 
 
 class PlannerNode(Node):
@@ -72,7 +46,7 @@ class PlannerNode(Node):
     - Subscribes:
         /open_slot_pose (PoseStamped)
         /virtual_walls   (planning_msgs/ObstacleArray)
-        /current_pose    (PoseStamped) [optional]
+        /autocar/location (nav_msgs/Odometry) [required]
     - Publishes:
         /waypoints               (nav_msgs/Path)  [MAIN]  활성 스테이지의 최신 경로를 통합 퍼블리시
         /stage1_path             (nav_msgs/Path)  [DEBUG] 스테이지1 경로 시각화/디버그용
@@ -89,9 +63,9 @@ class PlannerNode(Node):
 
         # Parameters
         self.declare_parameter('yaw_offset_deg', 30.0)      # 좌측 선회 각도
-        self.declare_parameter('s_overshoot', 0.6)          # (구버전) 슬롯 중심을 얼마나 지나칠지 [m]
-        self.declare_parameter('front_margin', 0.5)         # 위쪽(전방) 경계선에서 추가 전방 여유 [m]
-        self.declare_parameter('clear_lateral', 0.1)        # 도로쪽 여유 [m]
+        self.declare_parameter('s_overshoot', 1.0)          # (구버전) 슬롯 중심을 얼마나 지나칠지 [m]
+        self.declare_parameter('front_margin', 1.0)         # 위쪽(전방) 경계선에서 추가 전방 여유 [m]
+        self.declare_parameter('clear_lateral', 2.0)        # 도로쪽 여유 [m]
         self.declare_parameter('default_slot_len', 5.0)     # 추정 실패 시 기본 L
         self.declare_parameter('default_slot_width', 2.5)   # 추정 실패 시 기본 W
         self.declare_parameter('angle_eps_deg', 5.0)       # 평행/수직 분류 각 허용치
@@ -109,11 +83,11 @@ class PlannerNode(Node):
         self.declare_parameter('show_stage1_path', True)     # 시각화용: 기본 비활성
         # Stage-2 goal rule
         self.declare_parameter('stage2_use_map_y_offset', True)
-        self.declare_parameter('stage2_goal_offset_y', -1.0)  # map 프레임 y에서 -1m
-        self.declare_parameter('stage2_back_offset', 1.0)     # 슬롯 진행축 기준 뒤로 1m (fallback)
+        self.declare_parameter('stage2_goal_offset_y', 0.0)  # map 프레임 y에서 -1m
+        self.declare_parameter('stage2_back_offset', 0.0)     # 슬롯 진행축 기준 뒤로 1m (fallback)
         self.declare_parameter('stage2_straight_only', True)  # 원호 없이 직선 경로만 생성
         # Stage-2 guided reverse (no explicit goal pose)
-        self.declare_parameter('stage2_guided', False)
+        self.declare_parameter('stage2_guided', True)
         self.declare_parameter('stage2_inside_margin', 0.2)
         self.declare_parameter('stage2_k_lat', 0.8)
         self.declare_parameter('stage2_k_yaw', 0.8)
@@ -123,10 +97,10 @@ class PlannerNode(Node):
         self.declare_parameter('stage3_preview', True)
         # General stage control
         self.declare_parameter('auto_advance', True)            # 오돔 기반 자동 스테이지 전환
-        self.declare_parameter('prefer_odom', True)             # 시작자세로 odom 우선 사용
+        # self.declare_parameter('prefer_odom', True)             # 더 이상 사용하지 않음 - location만 사용
         self.declare_parameter('stage_position_tolerance', 0.25)  # [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 8.0)    # [deg]
-        self.declare_parameter('publish_unified_waypoints', True)  # 현재 스테이지만 /waypoints(및 points) 퍼블리시
+        self.declare_parameter('publish_unified_waypoints', False)  # 현재 스테이지만 /waypoints(및 points) 퍼블리시
         # Delivery mission
         self.declare_parameter('delivery_position_tolerance', 0.3)
         self.declare_parameter('delivery_yaw_tolerance_deg', 12.0)
@@ -137,12 +111,11 @@ class PlannerNode(Node):
         self.declare_parameter('frame_id', 'map')
 
         # State
-        self._open_slot_pose: Optional[PoseStamped] = None
-        self._current_pose: Optional[PoseStamped] = None
+        self._parking_pose: Optional[PoseStamped] = None
         self._odom: Optional[Odometry] = None
-        self._segments: List[Segment] = []
-        self._lane_left_pts: List[Tuple[float, float]] = []
-        self._lane_right_pts: List[Tuple[float, float]] = []
+        # 주차 패키지에서 받은 정보들
+        self._parking_area_idx: Optional[int] = None
+        self._stable_cones: List[Obstacle] = []
         self._last_stage1_goal: Optional[PoseStamped] = None
         self._last_stage2_goal: Optional[PoseStamped] = None
         self._last_stage3_goal: Optional[PoseStamped] = None
@@ -158,6 +131,10 @@ class PlannerNode(Node):
         self._delivery_phase: str = 'pickup'  # 'pickup' then 'dropoff'
         self._delivery_pick_target: Optional[PoseStamped] = None
         self._delivery_drop_target: Optional[PoseStamped] = None
+        
+        # TF Buffer for coordinate transformation
+        self._tf_buffer = tf2_ros.Buffer()
+        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
         # Publishers
         # MAIN topic: 컨트롤 파트가 구독할 표준 토픽 (활성 스테이지 최신 경로)
@@ -183,14 +160,13 @@ class PlannerNode(Node):
         self._delivery_drop_points_pub = self.create_publisher(PoseArray, '/delivery_drop_waypoints', 10)
 
         # Subscribers
-        self.create_subscription(PoseStamped, '/open_slot_pose', self._on_open_slot_pose, 10)
-        # Prefer stable pose if available
-        self.create_subscription(PoseStamped, '/open_slot_pose_stable', self._on_open_slot_pose, 10)
-        self.create_subscription(ObstacleArray, '/virtual_walls', self._on_virtual_walls, 10)
-        self.create_subscription(PoseStamped, '/current_pose', self._on_current_pose, 10)
-        self.create_subscription(MarkerArray, '/road_markers', self._on_road_markers, 10)
+        # 주차 패키지 출력 구독
+        self.create_subscription(Int32, '/parking/open_area_idx', self._on_parking_area_idx, 10)
+        self.create_subscription(PoseStamped, '/parking/parking_pose', self._on_parking_pose, 10)
+        self.create_subscription(ObstacleArray, '/parking/cones_mapped_in_roi', self._on_stable_cones, 10)
+        # 기존 구독자들
         # Odom for stage completion/starting pose
-        self.create_subscription(Odometry, '/odom', self._on_odom, 20)
+        self.create_subscription(Odometry, '/autocar/location', self._on_odom, 20)
         # Optional stage selector interface (1,2,3)
         self.create_subscription(Int32, '/stage_selector', self._on_stage_selector, 10)
         # Mission selection and delivery inputs
@@ -207,42 +183,29 @@ class PlannerNode(Node):
         self.get_logger().info('Planner node started (Stage-1 goal computation).')
 
     # ───────────────────────────── Callbacks ─────────────────────────────
-    def _on_open_slot_pose(self, msg: PoseStamped) -> None:
-        self._open_slot_pose = msg
+    def _on_parking_area_idx(self, msg: Int32) -> None:
+        """주차 공간 인덱스 수신"""
+        self._parking_area_idx = int(msg.data)
+        self.get_logger().info(f'Parking area idx: {self._parking_area_idx}')
         self._maybe_publish_goal()
 
-    def _on_current_pose(self, msg: PoseStamped) -> None:
-        self._current_pose = msg
-
-    def _on_virtual_walls(self, msg: ObstacleArray) -> None:
-        self._segments = self._parse_segments(msg)
+    def _on_parking_pose(self, msg: PoseStamped) -> None:
+        """주차 포즈 수신"""
+        self._parking_pose = msg
+        self.get_logger().info(f'Parking pose: ({msg.pose.position.x:.2f}, {msg.pose.position.y:.2f})')
         self._maybe_publish_goal()
 
-    def _on_road_markers(self, msg: MarkerArray) -> None:
-        left: List[Tuple[float, float]] = []
-        right: List[Tuple[float, float]] = []
-        for mk in msg.markers:
-            if mk.type != Marker.LINE_STRIP or not mk.points:
-                continue
-            ns = mk.ns.lower() if mk.ns else ''
-            pts = [(float(p.x), float(p.y)) for p in mk.points]
-            if 'lane_left' in ns:
-                left.extend(pts)
-            elif 'lane_right' in ns:
-                right.extend(pts)
-        self._lane_left_pts = left
-        self._lane_right_pts = right
+    def _on_stable_cones(self, msg: ObstacleArray) -> None:
+        """안정화된 콘 정보 수신"""
+        self._stable_cones = msg.obstacles
+        self.get_logger().info(f'Received {len(self._stable_cones)} stable cones')
+        self._maybe_publish_goal()
+
 
     def _on_odom(self, msg: Odometry) -> None:
         self._odom = msg
-        # 스테이지 완료 평가 및 자동 전환
-        try:
-            if bool(self.get_parameter('auto_advance').value):
-                if self._evaluate_and_advance_stage():
-                    # 전환되면 즉시 재계산/퍼블리시
-                    self._maybe_publish_goal()
-        except Exception as e:
-            self.get_logger().warn(f'Odometry stage evaluation error: {e}')
+        # 스테이지 전환 체크를 위해 _maybe_publish_goal 호출
+        self._maybe_publish_goal()
 
     def _on_stage_selector(self, msg: Int32) -> None:
         val = int(msg.data)
@@ -325,105 +288,46 @@ class PlannerNode(Node):
             self._maybe_publish_delivery()
         else:
             self._maybe_publish_goal()
-    def _parse_segments(self, msg: ObstacleArray) -> List[Segment]:
-        segments: List[Segment] = []
-        for obs in msg.obstacles:
-            desc = obs.description or ''
-            if not desc.startswith('seg:'):
-                continue
-            try:
-                # format: seg:x1,y1,x2,y2,width
-                payload = desc.split(':', 1)[1]
-                x1, y1, x2, y2, width = [float(x) for x in payload.split(',')]
-                segments.append(Segment(x1=x1, y1=y1, x2=x2, y2=y2, width=width))
-            except Exception:
-                # Ignore malformed segments
-                continue
-        return segments
+    def _get_slot_dimensions_from_area_idx(self, area_idx: int) -> Tuple[float, float]:
+        """모든 슬롯은 동일한 크기: 길이 5m, 폭 2.5m"""
+        return 5.0, 2.5  # 모든 슬롯 동일
 
-    
-
-    def _estimate_slot_dimensions(self, yaw_slot: float, center: Tuple[float, float]) -> Tuple[float, float]:
-        """Estimate (L, W) using virtual wall segments oriented w.r.t yaw_slot.
-
-        Strategy: classify segments into longitudinal (parallel) and lateral (perpendicular)
-        relative to yaw_slot, then take median lengths. Optionally focus on segments near the
-        open slot center.
-        """
-        if not self._segments:
-            return (
-                float(self.get_parameter('default_slot_len').value),
-                float(self.get_parameter('default_slot_width').value),
-            )
-
-        angle_eps = math.radians(float(self.get_parameter('angle_eps_deg').value))
-        prefer_near = bool(self.get_parameter('prefer_near_open_slot').value)
-        near_radius = float(self.get_parameter('near_radius').value)
-
-        cx, cy = center
-        long_lengths: List[float] = []
-        lat_lengths: List[float] = []
-
-        for seg in self._segments:
-            if prefer_near:
-                if seg.distance_to_point(cx, cy) > near_radius:
-                    continue
-            diff = abs(wrap_to_pi(seg.angle - yaw_slot))
-            diff = min(diff, abs(math.pi - diff))  # account for 180° ambiguity
-            if diff < angle_eps:
-                long_lengths.append(seg.length)
-            elif abs(diff - math.pi / 2.0) < angle_eps:
-                lat_lengths.append(seg.length)
-
-        def median(values: List[float]) -> Optional[float]:
-            if not values:
-                return None
-            values_sorted = sorted(values)
-            n = len(values_sorted)
-            mid = n // 2
-            if n % 2 == 1:
-                return values_sorted[mid]
-            return 0.5 * (values_sorted[mid - 1] + values_sorted[mid])
-
-        L_est = median(long_lengths)
-        W_est = median(lat_lengths)
-
-        if L_est is None or W_est is None:
-            # Fallback to defaults
-            L_default = float(self.get_parameter('default_slot_len').value)
-            W_default = float(self.get_parameter('default_slot_width').value)
-            if L_est is None:
-                L_est = L_default
-            if W_est is None:
-                W_est = W_default
-
-        return float(L_est), float(W_est)
-
-    def _compute_centerline_lateral(self, center: Tuple[float, float], u_lat: Tuple[float, float]) -> Optional[float]:
-        """Compute lateral offset of road centerline from slot center along +u_lat.
-
-        Returns distance d such that centerline_point ≈ center + d * u_lat. None if unavailable.
-        """
-        if not (self._lane_left_pts and self._lane_right_pts):
+    def _transform_odom_to_map(self, odom: Odometry) -> Optional[PoseStamped]:
+        """Odometry를 map 프레임으로 변환"""
+        try:
+            # Odometry를 PoseStamped로 변환
+            pose_stamped = PoseStamped()
+            pose_stamped.header = odom.header
+            pose_stamped.pose = odom.pose.pose
+            
+            # map 프레임으로 변환
+            transformed_pose = self._tf_buffer.transform(pose_stamped, 'map', timeout=rclpy.duration.Duration(seconds=1.0))
+            return transformed_pose
+        except Exception as e:
+            self.get_logger().warn(f"TF transformation failed: {e}")
             return None
-        def avg_xy(pts: List[Tuple[float, float]]) -> Tuple[float, float]:
-            sx = sum(p[0] for p in pts); sy = sum(p[1] for p in pts)
-            n = max(1, len(pts))
-            return (sx / n, sy / n)
-        lx, ly = avg_xy(self._lane_left_pts)
-        rx, ry = avg_xy(self._lane_right_pts)
-        cx, cy = center
-        ux, uy = u_lat
-        d_left = (lx - cx) * ux + (ly - cy) * uy
-        d_right = (rx - cx) * ux + (ry - cy) * uy
-        return 0.5 * (d_left + d_right)
 
-    def _compute_stage1_goal(self, open_slot_pose: PoseStamped) -> Tuple[PoseStamped, MarkerArray]:
-        yaw_slot = quaternion_to_yaw(open_slot_pose.pose.orientation)
-        center = (open_slot_pose.pose.position.x, open_slot_pose.pose.position.y)
+    def _min_distance_to_cones(self, x: float, y: float) -> float:
+        """콘까지의 최소 거리 계산 (가상 벽 대체)"""
+        if not self._stable_cones:
+            return float('inf')
+        
+        min_dist = float('inf')
+        for cone in self._stable_cones:
+            dist = math.hypot(x - cone.center.x, y - cone.center.y) - cone.radius
+            min_dist = min(min_dist, dist)
+        
+        return min_dist
 
-        # Dimensions from virtual walls (with default fallback)
-        L, W = self._estimate_slot_dimensions(yaw_slot, center)
+    def _compute_stage1_goal(self, parking_pose: PoseStamped) -> Tuple[PoseStamped, MarkerArray]:
+        yaw_slot = quaternion_to_yaw(parking_pose.pose.orientation)
+        center = (parking_pose.pose.position.x, parking_pose.pose.position.y)
+
+        # Dimensions from parking area idx
+        if self._parking_area_idx is not None:
+            L, W = self._get_slot_dimensions_from_area_idx(self._parking_area_idx)
+        else:
+            L, W = 5.0, 2.5  # 기본값
 
         # Parameters
         # 목표는 "슬롯 위쪽 경계선까지 올라간 뒤" 정지
@@ -437,14 +341,8 @@ class PlannerNode(Node):
         u_long = (math.cos(yaw_slot), math.sin(yaw_slot))
         u_lat = (-math.sin(yaw_slot), math.cos(yaw_slot))  # road side is +u_lat
 
-        # Lateral placement: prefer road centerline, then fallback to slot-based offset
-        lateral = None
-        if bool(self.get_parameter('prefer_centerline_lateral').value):
-            lateral = self._compute_centerline_lateral(center, u_lat)
-            if lateral is not None:
-                lateral = lateral + float(self.get_parameter('centerline_left_margin').value)
-        if lateral is None:
-            lateral = (W / 2.0 + clear_lat)
+        # Lateral placement: slot-based offset (centerline 계산 제거)
+        lateral = (W / 2.0 + clear_lat)
 
         # Stop pose
         x_entry = center[0] + s_along * u_long[0] + lateral * u_lat[0]
@@ -452,7 +350,7 @@ class PlannerNode(Node):
         yaw_entry = wrap_to_pi(yaw_slot + yaw_offset)
 
         goal = PoseStamped()
-        goal.header = open_slot_pose.header
+        goal.header = parking_pose.header
         goal.pose.position.x = x_entry
         goal.pose.position.y = y_entry
         goal.pose.position.z = 0.0
@@ -518,12 +416,25 @@ class PlannerNode(Node):
         return goal, markers
 
     def _maybe_publish_goal(self) -> None:
+        """모든 Stage의 경로를 계산하고 통합 waypoint로 발행"""
         # 입력 필요 확인
-        if self._open_slot_pose is None:
+        if self._parking_pose is None:
+            self.get_logger().warn("DEBUG: _parking_pose is None, returning")
             return
+            
+        # 시작 자세: odom 직접 사용
+        if self._odom is None:
+            self.get_logger().warn("DEBUG: _odom is None, returning")
+            return
+            
+        # Location 변경 문제 해결: _odom을 로컬 변수로 복사
+        current_odom = self._odom
+        self.get_logger().info("DEBUG: Starting _maybe_publish_goal")
+        self.get_logger().info(f"DEBUG: Using odom: ({current_odom.pose.pose.position.x:.2f}, {current_odom.pose.pose.position.y:.2f})")
+
         # Stage-1 goal/markers는 항상 갱신(디버그 가시화)
         try:
-            stage1_goal, markers = self._compute_stage1_goal(self._open_slot_pose)
+            stage1_goal, markers = self._compute_stage1_goal(self._parking_pose)
             self._last_stage1_goal = stage1_goal
             self._goal_pub.publish(stage1_goal)
             self._vis_pub.publish(markers)
@@ -531,86 +442,124 @@ class PlannerNode(Node):
             self.get_logger().warn(f'Stage-1 goal computation failed: {e}')
             return
 
-        # 현재 활성 스테이지 결정(외부 셀렉터 우선)
-        active_stage = self._stage
-
-        # 시작 자세: prefer odom
-        start_pose = self._get_start_pose()
-
-        publish_unified = bool(self.get_parameter('publish_unified_waypoints').value)
-
-        # Stage별 생성/퍼블리시
-        if active_stage == 1:
-            if start_pose is None:
-                return
-            if bool(self.get_parameter('show_stage1_path').value):
-                path_msg = self._compute_stage1_path(start_pose, stage1_goal)
-                if path_msg is not None:
-                    self._path_pub.publish(path_msg)
-                    self._publish_points(self._stage1_points_pub, path_msg)
-                    if publish_unified:
-                        self._waypoints_pub.publish(path_msg)
-                        self._publish_points(self._waypoints_points_pub, path_msg)
-
-        elif active_stage == 2:
-            # 목표/경로 생성
-            if bool(self.get_parameter('stage2_guided').value):
-                path = self._compute_stage2_path_guided(start_pose, self._open_slot_pose) if start_pose is not None else None
-                if path is not None:
-                    self._stage2_path_pub.publish(path)
-                    self._publish_points(self._stage2_points_pub, path)
-                    if publish_unified:
-                        self._waypoints_pub.publish(path)
-                        self._publish_points(self._waypoints_points_pub, path)
-                # guided라도 기준 goal은 참고용으로 발행
-                g2 = self._compute_stage2_goal(self._open_slot_pose)
-                if g2 is not None:
-                    self._last_stage2_goal = g2
-                    self._stage2_goal_pub.publish(g2)
+        # 스테이지 전환 체크
+        stage_advanced = self._check_stage_advancement()
+        if stage_advanced:
+            self.get_logger().info(f"Stage advanced to: {self._stage}")
+        
+        # 현재 스테이지에 맞는 경로만 계산하고 퍼블리시
+        current_path = None
+        
+        if self._stage == 1:
+            # Stage 1 경로
+            show_stage1 = bool(self.get_parameter('show_stage1_path').value)
+            if show_stage1:
+                self.get_logger().info("DEBUG: Computing stage1 path...")
+                try:
+                    current_path = self._compute_stage1_path(current_odom, stage1_goal)
+                    if current_path is not None:
+                        self._path_pub.publish(current_path)
+                        self._publish_points(self._stage1_points_pub, current_path)
+                        self.get_logger().info(f"Stage 1 path: {len(current_path.poses)} points")
+                    else:
+                        self.get_logger().warn("DEBUG: Stage1 path is None")
+                except Exception as e:
+                    self.get_logger().error(f"Stage 1 path computation failed: {e}")
+                    import traceback
+                    self.get_logger().error(f"Traceback: {traceback.format_exc()}")
+        
+        elif self._stage == 2:
+            # Stage 2 골과 경로
+            stage2_goal = self._compute_stage2_goal(self._parking_pose)
+            if stage2_goal is not None:
+                self._stage2_goal_pub.publish(stage2_goal)
+                self.get_logger().info(f"Stage 2 goal published: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
+                
+                # Stage 2 경로 계산
+                if bool(self.get_parameter('stage2_guided').value):
+                    current_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
+                else:
+                    current_path = self._compute_stage2_path(current_odom, stage2_goal)
+                
+                if current_path is not None:
+                    self._stage2_path_pub.publish(current_path)
+                    self._publish_points(self._stage2_points_pub, current_path)
+                    self.get_logger().info(f"Stage 2 path: {len(current_path.poses)} points")
             else:
-                g2 = self._compute_stage2_goal(self._open_slot_pose)
-                if g2 is not None:
-                    self._last_stage2_goal = g2
-                    self._stage2_goal_pub.publish(g2)
-                    path = self._compute_stage2_path(start_pose, g2) if start_pose is not None else None
-                    if path is not None:
-                        self._stage2_path_pub.publish(path)
-                        self._publish_points(self._stage2_points_pub, path)
-                        if publish_unified:
-                            self._waypoints_pub.publish(path)
-                            self._publish_points(self._waypoints_points_pub, path)
-
-        elif active_stage == 3:
-            g3 = self._compute_stage3_goal(self._open_slot_pose)
-            if g3 is not None:
-                self._last_stage3_goal = g3
-                self._stage3_goal_pub.publish(g3)
-            if start_pose is not None:
-                yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
-                path3 = self._compute_stage3_path(start_pose, yaw_slot)
-                if path3 is not None and path3.poses:
-                    self._stage3_path_pub.publish(path3)
-                    self._publish_points(self._stage3_points_pub, path3)
-                    if publish_unified:
-                        self._waypoints_pub.publish(path3)
-                        self._publish_points(self._waypoints_points_pub, path3)
-
-        # Preview는 스테이지 3에서만, 내부에 있을 때 옵션으로 유지
-        if active_stage == 3 and bool(self.get_parameter('stage3_preview').value) and start_pose is not None and self._open_slot_pose is not None:
-            yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
-            center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
-            L, W = self._estimate_slot_dimensions(yaw_slot, center)
-            margin = float(self.get_parameter('stage2_inside_margin').value)
-            if self._inside_slot(start_pose.pose.position.x,
-                                 start_pose.pose.position.y,
-                                 center, yaw_slot, L, W, margin):
-                path3 = self._compute_stage3_path(start_pose, yaw_slot)
-                if path3 is not None and path3.poses:
-                    self._stage3_path_pub.publish(path3)
-                    self._publish_points(self._stage3_points_pub, path3)
-                    if publish_unified:
-                        self._waypoints_pub.publish(path3)
-                        self._publish_points(self._waypoints_points_pub, path3)
+                self.get_logger().warn("DEBUG: Stage 2 goal is None")
+        
+        elif self._stage == 3:
+            # Stage 3 골과 경로
+            stage3_goal = self._compute_stage3_goal(self._parking_pose)
+            if stage3_goal is not None:
+                self._stage3_goal_pub.publish(stage3_goal)
+                self.get_logger().info(f"Stage 3 goal published: ({stage3_goal.pose.position.x:.2f}, {stage3_goal.pose.position.y:.2f})")
+                yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
+                current_path = self._compute_stage3_path(current_odom, yaw_slot)
+                
+                if current_path is not None:
+                    self._stage3_path_pub.publish(current_path)
+                    self._publish_points(self._stage3_points_pub, current_path)
+                    self.get_logger().info(f"Stage 3 path: {len(current_path.poses)} points")
+            else:
+                self.get_logger().warn("DEBUG: Stage 3 goal is None")
+        
+        # 현재 스테이지 경로를 /waypoints 토픽으로 퍼블리시
+        if current_path is not None:
+            self._waypoints_pub.publish(current_path)
+            self._publish_points(self._waypoints_points_pub, current_path)
+            self.get_logger().info(f"Published stage {self._stage} waypoints: {len(current_path.poses)} points")
+        else:
+            self.get_logger().warn(f"No path available for stage {self._stage}")
+        
+        # DEBUG: 모든 스테이지 골과 경로도 퍼블리시 (시각화용)
+        self._publish_all_debug_paths(current_odom)
+    
+    def _publish_all_debug_paths(self, current_odom: Odometry) -> None:
+        """모든 스테이지의 골과 경로를 DEBUG 토픽으로 퍼블리시 (시각화용)"""
+        try:
+            # Stage 1 골과 경로 (항상 퍼블리시)
+            stage1_goal = self._compute_stage1_goal()
+            if stage1_goal is not None:
+                self._goal_pub.publish(stage1_goal)
+                self._last_stage1_goal = stage1_goal
+                
+                show_stage1 = bool(self.get_parameter('show_stage1_path').value)
+                if show_stage1:
+                    stage1_path = self._compute_stage1_path(current_odom, stage1_goal)
+                    if stage1_path is not None:
+                        self._path_pub.publish(stage1_path)
+                        self._publish_points(self._stage1_points_pub, stage1_path)
+            
+            # Stage 2 골과 경로
+            if self._parking_pose is not None:
+                stage2_goal = self._compute_stage2_goal(self._parking_pose)
+                if stage2_goal is not None:
+                    self._stage2_goal_pub.publish(stage2_goal)
+                    self._last_stage2_goal = stage2_goal
+                    
+                    if bool(self.get_parameter('stage2_guided').value):
+                        stage2_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
+                    else:
+                        stage2_path = self._compute_stage2_path(current_odom, stage2_goal)
+                    
+                    if stage2_path is not None:
+                        self._stage2_path_pub.publish(stage2_path)
+                        self._publish_points(self._stage2_points_pub, stage2_path)
+                
+                # Stage 3 골과 경로
+                stage3_goal = self._compute_stage3_goal(self._parking_pose)
+                if stage3_goal is not None:
+                    self._stage3_goal_pub.publish(stage3_goal)
+                    self._last_stage3_goal = stage3_goal
+                    
+                    yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
+                    stage3_path = self._compute_stage3_path(current_odom, yaw_slot)
+                    if stage3_path is not None:
+                        self._stage3_path_pub.publish(stage3_path)
+                        self._publish_points(self._stage3_points_pub, stage3_path)
+        except Exception as e:
+            self.get_logger().warn(f"Debug paths publishing failed: {e}")
 
     # ───────────────────────────── Delivery Mission ──────────────────────
     def _maybe_publish_delivery(self) -> None:
@@ -674,9 +623,9 @@ class PlannerNode(Node):
         """
         if not spots.poses:
             return None
-        sx = float(start_pose.pose.position.x)
-        sy = float(start_pose.pose.position.y)
-        yaw = quaternion_to_yaw(start_pose.pose.orientation)
+        sx = float(start_pose.pose.pose.position.x)
+        sy = float(start_pose.pose.pose.position.y)
+        yaw = quaternion_to_yaw(start_pose.pose.pose.orientation)
         fx = math.cos(yaw); fy = math.sin(yaw)
         best = None
         best_dist = None
@@ -713,8 +662,8 @@ class PlannerNode(Node):
         - 포즈 방향은 순간 방향(atan2(dy,dx))으로 설정.
         """
         ds = float(self.get_parameter('path_resolution').value)
-        x0 = float(start_pose.pose.position.x)
-        y0 = float(start_pose.pose.position.y)
+        x0 = float(start_pose.pose.pose.position.x)
+        y0 = float(start_pose.pose.pose.position.y)
         x1 = float(goal.pose.position.x)
         y1 = float(goal.pose.position.y)
         dx = x1 - x0; dy = y1 - y0
@@ -728,7 +677,7 @@ class PlannerNode(Node):
             pose = PoseStamped(); pose.header = path.header
             pose.pose.position.x = px
             pose.pose.position.y = py
-            yaw = math.atan2(dy, dx) if L > 1e-6 else quaternion_to_yaw(start_pose.pose.orientation)
+            yaw = math.atan2(dy, dx) if L > 1e-6 else quaternion_to_yaw(start_pose.pose.pose.orientation)
             pose.pose.orientation = yaw_to_quaternion(yaw)
             path.poses.append(pose)
         return path
@@ -738,8 +687,8 @@ class PlannerNode(Node):
         - 목표 헤딩은 start→sign 방향을 사용.
         - 헤더 프레임은 map으로 유지.
         """
-        sx = float(start_pose.pose.position.x)
-        sy = float(start_pose.pose.position.y)
+        sx = float(start_pose.pose.pose.position.x)
+        sy = float(start_pose.pose.pose.position.y)
         gx = float(sign_pose.pose.position.x)
         gy = float(sign_pose.pose.position.y)
         dx = gx - sx
@@ -759,13 +708,13 @@ class PlannerNode(Node):
         return goal
 
     def _get_start_pose(self) -> Optional[PoseStamped]:
-        prefer_odom = bool(self.get_parameter('prefer_odom').value)
-        if prefer_odom and self._odom is not None:
+        # 실제 대회에서는 /autocar/location만 사용
+        if self._odom is not None:
             ps = PoseStamped()
             ps.header = self._odom.header
             ps.pose = self._odom.pose.pose
             return ps
-        return self._current_pose
+        return None
 
     def _publish_points(self, pub, path: Path) -> None:
         arr = PoseArray()
@@ -780,41 +729,57 @@ class PlannerNode(Node):
     def _evaluate_and_advance_stage(self) -> bool:
         """오돔 기반으로 현재 스테이지 완료를 평가하고 필요 시 다음 스테이지로 전환.
         Returns True if stage was advanced."""
-        start_pose = self._get_start_pose()
-        if start_pose is None or self._open_slot_pose is None:
+        if self._odom is None or self._parking_pose is None:
             return False
         pos_tol = float(self.get_parameter('stage_position_tolerance').value)
         yaw_tol = math.radians(float(self.get_parameter('stage_yaw_tolerance_deg').value))
 
         if self._stage == 1 and self._last_stage1_goal is not None:
-            if self._is_near_pose(start_pose, self._last_stage1_goal, pos_tol, yaw_tol):
+            # Odometry를 PoseStamped로 변환
+            current_pose = PoseStamped()
+            current_pose.header = self._odom.header
+            current_pose.pose = self._odom.pose.pose
+            if self._is_near_pose(current_pose, self._last_stage1_goal, pos_tol, yaw_tol):
                 self._stage = 2
                 self.get_logger().info('Stage-1 complete -> Stage-2')
                 return True
 
         elif self._stage == 2:
             if bool(self.get_parameter('stage2_guided').value):
-                yaw_slot = quaternion_to_yaw(self._open_slot_pose.pose.orientation)
-                center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
-                L, W = self._estimate_slot_dimensions(yaw_slot, center)
+                yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
+                center = (self._parking_pose.pose.position.x, self._parking_pose.pose.position.y)
+                if self._parking_area_idx is not None:
+                    L, W = self._get_slot_dimensions_from_area_idx(self._parking_area_idx)
+                else:
+                    L, W = 5.0, 2.5
                 margin = float(self.get_parameter('stage2_inside_margin').value)
-                if self._inside_slot(start_pose.pose.position.x, start_pose.pose.position.y, center, yaw_slot, L, W, margin):
+                if self._inside_slot(self._odom.pose.pose.position.x, self._odom.pose.pose.position.y, center, yaw_slot, L, W, margin):
                     self._stage = 3
                     self.get_logger().info('Stage-2 (guided) complete -> Stage-3')
                     return True
             else:
-                if self._last_stage2_goal is not None and self._is_near_pose(start_pose, self._last_stage2_goal, pos_tol, yaw_tol):
-                    self._stage = 3
-                    self.get_logger().info('Stage-2 complete -> Stage-3')
-                    return True
+                if self._last_stage2_goal is not None:
+                    # Odometry를 PoseStamped로 변환
+                    current_pose = PoseStamped()
+                    current_pose.header = self._odom.header
+                    current_pose.pose = self._odom.pose.pose
+                    if self._is_near_pose(current_pose, self._last_stage2_goal, pos_tol, yaw_tol):
+                        self._stage = 3
+                        self.get_logger().info('Stage-2 complete -> Stage-3')
+                        return True
 
         elif self._stage == 3:
             # 목표: 슬롯 중심에서 yaw 정렬
-            g3 = self._last_stage3_goal or self._compute_stage3_goal(self._open_slot_pose)
-            if g3 is not None and self._is_near_pose(start_pose, g3, pos_tol, yaw_tol):
-                # 최종 완료. 여기서는 유지(또는 1로 리셋)
-                self.get_logger().info('Stage-3 complete (mission done)')
-                return False
+            g3 = self._last_stage3_goal or self._compute_stage3_goal(self._parking_pose)
+            if g3 is not None:
+                # Odometry를 PoseStamped로 변환
+                current_pose = PoseStamped()
+                current_pose.header = self._odom.header
+                current_pose.pose = self._odom.pose.pose
+                if self._is_near_pose(current_pose, g3, pos_tol, yaw_tol):
+                    # 최종 완료. 여기서는 유지(또는 1로 리셋)
+                    self.get_logger().info('Stage-3 complete (mission done)')
+                    return False
 
         return False
 
@@ -828,81 +793,76 @@ class PlannerNode(Node):
         return (dist <= pos_tol) and (dyaw <= yaw_tol)
 
     # ───────────────────────────── Utilities ─────────────────────────────
-    def _min_distance_to_walls(self, x: float, y: float) -> float:
-        if not self._segments:
-            return float('inf')
-        return min(seg.distance_to_point(x, y) for seg in self._segments)
+    # _min_distance_to_walls 함수 제거 - _min_distance_to_cones로 대체됨
 
-    def _compute_stage1_path(self, current_pose: Optional[PoseStamped], goal: PoseStamped) -> Optional[Path]:
+    def _compute_stage1_path(self, current_pose: Odometry, goal: PoseStamped) -> Optional[Path]:
+        """현재 위치에서 Stage 1 골까지 직선 경로"""
         if current_pose is None:
+            self.get_logger().warn("DEBUG: current_pose is None in stage1 path")
             return None
-        # Parameters
-        R = float(self.get_parameter('turn_radius').value)
-        yaw_offset = math.radians(float(self.get_parameter('yaw_offset_deg').value))
-        ds = float(self.get_parameter('path_resolution').value)
-        vehicle_width = float(self.get_parameter('vehicle_width').value)
-        safety_margin = float(self.get_parameter('safety_margin').value)
-
-        # Goal geometry
-        yaw_g = quaternion_to_yaw(goal.pose.orientation)
-        u_left = (-math.sin(yaw_g), math.cos(yaw_g))
-        Cx = goal.pose.position.x + R * u_left[0]
-        Cy = goal.pose.position.y + R * u_left[1]
-        yaw_s = yaw_g - yaw_offset
-        u_left_s = (-math.sin(yaw_s), math.cos(yaw_s))
-        Psx = Cx - R * u_left_s[0]
-        Psy = Cy - R * u_left_s[1]
-
+        
+        # Odometry를 map 프레임으로 변환
+        transformed_pose = self._transform_odom_to_map(current_pose)
+        if transformed_pose is None:
+            self.get_logger().warn("DEBUG: Failed to transform odom to map frame")
+            return None
+        
+        self.get_logger().info(f"DEBUG: Stage1 path - current (map): ({transformed_pose.pose.position.x:.2f}, {transformed_pose.pose.position.y:.2f})")
+        self.get_logger().info(f"DEBUG: Stage1 path - goal: ({goal.pose.position.x:.2f}, {goal.pose.position.y:.2f})")
+        
         # Path message
         path = Path()
         path.header = goal.header
-
-        # 1) Straight from current -> Ps
-        x0 = current_pose.pose.position.x
-        y0 = current_pose.pose.position.y
-        dx = Psx - x0
-        dy = Psy - y0
-        L_line = math.hypot(dx, dy)
-        n_line = max(1, int(L_line / ds))
-        for i in range(n_line + 1):
-            t = i / max(1, n_line)
+        
+        # 현재 위치와 골 위치 (모두 map 프레임)
+        x0 = transformed_pose.pose.position.x
+        y0 = transformed_pose.pose.position.y
+        x1 = goal.pose.position.x
+        y1 = goal.pose.position.y
+        
+        # 직선 경로 생성
+        dx = x1 - x0
+        dy = y1 - y0
+        distance = math.hypot(dx, dy)
+        
+        if distance < 1e-6:  # 거리가 너무 작으면
+            self.get_logger().warn("DEBUG: Stage1 path distance too small")
+            return None
+        
+        # 경로 해상도
+        ds = float(self.get_parameter('path_resolution').value)
+        n_points = max(1, int(distance / ds))
+        
+        for i in range(n_points + 1):
+            t = i / n_points
             px = x0 + t * dx
             py = y0 + t * dy
+            
             pose = PoseStamped()
             pose.header = path.header
             pose.pose.position.x = px
             pose.pose.position.y = py
-            pose.pose.orientation = yaw_to_quaternion(math.atan2(dy, dx) if L_line > 1e-6 else yaw_s)
+            pose.pose.position.z = 0.0
+            pose.pose.orientation = yaw_to_quaternion(math.atan2(dy, dx))
             path.poses.append(pose)
-
-        # 2) Left arc from yaw_s -> yaw_g, center C, radius R
-        arc_len = abs(yaw_offset) * R
-        n_arc = max(1, int(arc_len / ds))
-        for j in range(1, n_arc + 1):
-            th = yaw_s + (yaw_offset) * (j / n_arc)
-            n_left = (-math.sin(th), math.cos(th))
-            px = Cx - R * n_left[0]
-            py = Cy - R * n_left[1]
-            pose = PoseStamped()
-            pose.header = path.header
-            pose.pose.position.x = px
-            pose.pose.position.y = py
-            pose.pose.orientation = yaw_to_quaternion(th)
-            path.poses.append(pose)
-
-        # 3) Simple collision audit against virtual walls
-        width = float(self.get_parameter('vehicle_width').value)
-        length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
-        eff_radius = 0.5 * math.hypot(width, length) + safety_margin
+        
+        # 충돌 검사
+        vehicle_width = float(self.get_parameter('vehicle_width').value)
+        vehicle_length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
+        safety_margin = float(self.get_parameter('safety_margin').value)
+        eff_radius = 0.5 * math.hypot(vehicle_width, vehicle_length) + safety_margin
+        
         collided = False
         for p in path.poses:
-            d = self._min_distance_to_walls(p.pose.position.x, p.pose.position.y)
+            d = self._min_distance_to_cones(p.pose.position.x, p.pose.position.y)
             if d < eff_radius:
                 collided = True
                 break
+        
         if collided:
-            self.get_logger().warn('Stage-1 path may collide with virtual walls. Consider increasing front_margin/clear_lateral/turn_radius.')
-
+            self.get_logger().warn('Stage-1 path may collide with cones. Consider increasing front_margin/clear_lateral.')
+        
+        self.get_logger().info(f"DEBUG: Stage1 path generated with {len(path.poses)} points")
         return path
 
     # ───────────────── Stage-2 Guided reverse (no fixed goal) ────────────
@@ -919,13 +879,17 @@ class PlannerNode(Node):
         x_l, y_l = self._to_slot_frame(px, py, center, yaw_slot)
         return (-L/2.0 + margin <= x_l <= L/2.0 - margin) and (-W/2.0 + margin <= y_l <= W/2.0 - margin)
 
-    def _compute_stage2_path_guided(self, start_pose: Optional[PoseStamped], open_slot_pose: Optional[PoseStamped]) -> Optional[Path]:
+    def _compute_stage2_path_guided(self, start_pose: Odometry, open_slot_pose: Optional[PoseStamped]) -> Optional[Path]:
         if start_pose is None or open_slot_pose is None:
+            self.get_logger().warn("DEBUG: start_pose or open_slot_pose is None in stage2 guided")
             return None
         # Slot geometry
         yaw_slot = quaternion_to_yaw(open_slot_pose.pose.orientation)
         center = (open_slot_pose.pose.position.x, open_slot_pose.pose.position.y)
-        L, W = self._estimate_slot_dimensions(yaw_slot, center)
+        if self._parking_area_idx is not None:
+            L, W = self._get_slot_dimensions_from_area_idx(self._parking_area_idx)
+        else:
+            L, W = 5.0, 2.5  # 기본값
 
         # Params
         ds = float(self.get_parameter('path_resolution').value)
@@ -938,78 +902,86 @@ class PlannerNode(Node):
         vehicle_width = float(self.get_parameter('vehicle_width').value)
         safety_margin = float(self.get_parameter('safety_margin').value)
 
-        # Initialize
-        x = start_pose.pose.position.x
-        y = start_pose.pose.position.y
-        yaw = quaternion_to_yaw(start_pose.pose.orientation)
+        # Initialize - UTM 좌표를 map 프레임으로 변환
+        transformed_pose = self._transform_odom_to_map(start_pose)
+        if transformed_pose is None:
+            self.get_logger().warn("DEBUG: Failed to transform odom to map frame in stage2")
+            return None
+            
+        x = transformed_pose.pose.position.x
+        y = transformed_pose.pose.position.y
+        yaw = quaternion_to_yaw(transformed_pose.pose.orientation)
         path = Path(); path.header = open_slot_pose.header
 
-        u_long = (math.cos(yaw_slot), math.sin(yaw_slot))
-        # Target point: 슬롯 뒤쪽 내부 한 점 (센터에서 -L/2+margin)
-        target_x = - (L / 2.0 - margin)
-        target_world = (
-            center[0] + target_x * u_long[0],
-            center[1] + target_x * u_long[1],
-        )
+        # Stage 2 골을 먼저 계산해서 target으로 사용
+        stage2_goal = self._compute_stage2_goal(open_slot_pose)
+        if stage2_goal is None:
+            self.get_logger().warn("DEBUG: Failed to compute stage2 goal")
+            return None
+        
+        # Stage 2 골의 좌표를 target으로 사용
+        target_world = (stage2_goal.pose.position.x, stage2_goal.pose.position.y)
+        
+        self.get_logger().info(f"DEBUG: Stage2 start - current: ({x:.2f}, {y:.2f}), target: ({target_world[0]:.2f}, {target_world[1]:.2f})")
+        self.get_logger().info(f"DEBUG: Stage2 start - distance to target: {math.hypot(target_world[0] - x, target_world[1] - y):.2f}")
 
-        # Guidance loop: reverse pure-pursuit towards target point
-        for step in range(max_steps):
-            pose = PoseStamped(); pose.header = path.header
-            pose.pose.position.x = x; pose.pose.position.y = y; pose.pose.orientation = yaw_to_quaternion(yaw)
-            path.poses.append(pose)
-
-            if self._inside_slot(x, y, center, yaw_slot, L, W, margin):
-                break
-
-            # Heading to target
-            dx = target_world[0] - x
-            dy = target_world[1] - y
-            heading_to_target = math.atan2(dy, dx)
-            # Pure pursuit curvature (reverse: 동일 공식, 통합에서 후진 적용)
-            alpha = wrap_to_pi(heading_to_target - yaw)
-            kappa_cmd = 2.0 * math.sin(alpha) / max(Ld, 1e-3)
-            # Blend with error-based term for stability near axis
-            x_l, y_l = self._to_slot_frame(x, y, center, yaw_slot)
-            e_lat = y_l
-            e_yaw = wrap_to_pi(yaw_slot - yaw)
-            kappa_cmd += k_lat * e_lat + k_yaw * e_yaw
-            kappa_cmd = max(min(kappa_cmd, 1.0 / max(1e-3, R)), -1.0 / max(1e-3, R))
-
-            # Integrate one backward step
-            yaw_new = wrap_to_pi(yaw - kappa_cmd * ds)  # backward: heading change sign flipped
-            x_new = x - ds * math.cos(yaw)
-            y_new = y - ds * math.sin(yaw)
-
-            # Collision guard
+        # 직선 경로 생성 (Stage 1과 동일한 방식)
+        x0, y0 = x, y
+        dx = target_world[0] - x0
+        dy = target_world[1] - y0
+        distance = math.hypot(dx, dy)
+        n_points = max(1, int(distance / ds))
+        
+        self.get_logger().info(f"DEBUG: Stage2 straight line - distance: {distance:.2f}, points: {n_points}")
+        
+        for i in range(n_points + 1):
+            t = i / n_points
+            px = x0 + t * dx
+            py = y0 + t * dy
+            
+            # 충돌 검사
             width = float(self.get_parameter('vehicle_width').value)
             length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
             eff_radius = 0.5 * math.hypot(width, length) + safety_margin
-            if self._min_distance_to_walls(x_new, y_new) < eff_radius:
-                self.get_logger().warn('Stage-2 guided step would collide with virtual wall. Stopping early.')
+            if self._min_distance_to_cones(px, py) < eff_radius:
+                self.get_logger().warn(f'Stage-2 straight line would collide with cone at point {i}. Stopping early.')
                 break
+                
+            pose = PoseStamped()
+            pose.header = path.header
+            pose.pose.position.x = px
+            pose.pose.position.y = py
+            pose.pose.position.z = 0.0
+            pose.pose.orientation = yaw_to_quaternion(math.atan2(dy, dx))
+            path.poses.append(pose)
 
-            x, y, yaw = x_new, y_new, yaw_new
-
+        self.get_logger().info(f"DEBUG: Stage2 path generated with {len(path.poses)} points")
         return path if path.poses else None
 
     # ───────────────────────────── Stage-3 (align heading) ───────────────
-    def _compute_stage3_path(self, start_pose: PoseStamped, yaw_slot: float) -> Optional[Path]:
-        yaw_s = quaternion_to_yaw(start_pose.pose.orientation)
+    def _compute_stage3_path(self, start_pose: Odometry, yaw_slot: float) -> Optional[Path]:
+        # UTM 좌표를 map 프레임으로 변환
+        transformed_pose = self._transform_odom_to_map(start_pose)
+        if transformed_pose is None:
+            self.get_logger().warn("DEBUG: Failed to transform odom to map frame in stage3")
+            return None
+            
+        yaw_s = quaternion_to_yaw(transformed_pose.pose.orientation)
         dyaw = wrap_to_pi(yaw_slot - yaw_s)
         tol = math.radians(float(self.get_parameter('stage3_yaw_tol_deg').value)) if self.has_parameter('stage3_yaw_tol_deg') else math.radians(5.0)
         ds = float(self.get_parameter('path_resolution').value)
         R = float(self.get_parameter('stage3_turn_radius').value) if self.has_parameter('stage3_turn_radius') else 2.0
         forward_extra = float(self.get_parameter('stage3_forward').value) if self.has_parameter('stage3_forward') else 0.4
 
-        path = Path(); path.header = start_pose.header
+        path = Path(); path.header = transformed_pose.header
 
         # Slot geometry and safety for in-slot and collision guard
         center = None
         L = None
         W = None
-        if self._open_slot_pose is not None:
-            center = (self._open_slot_pose.pose.position.x, self._open_slot_pose.pose.position.y)
-            L, W = self._estimate_slot_dimensions(yaw_slot, center)
+        if self._parking_pose is not None:
+            center = (self._parking_pose.pose.position.x, self._parking_pose.pose.position.y)
+            L, W = self._get_slot_dimensions_from_area_idx(self._parking_area_idx) if self._parking_area_idx is not None else (5.0, 2.5)
         margin = float(self.get_parameter('stage2_inside_margin').value) if self.has_parameter('stage2_inside_margin') else 0.2
         width = float(self.get_parameter('vehicle_width').value)
         length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
@@ -1017,89 +989,97 @@ class PlannerNode(Node):
         eff_radius = 0.5 * math.hypot(width, length) + safety_margin
 
         if abs(dyaw) <= tol:
-            x0 = start_pose.pose.position.x
-            y0 = start_pose.pose.position.y
+            x0 = transformed_pose.pose.position.x
+            y0 = transformed_pose.pose.position.y
             n_steps = max(1, int(forward_extra / max(ds, 1e-3)))
+            self.get_logger().info(f"Stage-3: Generating {n_steps} steps from ({x0:.2f}, {y0:.2f}) with forward_extra={forward_extra:.2f}")
+            
+            # 슬롯 정보 디버그
+            if center is not None and L is not None and W is not None:
+                self.get_logger().info(f"Stage-3: Slot center=({center[0]:.2f}, {center[1]:.2f}), L={L:.2f}, W={W:.2f}, margin={margin:.2f}")
+                self.get_logger().info(f"Stage-3: Slot bounds: x=[{center[0]-L/2+margin:.2f}, {center[0]+L/2-margin:.2f}], y=[{center[1]-W/2+margin:.2f}, {center[1]+W/2-margin:.2f}]")
+            
             for i in range(n_steps + 1):
                 s = (forward_extra * i) / max(1, n_steps)
                 pose = PoseStamped(); pose.header = path.header
                 pose.pose.position.x = x0 + s * math.cos(yaw_s)
                 pose.pose.position.y = y0 + s * math.sin(yaw_s)
                 pose.pose.orientation = yaw_to_quaternion(yaw_s)
-                # Guards: stay inside slot and avoid virtual walls
+                
+                # Guards: stay inside slot and avoid cones
                 if center is not None and L is not None and W is not None:
-                    if not self._inside_slot(pose.pose.position.x, pose.pose.position.y, center, yaw_slot, L, W, margin):
+                    inside_slot = self._inside_slot(pose.pose.position.x, pose.pose.position.y, center, yaw_slot, L, W, margin)
+                    if not inside_slot:
+                        self.get_logger().warn(f'Stage-3: Point ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f}) outside slot bounds. Breaking.')
                         break
-                if self._min_distance_to_walls(pose.pose.position.x, pose.pose.position.y) < eff_radius:
-                    self.get_logger().warn('Stage-3 forward preview would collide with virtual wall. Truncating path.')
+                
+                cone_dist = self._min_distance_to_cones(pose.pose.position.x, pose.pose.position.y)
+                if cone_dist < eff_radius:
+                    self.get_logger().warn(f'Stage-3: Point ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f}) too close to cone (dist={cone_dist:.2f} < {eff_radius:.2f}). Breaking.')
                     break
+                
                 path.poses.append(pose)
+            
+            # 최소한 하나의 점은 생성
+            if not path.poses:
+                pose = PoseStamped(); pose.header = path.header
+                pose.pose.position.x = x0
+                pose.pose.position.y = y0
+                pose.pose.orientation = yaw_to_quaternion(yaw_s)
+                path.poses.append(pose)
+                self.get_logger().warn('Stage-3: Created minimal path with start pose only')
+            
+            self.get_logger().info(f"Stage-3: Generated {len(path.poses)} points")
             return path
 
-        turn_left = dyaw > 0.0
-        n_left_s = (-math.sin(yaw_s), math.cos(yaw_s))
-        Sx = start_pose.pose.position.x
-        Sy = start_pose.pose.position.y
-        if turn_left:
-            Cx = Sx + R * n_left_s[0]
-            Cy = Sy + R * n_left_s[1]
-        else:
-            Cx = Sx - R * n_left_s[0]
-            Cy = Sy - R * n_left_s[1]
-
-        n_steps = max(1, int((abs(dyaw) * R) / max(ds, 1e-3)))
-        for j in range(n_steps + 1):
-            th = yaw_s + dyaw * (j / max(1, n_steps))
-            nL = (-math.sin(th), math.cos(th))
-            if turn_left:
-                px = Cx - R * nL[0]
-                py = Cy - R * nL[1]
-            else:
-                px = Cx + R * nL[0]
-                py = Cy + R * nL[1]
-            pose = PoseStamped(); pose.header = path.header
-            pose.pose.position.x = px
-            pose.pose.position.y = py
-            pose.pose.orientation = yaw_to_quaternion(th)
-            # Guards: stay inside slot and avoid virtual walls
+        # 직선 경로 생성 (Stage 1, 2와 동일한 방식)
+        x0 = transformed_pose.pose.position.x
+        y0 = transformed_pose.pose.position.y
+        
+        # 목표: 현재 위치에서 yaw_slot 방향으로 forward_extra만큼 직진
+        target_x = x0 + forward_extra * math.cos(yaw_slot)
+        target_y = y0 + forward_extra * math.sin(yaw_slot)
+        
+        dx = target_x - x0
+        dy = target_y - y0
+        distance = math.hypot(dx, dy)
+        n_points = max(1, int(distance / ds))
+        
+        self.get_logger().info(f"DEBUG: Stage3 straight line - distance: {distance:.2f}, points: {n_points}")
+        
+        for i in range(n_points + 1):
+            t = i / n_points
+            px = x0 + t * dx
+            py = y0 + t * dy
+            
+            # 충돌 검사
             if center is not None and L is not None and W is not None:
                 if not self._inside_slot(px, py, center, yaw_slot, L, W, margin):
-                    self.get_logger().warn('Stage-3 arc would exit slot bounds. Truncating path.')
+                    self.get_logger().warn(f'Stage-3 straight line would exit slot bounds at point {i}. Stopping early.')
                     break
-            if self._min_distance_to_walls(px, py) < eff_radius:
-                self.get_logger().warn('Stage-3 arc would collide with virtual wall. Truncating path.')
+                    
+            if self._min_distance_to_cones(px, py) < eff_radius:
+                self.get_logger().warn(f'Stage-3 straight line would collide with cone at point {i}. Stopping early.')
                 break
-            path.poses.append(pose)
-
-        x_last = path.poses[-1].pose.position.x
-        y_last = path.poses[-1].pose.position.y
-        yaw_last = yaw_slot
-        n_steps2 = max(1, int(forward_extra / max(ds, 1e-3)))
-        for i in range(1, n_steps2 + 1):
-            s = (forward_extra * i) / max(1, n_steps2)
-            pose = PoseStamped(); pose.header = path.header
-            pose.pose.position.x = x_last + s * math.cos(yaw_last)
-            pose.pose.position.y = y_last + s * math.sin(yaw_last)
-            pose.pose.orientation = yaw_to_quaternion(yaw_last)
-            # Guards: stay inside slot and avoid virtual walls
-            if center is not None and L is not None and W is not None:
-                if not self._inside_slot(pose.pose.position.x, pose.pose.position.y, center, yaw_slot, L, W, margin):
-                    break
-            if self._min_distance_to_walls(pose.pose.position.x, pose.pose.position.y) < eff_radius:
-                self.get_logger().warn('Stage-3 forward extension would collide with virtual wall. Truncating path.')
-                break
+                
+            pose = PoseStamped()
+            pose.header = path.header
+            pose.pose.position.x = px
+            pose.pose.position.y = py
+            pose.pose.position.z = 0.0
+            pose.pose.orientation = yaw_to_quaternion(yaw_slot)
             path.poses.append(pose)
 
         return path
 
     # ───────────────────────────── Stage-2 (reverse) ─────────────────────
-    def _compute_stage2_goal(self, open_slot_pose: Optional[PoseStamped]) -> Optional[PoseStamped]:
-        if open_slot_pose is None:
+    def _compute_stage2_goal(self, parking_pose: Optional[PoseStamped]) -> Optional[PoseStamped]:
+        if parking_pose is None:
             return None
-        yaw_slot = quaternion_to_yaw(open_slot_pose.pose.orientation)
-        center = (open_slot_pose.pose.position.x, open_slot_pose.pose.position.y)
+        yaw_slot = quaternion_to_yaw(parking_pose.pose.orientation)
+        center = (parking_pose.pose.position.x, parking_pose.pose.position.y)
         goal = PoseStamped()
-        goal.header = open_slot_pose.header
+        goal.header = parking_pose.header
         use_map = bool(self.get_parameter('stage2_use_map_y_offset').value)
         if use_map:
             offset_y = float(self.get_parameter('stage2_goal_offset_y').value)
@@ -1116,40 +1096,50 @@ class PlannerNode(Node):
             goal.pose.orientation = self._last_stage1_goal.pose.orientation
         else:
             goal.pose.orientation = yaw_to_quaternion(yaw_slot)
+        
+        # 충돌 검사: Stage 2 골 위치에 충돌이 있으면 None 반환
+        vehicle_radius = float(self.get_parameter('vehicle_width').value) / 2.0 + float(self.get_parameter('safety_margin').value)
+        if self._min_distance_to_cones(goal.pose.position.x, goal.pose.position.y) < vehicle_radius:
+            self.get_logger().warn(f"DEBUG: Stage 2 goal has collision at ({goal.pose.position.x:.2f}, {goal.pose.position.y:.2f})")
+            return None
+            
         return goal
 
-    def _compute_stage3_goal(self, open_slot_pose: Optional[PoseStamped]) -> Optional[PoseStamped]:
-        if open_slot_pose is None:
+    def _compute_stage3_goal(self, parking_pose: Optional[PoseStamped]) -> Optional[PoseStamped]:
+        if parking_pose is None:
             return None
-        yaw_slot = quaternion_to_yaw(open_slot_pose.pose.orientation)
+        yaw_slot = quaternion_to_yaw(parking_pose.pose.orientation)
         goal = PoseStamped()
-        goal.header = open_slot_pose.header
-        goal.pose.position.x = open_slot_pose.pose.position.x
-        goal.pose.position.y = open_slot_pose.pose.position.y
+        goal.header = parking_pose.header
+        goal.pose.position.x = parking_pose.pose.position.x
+        goal.pose.position.y = parking_pose.pose.position.y
         goal.pose.position.z = 0.0
         goal.pose.orientation = yaw_to_quaternion(yaw_slot)
         return goal
 
-    def _compute_stage3_path_from_stage2(self, start_pose: PoseStamped, open_slot_pose: PoseStamped) -> Optional[Path]:
-        yaw_slot = quaternion_to_yaw(open_slot_pose.pose.orientation)
-        center = (open_slot_pose.pose.position.x, open_slot_pose.pose.position.y)
+    def _compute_stage3_path_from_stage2(self, start_pose: Odometry, parking_pose: PoseStamped) -> Optional[Path]:
+        yaw_slot = quaternion_to_yaw(parking_pose.pose.orientation)
+        center = (parking_pose.pose.position.x, parking_pose.pose.position.y)
         ds = float(self.get_parameter('path_resolution').value)
         R = float(self.get_parameter('stage3_turn_radius').value) if self.has_parameter('stage3_turn_radius') else 2.0
         width = float(self.get_parameter('vehicle_width').value)
         length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
         safety_margin = float(self.get_parameter('safety_margin').value)
         eff_radius = 0.5 * math.hypot(width, length) + safety_margin
-        L, W = self._estimate_slot_dimensions(yaw_slot, center)
+        if self._parking_area_idx is not None:
+            L, W = self._get_slot_dimensions_from_area_idx(self._parking_area_idx)
+        else:
+            L, W = 5.0, 2.5
         margin = float(self.get_parameter('stage2_inside_margin').value) if self.has_parameter('stage2_inside_margin') else 0.2
 
         # 1) Align yaw from start to yaw_slot via arc
-        yaw_s = quaternion_to_yaw(start_pose.pose.orientation)
+        yaw_s = quaternion_to_yaw(start_pose.pose.pose.orientation)
         dyaw = wrap_to_pi(yaw_slot - yaw_s)
-        path = Path(); path.header = open_slot_pose.header
+        path = Path(); path.header = parking_pose.header
         turn_left = dyaw > 0.0
         n_left_s = (-math.sin(yaw_s), math.cos(yaw_s))
-        Sx = start_pose.pose.position.x
-        Sy = start_pose.pose.position.y
+        Sx = start_pose.pose.pose.position.x
+        Sy = start_pose.pose.pose.position.y
         if turn_left:
             Cx = Sx + R * n_left_s[0]
             Cy = Sy + R * n_left_s[1]
@@ -1172,7 +1162,7 @@ class PlannerNode(Node):
             pose.pose.orientation = yaw_to_quaternion(th)
             if not self._inside_slot(px, py, center, yaw_slot, L, W, margin):
                 break
-            if self._min_distance_to_walls(px, py) < eff_radius:
+            if self._min_distance_to_cones(px, py) < eff_radius:
                 break
             path.poses.append(pose)
 
@@ -1198,13 +1188,13 @@ class PlannerNode(Node):
             pose.pose.orientation = yaw_to_quaternion(yaw_slot)
             if not self._inside_slot(px, py, center, yaw_slot, L, W, margin):
                 break
-            if self._min_distance_to_walls(px, py) < eff_radius:
+            if self._min_distance_to_cones(px, py) < eff_radius:
                 break
             path.poses.append(pose)
 
         return path if path.poses else None
 
-    def _compute_stage2_path(self, start_pose: Optional[PoseStamped], goal: PoseStamped) -> Optional[Path]:
+    def _compute_stage2_path(self, start_pose: Odometry, goal: PoseStamped) -> Optional[Path]:
         if start_pose is None:
             return None
         # Parameters
@@ -1214,7 +1204,7 @@ class PlannerNode(Node):
         safety_margin = float(self.get_parameter('safety_margin').value)
         straight_only = bool(self.get_parameter('stage2_straight_only').value)
 
-        yaw_s = quaternion_to_yaw(start_pose.pose.orientation)
+        yaw_s = quaternion_to_yaw(start_pose.pose.pose.orientation)
         yaw_g = quaternion_to_yaw(goal.pose.orientation)
         # 원하는 것은 시작(yaw_s = yaw_slot+30°)에서 목표(yaw_g=yaw_slot)로 30° 만큼 우회전하며 후진
         yaw_delta = wrap_to_pi(yaw_g - yaw_s)
@@ -1224,8 +1214,8 @@ class PlannerNode(Node):
 
         # 회전 중심: 시작점에서 법선 방향으로 R만큼 (우측: -n_left, 좌측: +n_left)
         n_left_s = (-math.sin(yaw_s), math.cos(yaw_s))
-        Sx = start_pose.pose.position.x
-        Sy = start_pose.pose.position.y
+        Sx = start_pose.pose.pose.position.x
+        Sy = start_pose.pose.pose.position.y
         if turn_right:
             Cx = Sx - R * n_left_s[0]
             Cy = Sy - R * n_left_s[1]
@@ -1239,8 +1229,8 @@ class PlannerNode(Node):
 
         # 직선만 생성하는 옵션
         if straight_only:
-            x0 = start_pose.pose.position.x
-            y0 = start_pose.pose.position.y
+            x0 = start_pose.pose.pose.position.x
+            y0 = start_pose.pose.pose.position.y
             x2 = goal.pose.position.x
             y2 = goal.pose.position.y
             dx = x2 - x0
@@ -1260,8 +1250,8 @@ class PlannerNode(Node):
 
             eff_radius = 0.5 * vehicle_width + safety_margin
             for p in path.poses:
-                if self._min_distance_to_walls(p.pose.position.x, p.pose.position.y) < eff_radius:
-                    self.get_logger().warn('Stage-2 straight path may collide with virtual walls.')
+                if self._min_distance_to_cones(p.pose.position.x, p.pose.position.y) < eff_radius:
+                    self.get_logger().warn('Stage-2 straight path may collide with cones.')
                     break
             return path
 
@@ -1309,8 +1299,8 @@ class PlannerNode(Node):
         length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
         eff_radius = 0.5 * math.hypot(width, length) + safety_margin
         for p in path.poses:
-            if self._min_distance_to_walls(p.pose.position.x, p.pose.position.y) < eff_radius:
-                self.get_logger().warn('Stage-2 path may collide with virtual walls. Tune clearances/turn_radius.')
+            if self._min_distance_to_cones(p.pose.position.x, p.pose.position.y) < eff_radius:
+                self.get_logger().warn('Stage-2 path may collide with cones. Tune clearances/turn_radius.')
                 break
 
         return path
