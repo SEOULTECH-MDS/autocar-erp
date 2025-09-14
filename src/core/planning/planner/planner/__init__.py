@@ -10,7 +10,7 @@ from geometry_msgs.msg import PoseStamped, Point, PoseArray, Pose
 from nav_msgs.msg import Path, Odometry
 from visualization_msgs.msg import Marker, MarkerArray
 from planning_msgs.msg import ObstacleArray, Obstacle, ModeState
-from std_msgs.msg import Int32, Bool
+from std_msgs.msg import Int32
 import tf2_ros
 import tf2_geometry_msgs
 
@@ -153,12 +153,6 @@ class PlannerNode(Node):
         self._stage1_points_pub = self.create_publisher(PoseArray, '/stage1_waypoints', 10)
         self._stage2_points_pub = self.create_publisher(PoseArray, '/stage2_waypoints', 10)
         self._stage3_points_pub = self.create_publisher(PoseArray, '/stage3_waypoints', 10)
-        
-        # Reverse 플래그 퍼블리셔
-        self._reverse_flag_pub = self.create_publisher(Bool, '/reverse_flag', 10)
-        
-        # 초기 Reverse 플래그 설정 (Stage 1은 전진)
-        self._publish_reverse_flag(False)
         # Delivery mission publishers
         self._delivery_pick_path_pub = self.create_publisher(Path, '/delivery_pick_path', 10)
         self._delivery_drop_path_pub = self.create_publisher(Path, '/delivery_drop_path', 10)
@@ -440,9 +434,6 @@ class PlannerNode(Node):
             if distance < tolerance:
                 self._stage = 2
                 self.get_logger().info(f"Stage 1 -> Stage 2: distance={distance:.2f} < {tolerance}")
-                
-                # Stage 1 도착 시 Reverse=True 퍼블리싱
-                self._publish_reverse_flag(True)
         
         # Stage 2에서 Stage 3으로 전환
         elif self._stage == 2 and self._last_stage2_goal is not None:
@@ -453,18 +444,8 @@ class PlannerNode(Node):
             if distance < tolerance:
                 self._stage = 3
                 self.get_logger().info(f"Stage 2 -> Stage 3: distance={distance:.2f} < {tolerance}")
-                
-                # Stage 3에서는 Reverse=False (전진 주차)
-                self._publish_reverse_flag(False)
         
         return self._stage != old_stage
-
-    def _publish_reverse_flag(self, reverse: bool) -> None:
-        """Reverse 플래그 퍼블리싱 헬퍼 메서드"""
-        reverse_msg = Bool()
-        reverse_msg.data = reverse
-        self._reverse_flag_pub.publish(reverse_msg)
-        self.get_logger().info(f"Published Reverse={reverse}")
 
     def _maybe_publish_goal(self) -> None:
         """모든 Stage의 경로를 계산하고 통합 waypoint로 발행"""

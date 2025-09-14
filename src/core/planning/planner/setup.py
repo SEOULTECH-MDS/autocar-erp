@@ -5,8 +5,8 @@ package_name = 'planner'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[],
-    py_modules=['planner'],
+    packages=[package_name],
+    py_modules=[],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),

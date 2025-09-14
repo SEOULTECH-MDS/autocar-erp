@@ -7,12 +7,16 @@
   <maintainer email="user@todo.todo">user</maintainer>
   <license>TODO</license>
 
-  <depend>rclpy</depend>
-  <depend>geometry_msgs</depend>
-  <depend>nav_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>visualization_msgs</depend>
-  <depend>planning_msgs</depend>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>ament_python</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>planning_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
