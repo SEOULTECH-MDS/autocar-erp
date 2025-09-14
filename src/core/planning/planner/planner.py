@@ -100,7 +100,7 @@ class PlannerNode(Node):
         # self.declare_parameter('prefer_odom', True)             # 더 이상 사용하지 않음 - location만 사용
         self.declare_parameter('stage_position_tolerance', 0.25)  # [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 8.0)    # [deg]
-        self.declare_parameter('publish_unified_waypoints', True)  # 현재 스테이지만 /waypoints(및 points) 퍼블리시
+        self.declare_parameter('publish_unified_waypoints', False)  # 현재 스테이지만 /waypoints(및 points) 퍼블리시
         # Delivery mission
         self.declare_parameter('delivery_position_tolerance', 0.3)
         self.declare_parameter('delivery_yaw_tolerance_deg', 12.0)
@@ -204,8 +204,8 @@ class PlannerNode(Node):
 
     def _on_odom(self, msg: Odometry) -> None:
         self._odom = msg
-        self.get_logger().info(f'Received odometry: ({msg.pose.pose.position.x:.2f}, {msg.pose.pose.position.y:.2f})')
-        # Stage 전환 로직 제거 - 모든 Stage를 한 번에 계산
+        # 스테이지 전환 체크를 위해 _maybe_publish_goal 호출
+        self._maybe_publish_goal()
 
     def _on_stage_selector(self, msg: Int32) -> None:
         val = int(msg.data)
@@ -442,80 +442,124 @@ class PlannerNode(Node):
             self.get_logger().warn(f'Stage-1 goal computation failed: {e}')
             return
 
-        publish_unified = bool(self.get_parameter('publish_unified_waypoints').value)
+        # 스테이지 전환 체크
+        stage_advanced = self._check_stage_advancement()
+        if stage_advanced:
+            self.get_logger().info(f"Stage advanced to: {self._stage}")
         
-        # 모든 Stage의 경로를 계산하고 통합 waypoint 생성
-        all_waypoints = []
+        # 현재 스테이지에 맞는 경로만 계산하고 퍼블리시
+        current_path = None
         
-        # Stage 1 경로
-        show_stage1 = bool(self.get_parameter('show_stage1_path').value)
-        self.get_logger().info(f"DEBUG: show_stage1_path = {show_stage1}")
-        if show_stage1:
-            self.get_logger().info("DEBUG: Computing stage1 path...")
-            try:
-                stage1_path = self._compute_stage1_path(current_odom, stage1_goal)
-                if stage1_path is not None:
-                    all_waypoints.extend(stage1_path.poses)
-                    self._path_pub.publish(stage1_path)
-                    self._publish_points(self._stage1_points_pub, stage1_path)
-                    self.get_logger().info(f"Stage 1 path: {len(stage1_path.poses)} points")
+        if self._stage == 1:
+            # Stage 1 경로
+            show_stage1 = bool(self.get_parameter('show_stage1_path').value)
+            if show_stage1:
+                self.get_logger().info("DEBUG: Computing stage1 path...")
+                try:
+                    current_path = self._compute_stage1_path(current_odom, stage1_goal)
+                    if current_path is not None:
+                        self._path_pub.publish(current_path)
+                        self._publish_points(self._stage1_points_pub, current_path)
+                        self.get_logger().info(f"Stage 1 path: {len(current_path.poses)} points")
+                    else:
+                        self.get_logger().warn("DEBUG: Stage1 path is None")
+                except Exception as e:
+                    self.get_logger().error(f"Stage 1 path computation failed: {e}")
+                    import traceback
+                    self.get_logger().error(f"Traceback: {traceback.format_exc()}")
+        
+        elif self._stage == 2:
+            # Stage 2 골과 경로
+            stage2_goal = self._compute_stage2_goal(self._parking_pose)
+            if stage2_goal is not None:
+                self._stage2_goal_pub.publish(stage2_goal)
+                self.get_logger().info(f"Stage 2 goal published: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
+                
+                # Stage 2 경로 계산
+                if bool(self.get_parameter('stage2_guided').value):
+                    current_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
                 else:
-                    self.get_logger().warn("DEBUG: Stage1 path is None")
-            except Exception as e:
-                self.get_logger().error(f"Stage 1 path computation failed: {e}")
-                import traceback
-                self.get_logger().error(f"Traceback: {traceback.format_exc()}")
-        
-        # Stage 2 골과 경로
-        stage2_goal = self._compute_stage2_goal(self._parking_pose)
-        if stage2_goal is not None:
-            self._stage2_goal_pub.publish(stage2_goal)
-            self.get_logger().info(f"Stage 2 goal published: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
-            
-            # Stage 2 경로 계산
-            if bool(self.get_parameter('stage2_guided').value):
-                stage2_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
-                if stage2_path is not None:
-                    all_waypoints.extend(stage2_path.poses)
-                    self._stage2_path_pub.publish(stage2_path)
-                    self._publish_points(self._stage2_points_pub, stage2_path)
-                    self.get_logger().info(f"Stage 2 guided path: {len(stage2_path.poses)} points")
+                    current_path = self._compute_stage2_path(current_odom, stage2_goal)
+                
+                if current_path is not None:
+                    self._stage2_path_pub.publish(current_path)
+                    self._publish_points(self._stage2_points_pub, current_path)
+                    self.get_logger().info(f"Stage 2 path: {len(current_path.poses)} points")
             else:
-                stage2_path = self._compute_stage2_path(current_odom, stage2_goal)
-                if stage2_path is not None:
-                    all_waypoints.extend(stage2_path.poses)
-                    self._stage2_path_pub.publish(stage2_path)
-                    self._publish_points(self._stage2_points_pub, stage2_path)
-                    self.get_logger().info(f"Stage 2 path: {len(stage2_path.poses)} points")
-        else:
-            self.get_logger().warn("DEBUG: Stage 2 goal is None")
+                self.get_logger().warn("DEBUG: Stage 2 goal is None")
         
-        # Stage 3 골과 경로
-        stage3_goal = self._compute_stage3_goal(self._parking_pose)
-        if stage3_goal is not None:
-            self._stage3_goal_pub.publish(stage3_goal)
-            self.get_logger().info(f"Stage 3 goal published: ({stage3_goal.pose.position.x:.2f}, {stage3_goal.pose.position.y:.2f})")
-            yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
-            stage3_path = self._compute_stage3_path(current_odom, yaw_slot)
-            if stage3_path is not None:
-                all_waypoints.extend(stage3_path.poses)
-                self._stage3_path_pub.publish(stage3_path)
-                self._publish_points(self._stage3_points_pub, stage3_path)
-                self.get_logger().info(f"Stage 3 path: {len(stage3_path.poses)} points")
-        else:
-            self.get_logger().warn("DEBUG: Stage 3 goal is None")
+        elif self._stage == 3:
+            # Stage 3 골과 경로
+            stage3_goal = self._compute_stage3_goal(self._parking_pose)
+            if stage3_goal is not None:
+                self._stage3_goal_pub.publish(stage3_goal)
+                self.get_logger().info(f"Stage 3 goal published: ({stage3_goal.pose.position.x:.2f}, {stage3_goal.pose.position.y:.2f})")
+                yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
+                current_path = self._compute_stage3_path(current_odom, yaw_slot)
+                
+                if current_path is not None:
+                    self._stage3_path_pub.publish(current_path)
+                    self._publish_points(self._stage3_points_pub, current_path)
+                    self.get_logger().info(f"Stage 3 path: {len(current_path.poses)} points")
+            else:
+                self.get_logger().warn("DEBUG: Stage 3 goal is None")
         
-        # 통합 waypoint 발행
-        if all_waypoints and publish_unified:
-            unified_path = Path()
-            unified_path.header.frame_id = self.get_parameter('frame_id').value
-            unified_path.header.stamp = self.get_clock().now().to_msg()
-            unified_path.poses = all_waypoints
+        # 현재 스테이지 경로를 /waypoints 토픽으로 퍼블리시
+        if current_path is not None:
+            self._waypoints_pub.publish(current_path)
+            self._publish_points(self._waypoints_points_pub, current_path)
+            self.get_logger().info(f"Published stage {self._stage} waypoints: {len(current_path.poses)} points")
+        else:
+            self.get_logger().warn(f"No path available for stage {self._stage}")
+        
+        # DEBUG: 모든 스테이지 골과 경로도 퍼블리시 (시각화용)
+        self._publish_all_debug_paths(current_odom)
+    
+    def _publish_all_debug_paths(self, current_odom: Odometry) -> None:
+        """모든 스테이지의 골과 경로를 DEBUG 토픽으로 퍼블리시 (시각화용)"""
+        try:
+            # Stage 1 골과 경로 (항상 퍼블리시)
+            stage1_goal = self._compute_stage1_goal()
+            if stage1_goal is not None:
+                self._goal_pub.publish(stage1_goal)
+                self._last_stage1_goal = stage1_goal
+                
+                show_stage1 = bool(self.get_parameter('show_stage1_path').value)
+                if show_stage1:
+                    stage1_path = self._compute_stage1_path(current_odom, stage1_goal)
+                    if stage1_path is not None:
+                        self._path_pub.publish(stage1_path)
+                        self._publish_points(self._stage1_points_pub, stage1_path)
             
-            self._waypoints_pub.publish(unified_path)
-            self._publish_points(self._waypoints_points_pub, unified_path)
-            
-            self.get_logger().info(f"Published unified waypoints: {len(all_waypoints)} total points")
+            # Stage 2 골과 경로
+            if self._parking_pose is not None:
+                stage2_goal = self._compute_stage2_goal(self._parking_pose)
+                if stage2_goal is not None:
+                    self._stage2_goal_pub.publish(stage2_goal)
+                    self._last_stage2_goal = stage2_goal
+                    
+                    if bool(self.get_parameter('stage2_guided').value):
+                        stage2_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
+                    else:
+                        stage2_path = self._compute_stage2_path(current_odom, stage2_goal)
+                    
+                    if stage2_path is not None:
+                        self._stage2_path_pub.publish(stage2_path)
+                        self._publish_points(self._stage2_points_pub, stage2_path)
+                
+                # Stage 3 골과 경로
+                stage3_goal = self._compute_stage3_goal(self._parking_pose)
+                if stage3_goal is not None:
+                    self._stage3_goal_pub.publish(stage3_goal)
+                    self._last_stage3_goal = stage3_goal
+                    
+                    yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
+                    stage3_path = self._compute_stage3_path(current_odom, yaw_slot)
+                    if stage3_path is not None:
+                        self._stage3_path_pub.publish(stage3_path)
+                        self._publish_points(self._stage3_points_pub, stage3_path)
+        except Exception as e:
+            self.get_logger().warn(f"Debug paths publishing failed: {e}")
 
     # ───────────────────────────── Delivery Mission ──────────────────────
     def _maybe_publish_delivery(self) -> None:
