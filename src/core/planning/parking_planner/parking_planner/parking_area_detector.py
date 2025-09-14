@@ -27,7 +27,7 @@ class ParkingAreaDetector(Node):
         self.declare_parameter('roi_y_max_m', 0.0)
 
         # Graph connectivity distance (m) for clustering along a line
-        self.declare_parameter('connect_distance_m', 1.5)
+        self.declare_parameter('connect_distance_m', 1.8)
 
         # Debug
         self.declare_parameter('debug_enabled', True)

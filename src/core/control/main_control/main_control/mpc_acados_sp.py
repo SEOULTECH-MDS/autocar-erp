@@ -106,7 +106,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.3, 0.4]), # DRIVE
+            0: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -378,13 +378,13 @@ class Control(Node):
             current_s = self.s
             
 
-            lookahead_distance = 0.1  # 0.1m 앞의 reference point 사용
-            lookahead_s = min(current_s + lookahead_distance, cubic_spline.s[-1])
+            # lookahead_distance = 0.1  # 0.1m 앞의 reference point 사용
+            # lookahead_s = min(current_s + lookahead_distance, cubic_spline.s[-1])
             
-            if lookahead_s > 0 and lookahead_s <= cubic_spline.s[-1]:
-                ref_yaw = cubic_spline.calc_yaw(lookahead_s)
-                yaw_error = normalise_angle(self.yaw - ref_yaw)
-                self.is_reverse_mode = abs(yaw_error) > self.reverse_threshold
+            # if lookahead_s > 0 and lookahead_s <= cubic_spline.s[-1]:
+            #     ref_yaw = cubic_spline.calc_yaw(lookahead_s)
+            #     yaw_error = normalise_angle(self.yaw - ref_yaw)
+            #     self.is_reverse_mode = abs(yaw_error) > self.reverse_threshold
 
             for i in range(N):
                 # 다음 s 값 계산 
@@ -404,7 +404,8 @@ class Control(Node):
                     else:
                         # 후진 모드에 따른 속도 설정
                         if self.is_reverse_mode:
-                            target_vel = self.target_vel * (-1.0)  # 음수 속도
+                            # target_vel = self.target_vel * (-1.0)  # 음수 속도
+                            target_vel = self.target_vel
                         else:
                             target_vel = self.target_vel  # 양수 속도
             
@@ -416,7 +417,8 @@ class Control(Node):
                 
                 # 후진 모드에서는 yaw를 180도 회전
                 if self.is_reverse_mode:
-                    xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + np.pi)
+                    # xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + np.pi)
+                    xref[2, i] = cubic_spline.calc_yaw(s)
                 else:
                     xref[2, i] = cubic_spline.calc_yaw(s)
 
