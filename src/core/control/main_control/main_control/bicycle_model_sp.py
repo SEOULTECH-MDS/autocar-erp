@@ -3,7 +3,7 @@
 # Bicycle Model Spline version
 
 from acados_template import AcadosModel
-from casadi import SX, vertcat, sin, cos, tan, fabs
+from casadi import SX, vertcat, sin, cos, tan
 
 def export_spline_bicycle_model() -> AcadosModel:
 
@@ -54,8 +54,8 @@ def export_spline_bicycle_model() -> AcadosModel:
         v * cos(yaw),         # x_dot
         v * sin(yaw),         # y_dot
         v / WB * tan(delta),  # yaw_dot
-        a,  # v_dot (저항력 고려)
-        fabs(v)  # s_dot (spline parameter changes with speed)
+        effective_a,  # v_dot (저항력 고려)
+        v  # s_dot (spline parameter changes with speed)
     )
 
     f_impl = xdot - f_expl

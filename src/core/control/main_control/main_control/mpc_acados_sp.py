@@ -52,6 +52,8 @@ class Control(Node):
 
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
+        # self.obstacle_sub = self.create_subscription(PoseArray, '/sensor_fusion/obstacle', self.obstacle_cb, 10)
+        # self.obstacle_sub = self.create_subscription(MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10)
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10)
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
 
@@ -81,7 +83,7 @@ class Control(Node):
 
         self.stopline_distance = 1e6
 
-        self.target_vel = 4.0  # 목표 속도 (m/s)
+        self.target_vel = 3.0  # 목표 속도 (m/s)
         # 추후에 모드에 따라 변경 고려
 
         self.steering_angle = 0.0
@@ -106,7 +108,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DRIVE
+            0: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.3, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -115,10 +117,6 @@ class Control(Node):
             6: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN
         }        
         self.current_weights = self.mode_weights[self.mode]
-
-        # 후진 관련 변수 추가
-        self.is_reverse_mode = False
-        self.reverse_threshold = np.pi/2  # 90도 이상 차이나면 후진 모드
 
         # MPC Solver 초기화
         self.solver = acados_solver() 
@@ -150,12 +148,9 @@ class Control(Node):
         q = msg.pose.pose.orientation
         self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
 
-        if self.is_reverse_mode:
-            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0))
-        else:
-            self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0))
-        # if abs(self.v) < 0.001:
-        #     self.v = 0.1
+        self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0))
+        if abs(self.v) < 0.001:
+            self.v = 0.1
         self.yawrate = msg.twist.twist.angular.z
 
         # if len(self.xs_global) > 0 or len(self.xs_local) > 0:
@@ -376,18 +371,9 @@ class Control(Node):
 
         if cubic_spline:
             current_s = self.s
-            
-
-            # lookahead_distance = 0.1  # 0.1m 앞의 reference point 사용
-            # lookahead_s = min(current_s + lookahead_distance, cubic_spline.s[-1])
-            
-            # if lookahead_s > 0 and lookahead_s <= cubic_spline.s[-1]:
-            #     ref_yaw = cubic_spline.calc_yaw(lookahead_s)
-            #     yaw_error = normalise_angle(self.yaw - ref_yaw)
-            #     self.is_reverse_mode = abs(yaw_error) > self.reverse_threshold
 
             for i in range(N):
-                # 다음 s 값 계산 
+                # 다음 s 값을 먼저 계산
                 s = current_s + self.dt * self.target_vel
                 
                 # s가 끝점을 넘어갔는지 확인
@@ -402,26 +388,14 @@ class Control(Node):
                     if remaining_distance <= 3.0:  # 3m 이내에서 미리 속도 0 설정
                         target_vel = 0.0
                     else:
-                        # 후진 모드에 따른 속도 설정
-                        if self.is_reverse_mode:
-                            # target_vel = self.target_vel * (-1.0)  # 음수 속도
-                            target_vel = self.target_vel
-                        else:
-                            target_vel = self.target_vel  # 양수 속도
-            
+                        # 정상 범위 내라면 원래 목표 속도 사용
+                        target_vel = self.target_vel
+                
                 # 다음 iteration을 위해 current_s 업데이트
                 current_s = s
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
-
-                
-                # 후진 모드에서는 yaw를 180도 회전
-                if self.is_reverse_mode:
-                    # xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + np.pi)
-                    xref[2, i] = cubic_spline.calc_yaw(s)
-                else:
-                    xref[2, i] = cubic_spline.calc_yaw(s)
-
+                xref[2, i] = cubic_spline.calc_yaw(s)
                 xref[3, i] = target_vel
                 xref[4, i] = s 
 
@@ -429,6 +403,7 @@ class Control(Node):
                 tan_vec[1, i] = math.sin(cubic_spline.calc_yaw(s))
 
         self.visualize_ref_trajectory(xref)
+
         return xref, tan_vec
 
     def mpc_control(self):
