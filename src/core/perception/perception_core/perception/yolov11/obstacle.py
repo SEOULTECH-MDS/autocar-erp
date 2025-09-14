@@ -33,8 +33,8 @@ sys.modules['utils'] = utils
 
 # 하이퍼파라미터 및 설정
 package_share = get_package_share_directory('perception')
-WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_new.pt')
-# WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_ver2.pt') # github 라바콘 pt
+# WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_new.pt')
+WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_ver2.pt') # github 라바콘 pt
 IMG_SIZE = 640
 DEVICE = ''
 AUGMENT = False
@@ -84,6 +84,14 @@ class YOLO(Node):
         
         # 필수 패키지 요구사항 확인
         check_requirements(exclude=('pycocotools', 'thop'))
+
+        # 클래스 정보 출력 (디버깅용)
+        self.get_logger().info(f"Model classes: {self.names}")
+        self.get_logger().info(f"Total number of classes: {len(self.names)}")
+        self.get_logger().info("Class mapping:")
+        for idx, name in enumerate(self.names):
+            self.get_logger().info(f"  Class {idx}: '{name}'")
+        self.get_logger().info(f"Colors assigned: {len(self.colors)} color sets")
 
         # self.get_logger().info("YOLO Detector node has been started.")
 

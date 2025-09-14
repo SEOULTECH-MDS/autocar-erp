@@ -143,18 +143,18 @@ class SensorFusion(Node):
         fusion_markers = MarkerArray()
         
         # fusion_unmatched_markers = MarkerArray()
-        blue_marker   = self.make_marker((0.0, 0.0, 1.0))
-        yellow_marker = self.make_marker((1.0, 1.0, 0.0))
-        white_marker  = self.make_marker((1.0, 1.0, 1.0))
+        blue_marker   = self.make_marker((0.0, 0.0, 1.0), "blue", 1)
+        # yellow_marker = self.make_marker((1.0, 1.0, 0.0), "yellow", 2)
+        # red_marker    = self.make_marker((1.0, 0.0, 0.0), "red", 3)
+        white_marker  = self.make_marker((1.0, 1.0, 1.0), "white", 4)
 
-        label_clusters(clusters.T[:,:3], labels, blue_marker, yellow_marker, white_marker)
+        label_clusters(clusters.T[:,:3], labels, blue_marker, white_marker)
 
         # 디버깅
         self.get_logger().info(f"[SF] blue:{len(blue_marker.points)} "
-                       f"yellow:{len(yellow_marker.points)} white:{len(white_marker.points)}")
-        
+                       f"white:{len(white_marker.points)}")
 
-        fusion_markers.markers.extend([blue_marker, yellow_marker, white_marker])
+        fusion_markers.markers.extend([blue_marker, white_marker])
         self.fusion_pub.publish(fusion_markers)
 
         # ROS Publish (Projected clusters to 2D frame) 
@@ -201,14 +201,16 @@ class SensorFusion(Node):
         return Rzg @ Ryb @ Rxa @ T
         #return Rzg @ Rxa @ Ryb @ Rx180 @ T
 
-    def make_marker(self, color):
+    def make_marker(self, color, ns, mid):
         marker = Marker()
         marker.action = Marker.ADD
         marker.type = Marker.POINTS
         marker.header.frame_id = 'velodyne'
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.lifetime = rclpy.duration.Duration(seconds=0.1).to_msg()
-        marker.id = int(sum(color) * 10000)
+        #  marker.id = int(sum(color) * 10000)
+        marker.ns = ns
+        marker.id = mid * 10000
         marker.scale.x = marker.scale.y = marker.scale.z = 0.2
         marker.color.a = 1.0
         marker.color.r, marker.color.g, marker.color.b = color

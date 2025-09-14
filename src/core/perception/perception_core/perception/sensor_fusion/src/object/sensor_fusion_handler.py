@@ -133,15 +133,17 @@ def get_label(matched, valid_indicies):
 #             yellows.append(point)
 #     return blues, yellows
 
-def label_clusters(clusters_3d, labels, blue_marker, yellow_marker, white_marker):
+def label_clusters(clusters_3d, labels, blue_marker, white_marker):
     for i in range(len(clusters_3d)):
         point = Point()
         point.x, point.y, point.z = clusters_3d[i, 0], clusters_3d[i, 1], clusters_3d[i, 2]
         
         if labels[i] == 0:
             blue_marker.points.append(point)
-        elif labels[i] == 1:
-            yellow_marker.points.append(point)
+        # elif labels[i] == 1:
+        #     yellow_marker.points.append(point)
+        # elif labels[i] == 2:
+        #     red_marker.points.append(point)
         else:
             white_marker.points.append(point)
     return
