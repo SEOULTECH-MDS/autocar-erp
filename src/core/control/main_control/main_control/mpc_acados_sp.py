@@ -83,7 +83,7 @@ class Control(Node):
 
         self.stopline_distance = 1e6
 
-        self.target_vel = 3.0  # 목표 속도 (m/s)
+        self.target_vel = 4.0  # 목표 속도 (m/s)
         # 추후에 모드에 따라 변경 고려
 
         self.steering_angle = 0.0
@@ -108,7 +108,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.3, 0.4]), # DRIVE
+            0: np.array([0.2, 0.2, 2.0, 0.1, 1.5, 0.3, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC

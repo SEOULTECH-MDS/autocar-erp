@@ -105,7 +105,7 @@ class SensorFusion(Node):
         
         # Sensor Fusion (Hungarian Algorithm)
         #matched_left = hungarian_match(clusters_2d_left, left_bboxes, left_labels, distance_threshold=120)
-        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=120)
+        matched_right = hungarian_match(clusters_2d_right, right_bboxes, right_labels, distance_threshold=80)
 
 
         # 디버깅

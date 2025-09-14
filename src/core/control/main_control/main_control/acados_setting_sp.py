@@ -24,7 +24,7 @@ def acados_solver():
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
     MAX_SPEED = 5.0  # 최대 속도 [m/s]
     MIN_SPEED = -5.0  # 최소 속도 [m/s] 
-    MAX_ACCEL = 10.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
+    MAX_ACCEL = 9.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
     MIN_ACCEL = -1e3  # 최대 감속도 [m/s^2]
 
     NX = 5  # reference size (x, y, yaw, v, s)
