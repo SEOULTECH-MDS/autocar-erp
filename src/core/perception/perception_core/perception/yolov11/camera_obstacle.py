@@ -7,16 +7,16 @@ from cv_bridge import CvBridge
 
 class CameraObstacle(Node):
     def __init__(self):
-        super().__init__('camera_rubber')
-        
-        self.publisher_ = self.create_publisher(Image, '/camera_rubber/image_raw', 10)
+        super().__init__('camera_obstacle')
+
+        self.publisher_ = self.create_publisher(Image, '/camera_obstacle/image_raw', 10)
         self.bridge = CvBridge()
 
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             self.get_logger().error("카메라를 열 수 없습니다!")
         self.timer = self.create_timer(0.1, self.timer_callback)  # 10Hz로 프레임 퍼블리시
-        self.get_logger().info("camera_rubber 노드가 시작되었습니다.")
+        self.get_logger().info("camera_obstacle 노드가 시작되었습니다.")
 
     def timer_callback(self):
         ret, frame = self.cap.read()
@@ -34,7 +34,7 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("camera_rubber 노드가 종료됩니다.")
+        node.get_logger().info("camera_obstacle 노드가 종료됩니다.")
     finally:
         node.cap.release()
         node.destroy_node()

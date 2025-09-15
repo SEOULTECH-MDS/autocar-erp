@@ -6,15 +6,15 @@ def generate_launch_description():
     return LaunchDescription([
         #Node(
         #    package='perception',
-        #    executable='camera_car',
-        #    name='camera_car',
+        #    executable='camera_obstacle',
+        #    name='camera_obstacle',
         #    output='screen'
         #),
 
         Node( # 라바콘 인식 (드럼통 대신)
             package='perception',
-            executable='obstacle',
-            name='obstacle',
+            executable='rubber_detect',
+            name='rubber_detect',
             output='screen'
         ),
 

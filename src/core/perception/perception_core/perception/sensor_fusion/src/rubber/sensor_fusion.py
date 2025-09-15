@@ -9,7 +9,7 @@ from scipy.optimize import linear_sum_assignment
 #from motrackers import CentroidTracker, CentroidKF_Tracker, SORT, IOUTracker
 #from motrackers.utils import draw_tracks
 
-from perception.sensor_fusion.src.object.sensor_fusion_handler import *
+from perception.sensor_fusion.src.rubber.sensor_fusion_handler import *
 
 import rclpy
 from rclpy.node import Node

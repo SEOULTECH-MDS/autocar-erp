@@ -14,43 +14,15 @@ def generate_launch_description():
         use_sim_time_arg,
         #Node(
         #    package='perception',
-        #    executable='camera_obstacle',
-        #    name='camera_obstacle',
+        #    executable='camera_rubber',
+        #    name='camera_rubber',
         #    output='screen'
         #),
 
-        # Node(
-        #     package='perception',
-        #     executable='left_camera',
-        #     name='left_camera',
-        #     output='screen'
-        # ),
-
-        # Node(
-        #     package='perception',
-        #     executable='right_camera',
-        #     name='right_camera',
-        #     output='screen'
-        # ),
-
-        # Node(
-        #     package='perception',
-        #     executable='combined_camera',
-        #     name='combined_camera',
-        #     output='screen'
-        # ),
-        
-        # Node(
-        #     package='perception',
-        #     executable='camera_obstacle',
-        #     name='camera_obstacle',
-        #     output='screen'
-        # ),
-
         Node(
             package='perception',
-            executable='obstacle',
-            name='obstacle',
+            executable='rubber_detect',
+            name='rubber_detect',
             output='screen',
             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         ),

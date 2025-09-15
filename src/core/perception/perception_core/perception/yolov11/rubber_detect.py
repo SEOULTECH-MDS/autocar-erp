@@ -27,13 +27,9 @@ sys.modules['models'] = models
 # [✓] Modified: "utils" alias 추가
 import perception.yolov11.utils as utils
 sys.modules['utils'] = utils
-# # [✓] Modified: "models.common" alias 추가
-# import perception.yolov11.models.common as models_common
-# sys.modules['models.common'] = models_common
 
 # 하이퍼파라미터 및 설정
 package_share = get_package_share_directory('perception')
-# WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_new.pt')
 WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'rubber_ver2.pt') # github 라바콘 pt
 IMG_SIZE = 640
 DEVICE = ''
@@ -45,18 +41,16 @@ AGNOSTIC_NMS = False
 
 class YOLO(Node):
     def __init__(self):
-        super().__init__('obstacle_rubber')
+        super().__init__('parking_rubber')
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
-        #self.subscription = self.create_subscription(Image, '/image_combined', self.image_callback, 10)
-        #self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
+        # self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
         self.subscription = self.create_subscription(Image, '/usb_cam_1/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성
         self.pose_array_pub = self.create_publisher(PoseArray, '/bounding_boxes/rubber', 10)
         # self.img_res_pub = self.create_publisher(Image, '/yolo/rubber', 10)
-        # self.obstacle_pub = self.create_publisher(String, '/obstacle_type', 10)
         
         # CvBridge 초기화 (ROS 이미지와 OpenCV 이미지 간 변환)
         self.bridge = CvBridge()
@@ -148,7 +142,7 @@ class YOLO(Node):
             for rubber in rubbers:
                 pose = Pose()
                 # 각 필드에 검출 결과 할당 (클래스, 바운딩 박스 좌표, 신뢰도)(ROS msg 타입은 float이어야 함)
-                pose.position.x = float(rubber[0])  # 클래스 인덱스 # 0 blue or 1 yellow 
+                pose.position.x = float(rubber[0])  # 클래스 인덱스
                 pose.position.y = float(rubber[5])  # 신뢰도
                 # pose.position.z 는 0으로 유지됨
                 pose.orientation.x = float(rubber[1])  # xmin
@@ -156,11 +150,10 @@ class YOLO(Node):
                 pose.orientation.z = float(rubber[3])  # xmax
                 pose.orientation.w = float(rubber[4])  # ymax
 
-                # self.get_logger().info(
-                #     f"(color, reliability)=({pose.position.x:.1f}, {pose.position.y:.0f})"
-                #     f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
-                #     f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
-                # )
+                self.get_logger().info(
+                    f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
+                    f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
+                )
                 
                 pose_array.poses.append(pose)
             
@@ -168,7 +161,7 @@ class YOLO(Node):
             self.pose_array_pub.publish(pose_array)
             
             elapsed_time = time.perf_counter() - start_time
-            # self.get_logger().info(f"YOLO detection time: {elapsed_time:.5f} seconds")
+            self.get_logger().info(f"YOLO detection time: {elapsed_time:.5f} seconds")
     
     def detect(self, img0):
         # 이미지 전처리: letterbox로 크기 조정 및 패딩 추가
