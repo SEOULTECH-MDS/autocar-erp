@@ -107,6 +107,18 @@ class PlannerNode(Node):
         self.declare_parameter('delivery_stop_offset', 1.0)  # 표지판 앞 정지 오프셋 [m]
         self.declare_parameter('delivery_auto_activate', False)  # delivery 토픽 수신 시 자동 전환 (기본 OFF)
         self.declare_parameter('enable_delivery_planning', False)  # 배달 경로 생성 전체 활성화 토글 (기본 OFF)
+        
+        # S-Curve Path Planning Parameters (S자 경로 계획용 새로운 파라미터들)
+        self.declare_parameter('s_curve_enabled', True)           # S자 경로 활성화 (기본 OFF)
+        self.declare_parameter('s_curve_radius1', 2.0)            # 첫 번째 원호 반경 [m]
+        self.declare_parameter('s_curve_radius2', 2.0)            # 두 번째 원호 반경 [m]
+        self.declare_parameter('s_curve_middle_offset', 0.5)      # 중간점 오프셋 [m]
+        # self.declare_parameter('s_curve_alignment_angle', 90.0)    # 정렬 각도 [deg] - 주차 구역 포즈와 자동 일치
+        self.declare_parameter('s_curve_smoothing', True)         # 곡률 스무딩 활성화
+        self.declare_parameter('s_curve_resolution', 0.1)         # S자 경로 해상도 [m]
+        self.declare_parameter('s_curve_collision_resolution', 0.05)  # 충돌 검사 해상도 [m]
+        self.declare_parameter('s_curve_vehicle_radius', 1.0)     # S자 충돌 검사용 차량 반경 [m]
+        
         # Frames
         self.declare_parameter('frame_id', 'map')
 
@@ -527,9 +539,23 @@ class PlannerNode(Node):
                 self.get_logger().info(f"Stage 2 goal published: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
                 
                 # Stage 2 경로 계산
-                if bool(self.get_parameter('stage2_guided').value):
+                s_curve_enabled = bool(self.get_parameter('s_curve_enabled').value)
+                self.get_logger().info(f"DEBUG: s_curve_enabled = {s_curve_enabled}")
+                
+                if s_curve_enabled:
+                    # S자 경로 사용
+                    self.get_logger().info("DEBUG: Attempting to use S-curve path for Stage 2")
+                    current_path = self._compute_stage2_path_s_curve(current_odom, self._parking_pose)
+                    if current_path is not None:
+                        self.get_logger().info("Using S-curve path for Stage 2")
+                    else:
+                        self.get_logger().warn("DEBUG: S-curve path returned None, falling back to guided path")
+                        current_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
+                elif bool(self.get_parameter('stage2_guided').value):
+                    # 기존 guided 경로 사용
                     current_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
                 else:
+                    # 기존 직선 경로 사용
                     current_path = self._compute_stage2_path(current_odom, stage2_goal)
                 
                 if current_path is not None:
@@ -590,7 +616,9 @@ class PlannerNode(Node):
                     self._stage2_goal_pub.publish(stage2_goal)
                     self._last_stage2_goal = stage2_goal
                     
-                    if bool(self.get_parameter('stage2_guided').value):
+                    if bool(self.get_parameter('s_curve_enabled').value):
+                        stage2_path = self._compute_stage2_path_s_curve(current_odom, self._parking_pose)
+                    elif bool(self.get_parameter('stage2_guided').value):
                         stage2_path = self._compute_stage2_path_guided(current_odom, self._parking_pose)
                     else:
                         stage2_path = self._compute_stage2_path(current_odom, stage2_goal)
@@ -1356,6 +1384,170 @@ class PlannerNode(Node):
                 break
 
         return path
+
+    def _compute_stage2_path_s_curve(self, current_odom: Odometry, parking_pose: PoseStamped) -> Optional[Path]:
+        """S자 형태의 Stage 2 경로 생성"""
+        self.get_logger().info("DEBUG: _compute_stage2_path_s_curve called")
+        
+        try:
+            # 1. 입력 정보 추출
+            start_x = current_odom.pose.pose.position.x
+            start_y = current_odom.pose.pose.position.y
+            start_heading = quaternion_to_yaw(current_odom.pose.pose.orientation)
+            
+            self.get_logger().info(f"DEBUG: S-curve start = ({start_x:.2f}, {start_y:.2f}), heading = {start_heading:.2f}")
+            
+            stage2_goal = self._compute_stage2_goal(parking_pose)
+            if stage2_goal is None:
+                self.get_logger().warn("DEBUG: Stage 2 goal is None for S-curve")
+                return None
+                
+            goal_x = stage2_goal.pose.position.x
+            goal_y = stage2_goal.pose.position.y
+            goal_heading = quaternion_to_yaw(stage2_goal.pose.orientation)
+            
+            self.get_logger().info(f"DEBUG: S-curve goal = ({goal_x:.2f}, {goal_y:.2f}), heading = {goal_heading:.2f}")
+            
+            # 2. S자 경로 파라미터
+            radius1 = float(self.get_parameter('s_curve_radius1').value)
+            radius2 = float(self.get_parameter('s_curve_radius2').value)
+            middle_offset = float(self.get_parameter('s_curve_middle_offset').value)
+            resolution = float(self.get_parameter('s_curve_resolution').value)
+            
+            self.get_logger().info(f"DEBUG: S-curve parameters - radius1={radius1:.2f}, radius2={radius2:.2f}, middle_offset={middle_offset:.2f}, resolution={resolution:.2f}")
+            
+            # 3. 중간점 계산 (주차 구역과 평행한 정렬점)
+            # 정렬 각도를 주차 구역 포즈(open_slot_pose)와 일치하도록 설정
+            yaw_slot = quaternion_to_yaw(parking_pose.pose.orientation)
+            middle_x = goal_x - middle_offset * math.cos(yaw_slot)
+            middle_y = goal_y - middle_offset * math.sin(yaw_slot)
+            middle_heading = yaw_slot  # 주차 구역과 동일한 방향
+            
+            self.get_logger().info(f"DEBUG: S-curve yaw_slot={yaw_slot:.2f}, middle=({middle_x:.2f}, {middle_y:.2f}), middle_heading={middle_heading:.2f}")
+            self.get_logger().info(f"S-curve: start=({start_x:.2f}, {start_y:.2f}), middle=({middle_x:.2f}, {middle_y:.2f}), goal=({goal_x:.2f}, {goal_y:.2f})")
+            
+            # 4. 첫 번째 원호: 시작점 → 중간점
+            self.get_logger().info("DEBUG: Generating first arc...")
+            arc1_points = self._generate_s_curve_arc(
+                start_x, start_y, start_heading,
+                middle_x, middle_y, middle_heading,
+                radius1, resolution
+            )
+            
+            if arc1_points is None:
+                self.get_logger().warn("S-curve: Failed to generate first arc")
+                return None
+            
+            self.get_logger().info(f"DEBUG: First arc generated with {len(arc1_points)} points")
+            
+            # 5. 두 번째 원호: 중간점 → 목표점
+            self.get_logger().info("DEBUG: Generating second arc...")
+            arc2_points = self._generate_s_curve_arc(
+                middle_x, middle_y, middle_heading,
+                goal_x, goal_y, goal_heading,
+                radius2, resolution
+            )
+            
+            if arc2_points is None:
+                self.get_logger().warn("S-curve: Failed to generate second arc")
+                return None
+            
+            self.get_logger().info(f"DEBUG: Second arc generated with {len(arc2_points)} points")
+            
+            # 6. 두 원호 연결 (중복점 제거)
+            combined_points = arc1_points + arc2_points[1:]  # 첫 번째 점 제거
+            self.get_logger().info(f"DEBUG: Combined S-curve has {len(combined_points)} points")
+            
+            # 7. 충돌 검사
+            self.get_logger().info("DEBUG: Checking S-curve collision...")
+            if self._check_s_curve_collision(combined_points):
+                self.get_logger().warn("S-curve: Collision detected")
+                return None
+            
+            self.get_logger().info("DEBUG: S-curve collision check passed")
+            
+            # 8. Path 메시지 생성
+            path = Path()
+            path.header.frame_id = 'map'
+            path.header.stamp = self.get_clock().now().to_msg()
+            
+            for point in combined_points:
+                pose = PoseStamped()
+                pose.header = path.header
+                pose.pose.position.x = point[0]
+                pose.pose.position.y = point[1]
+                pose.pose.position.z = 0.0
+                pose.pose.orientation = yaw_to_quaternion(point[2])
+                path.poses.append(pose)
+            
+            self.get_logger().info(f"S-curve path generated: {len(path.poses)} points")
+            return path
+            
+        except Exception as e:
+            self.get_logger().error(f"S-curve path generation failed: {e}")
+            import traceback
+            self.get_logger().error(f"Traceback: {traceback.format_exc()}")
+            return None
+
+    def _generate_s_curve_arc(self, start_x: float, start_y: float, start_heading: float,
+                             end_x: float, end_y: float, end_heading: float,
+                             radius: float, resolution: float) -> Optional[List[Tuple[float, float, float]]]:
+        """S자 경로의 개별 원호 생성"""
+        try:
+            # 원호 중심점 계산 (간단한 접근법)
+            # 실제로는 더 정교한 계산이 필요하지만, 여기서는 기본적인 구현
+            
+            # 시작점에서 수직 방향으로 radius만큼 이동하여 중심점 계산
+            center_x = start_x + radius * math.sin(start_heading)
+            center_y = start_y - radius * math.cos(start_heading)
+            
+            # 시작각과 끝각 계산
+            start_angle = start_heading - math.pi/2
+            end_angle = end_heading - math.pi/2
+            
+            # 각도 정규화
+            while end_angle - start_angle > math.pi:
+                end_angle -= 2 * math.pi
+            while end_angle - start_angle < -math.pi:
+                end_angle += 2 * math.pi
+            
+            # 원호 위의 점들 생성
+            points = []
+            angle_step = resolution / radius  # 각도 스텝
+            
+            current_angle = start_angle
+            while abs(current_angle - end_angle) > angle_step:
+                x = center_x + radius * math.cos(current_angle)
+                y = center_y + radius * math.sin(current_angle)
+                heading = current_angle + math.pi/2
+                points.append((x, y, heading))
+                current_angle += angle_step if end_angle > start_angle else -angle_step
+            
+            # 마지막 점 추가
+            x = center_x + radius * math.cos(end_angle)
+            y = center_y + radius * math.sin(end_angle)
+            points.append((x, y, end_heading))
+            
+            return points
+            
+        except Exception as e:
+            self.get_logger().error(f"Arc generation failed: {e}")
+            return None
+
+    def _check_s_curve_collision(self, points: List[Tuple[float, float, float]]) -> bool:
+        """S자 경로의 충돌 검사"""
+        try:
+            collision_resolution = float(self.get_parameter('s_curve_collision_resolution').value)
+            vehicle_radius = float(self.get_parameter('s_curve_vehicle_radius').value)
+            
+            for point in points[::max(1, int(collision_resolution / 0.1))]:  # 해상도에 따라 샘플링
+                if self._min_distance_to_cones(point[0], point[1]) < vehicle_radius:
+                    return True
+            return False
+            
+        except Exception as e:
+            self.get_logger().error(f"S-curve collision check failed: {e}")
+            return True  # 에러 시 안전을 위해 충돌로 판정
 
 
 def main(args=None) -> None:
