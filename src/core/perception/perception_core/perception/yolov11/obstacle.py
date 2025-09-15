@@ -86,12 +86,12 @@ class YOLO(Node):
         check_requirements(exclude=('pycocotools', 'thop'))
 
         # 클래스 정보 출력 (디버깅용)
-        self.get_logger().info(f"Model classes: {self.names}")
-        self.get_logger().info(f"Total number of classes: {len(self.names)}")
-        self.get_logger().info("Class mapping:")
-        for idx, name in enumerate(self.names):
-            self.get_logger().info(f"  Class {idx}: '{name}'")
-        self.get_logger().info(f"Colors assigned: {len(self.colors)} color sets")
+        # self.get_logger().info(f"Model classes: {self.names}")
+        # self.get_logger().info(f"Total number of classes: {len(self.names)}")
+        # self.get_logger().info("Class mapping:")
+        # for idx, name in enumerate(self.names):
+        #     self.get_logger().info(f"  Class {idx}: '{name}'")
+        # self.get_logger().info(f"Colors assigned: {len(self.colors)} color sets")
 
         # self.get_logger().info("YOLO Detector node has been started.")
 

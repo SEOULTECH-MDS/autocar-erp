@@ -123,7 +123,7 @@ class YOLOv11(Node):
             for coord in coords:
                 pose = Pose()
                 # 포즈의 위치 설정
-                pose.position.x = float(coord[0])  # 0 blue or 1 yellow
+                pose.position.x = float(coord[0])  # class id
                 # pose.position.y = 0.  # confidence
                 # pose.position.z = 0.
                     
@@ -132,10 +132,10 @@ class YOLOv11(Node):
                 pose.orientation.z = float(coord[3])  # xmax
                 pose.orientation.w = float(coord[4])  # ymax
 
-                self.get_logger().info(
-                    f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
-                    f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
-                )
+                # self.get_logger().info(
+                #     f"(xmin, ymin)=({pose.orientation.x:.0f}, {pose.orientation.y:.0f}) "
+                #     f"(xmax, ymax)=({pose.orientation.z:.0f}, {pose.orientation.w:.0f})"
+                # )
 
                 poses.poses.append(pose)
             self.boungingboxes_pub.publish(poses)
@@ -186,8 +186,8 @@ class YOLOv11(Node):
                                 self.target_sign = 4
                             elif cls == 2:
                                 self.target_sign = 5
-                        self.get_logger().info(f"Delivery start mode activated. Detected sign: {self.names[cls]}")
-                        self.get_logger().info(f"Delivery start mode activated. Target sign: {self.names[self.target_sign]}")
+                        # self.get_logger().info(f"Delivery start mode activated. Detected sign: {self.names[cls]}")
+                        # self.get_logger().info(f"Delivery start mode activated. Target sign: {self.names[self.target_sign]}")
                         if xmean >= 550:
                             self.get_logger().info(f"Start sign A{self.sign} detected Stop.")
                             self.start_detected = True
