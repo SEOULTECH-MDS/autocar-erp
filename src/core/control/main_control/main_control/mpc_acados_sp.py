@@ -105,6 +105,8 @@ class Control(Node):
         # 모드 상태
         self.mode = 0
         self.mode_description = "Drive" 
+    
+        self.is_reverse = False
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
@@ -148,7 +150,12 @@ class Control(Node):
         q = msg.pose.pose.orientation
         self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
 
-        self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0))
+
+        if self.is_reverse:
+            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state
+        else:
+            self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 정상 주행일 때 양수 속도 state
+
         if abs(self.v) < 0.001:
             self.v = 0.1
         self.yawrate = msg.twist.twist.angular.z
@@ -627,7 +634,7 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = 1.0
+            marker.color.r = xref[3, i] / 5.0  # 속도에 비례하여 빨간색 조절 (최대 10m/s 기준)
             marker.color.g = 1.0  # 초록색
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명

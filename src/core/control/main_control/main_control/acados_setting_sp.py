@@ -126,8 +126,8 @@ def acados_solver():
     # terminal cost function
     terminal_cost = We_v * ((vehicle_v - v_ref) ** 2) + \
                     We_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
-                    We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
-                    We_yaw * ((vehicle_yaw - yaw_ref) ** 2)                    
+                    We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 
+                    # We_yaw * ((vehicle_yaw - yaw_ref) ** 2) #TODO: 후진일 떄 yaw error 고려 방법 고민                   
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # constraints

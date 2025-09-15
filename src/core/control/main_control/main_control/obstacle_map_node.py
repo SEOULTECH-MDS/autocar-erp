@@ -134,41 +134,69 @@ class ObstacleMap(Node):
             self.get_logger().debug(f'TF 조회 실패: {e}')
             return None
 
+    # def _transform_points_batch(self, points, transform):
+    #     """배치로 포인트들을 한 번에 변환 (직접 velodyne → map)"""
+    #     if not points:
+    #         return []
+        
+    #     # TF에서 변환 행렬 추출
+    #     t = transform.transform.translation
+    #     r = transform.transform.rotation
+        
+    #     # 쿼터니언 → 회전행렬
+    #     x, y, z, w = r.x, r.y, r.z, r.w
+    #     R = np.array([
+    #         [1-2*(y*y + z*z), 2*(x*y - z*w), 2*(x*z + y*w)],
+    #         [2*(x*y + z*w), 1-2*(x*x + z*z), 2*(y*z - x*w)],
+    #         [2*(x*z - y*w), 2*(y*z + x*w), 1-2*(x*x + y*y)]
+    #     ])
+        
+    #     # 평행이동
+    #     T = np.array([t.x, t.y, t.z])
+        
+    #     # velodyne → map
+    #     points_map = []
+    #     for p in points:
+    #         velodyne_point = np.array([
+    #             float(p.x),  
+    #             float(p.y),
+    #             float(p.z)
+    #         ])
+            
+    #         # 직접 velodyne → map 변환
+    #         map_point = R @ velodyne_point + T
+    #         points_map.append((map_point[0], map_point[1], map_point[2]))
+        
+    #     self.transform_count += len(points)
+    #     return points_map
+    
     def _transform_points_batch(self, points, transform):
-        """배치로 포인트들을 한 번에 변환 (직접 velodyne → map)"""
+        """배치로 포인트들을 한 번에 변환 (numpy 벡터화)"""
         if not points:
             return []
-        
+
         # TF에서 변환 행렬 추출
         t = transform.transform.translation
         r = transform.transform.rotation
-        
+
         # 쿼터니언 → 회전행렬
         x, y, z, w = r.x, r.y, r.z, r.w
         R = np.array([
-            [1-2*(y*y + z*z), 2*(x*y - z*w), 2*(x*z + y*w)],
-            [2*(x*y + z*w), 1-2*(x*x + z*z), 2*(y*z - x*w)],
-            [2*(x*z - y*w), 2*(y*z + x*w), 1-2*(x*x + y*y)]
+            [1 - 2*(y*y + z*z),     2*(x*y - z*w),     2*(x*z + y*w)],
+            [    2*(x*y + z*w), 1 - 2*(x*x + z*z),     2*(y*z - x*w)],
+            [    2*(x*z - y*w),     2*(y*z + x*w), 1 - 2*(x*x + y*y)]
         ])
-        
-        # 평행이동
         T = np.array([t.x, t.y, t.z])
-        
-        # velodyne → map
-        points_map = []
-        for p in points:
-            velodyne_point = np.array([
-                float(p.x),  
-                float(p.y),
-                float(p.z)
-            ])
-            
-            # 직접 velodyne → map 변환
-            map_point = R @ velodyne_point + T
-            points_map.append((map_point[0], map_point[1], map_point[2]))
-        
-        self.transform_count += len(points)
-        return points_map
+
+        # 입력 포인트를 (N,3) numpy 배열로 변환
+        pts = np.array([[p.x, p.y, p.z] for p in points], dtype=np.float32)  # (N,3)
+
+        # 벡터화된 변환 (map = R * lidar + T)
+        pts_map = (R @ pts.T).T + T  # (N,3)
+
+        self.transform_count += pts.shape[0]
+        return pts_map.tolist()  # 제어에 전달하기 쉽게 list로 반환
+
 
     def _update_tracked_obstacles_fast(self, points_map, now):
         """벡터화된 장애물 업데이트"""
