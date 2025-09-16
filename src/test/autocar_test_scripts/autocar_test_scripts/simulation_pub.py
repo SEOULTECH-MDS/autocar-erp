@@ -30,66 +30,59 @@ class SimulationPub(Node):
         self.publisher_gps = self.create_publisher(NavSatFix, '/ublox_gps_node/fix', 10)
         self.publisher_imu = self.create_publisher(Imu, '/imu/data', 10)
 
-        # self.obstacle_marker_pub = self.create_publisher(MarkerArray, '/obstacles/markers', 10)
-        self.obstacle_pose_pub = self.create_publisher(PoseArray, '/sensor_fusion/obstacle', 10)
+        # 토픽명 변경: /sensor_fusion/obstacle -> /obstacle_map
+        self.obstacle_marker_pub = self.create_publisher(MarkerArray, '/obstacle_map', 10)
         self.stopline_marker_pub = self.create_publisher(MarkerArray, '/stoplines/markers', 10)
-        # 장애물 정보 설정
-        # self.obstacle_lat = 37.62999526
-        # self.obstacle_lon = 127.08136022
-        # self.obstacle_a = 0.5  # 장축 길이 (meter)
-        # self.obstacle_b = 0.5  # 단축 길이 (meter)
         
-        # self.obstacle1_lat = 37.63004349
-        # self.obstacle1_lon = 127.08137807
-        # self.obstacle2_lat = 37.62999185
-        # self.obstacle2_lon = 127.08135382
+        # 장애물 정보 설정 (Map 좌표계)
+        self.obstacle1_x =  -7.916111469268799
+        self.obstacle1_y = -11.816336631774902
 
-        self.obstacle1_lat = 37.62998188
-        self.obstacle1_lon = 127.08135814
-        self.obstacle2_lat = 37.62995006
-        self.obstacle2_lon = 127.08134290
+        self.obstacle2_x = -10.887680053710938
+        self.obstacle2_y = -14.245729446411133
+        # self.obstacle2_x =  -8.924687385559082
+        # self.obstacle2_y = -10.957145690917969
+  
+
+
+
+        # 정지선 정보 설정 (Map 좌표계)
+        self.stopline_x = 20.0
+        self.stopline_y = 10.0
         
-        # 정지선 정보 설정
-        self.stopline_lat = 37.62983145
-        self.stopline_lon = 127.08144689
-        
-        # UTM 변환 설정 (한국 지역에 맞는 설정)
+        # UTM 변환 설정 (GPS/IMU 시뮬레이션용으로만 사용)
         self.transformer = Transformer.from_proj(
             Proj(proj='latlong', ellps='WGS84', datum='WGS84'),
             Proj(proj='utm', zone=52, ellps='WGS84'),
             always_xy=True
         )
-        # 장애물의 UTM 좌표 계산
-        self.obstacle1_x, self.obstacle1_y = self.transformer.transform(self.obstacle1_lon, self.obstacle1_lat)
-        self.obstacle2_x, self.obstacle2_y = self.transformer.transform(self.obstacle2_lon, self.obstacle2_lat)
         
-        # 정지선의 UTM 좌표 계산
-        self.stopline_x, self.stopline_y = self.transformer.transform(self.stopline_lon, self.stopline_lat)
-        
-        # 장애물 리스트 생성
+        # 장애물 리스트 생성 (Map 좌표계) - CYLINDER 마커용
         self.obstacles = [
             {
                 'x': self.obstacle1_x,
                 'y': self.obstacle1_y,
-                'z' : 0.0,
-                'label': 0
+                'z': 0.0,
+                'height': 1.0,  # 원통 높이
+                'radius': 0.5   # 원통 반지름
             },
             {
                 'x': self.obstacle2_x,
                 'y': self.obstacle2_y,
                 'z': 0.0,
-                'label': 0
+                'height': 1.0,  # 원통 높이
+                'radius': 0.5   # 원통 반지름
             }
         ]
 
-        # 정지선 정보 생성
+        # 정지선 정보 생성 (Map 좌표계)
         self.stoplines = [
             {
                 'x': self.stopline_x,
                 'y': self.stopline_y,
                 'color': ColorRGBA(r=1.0, g=1.0, b=1.0, a=0.9),  # 흰색
                 'scale': {'x': 4.0, 'y': 0.15, 'z': 0.05},  # 정지선 형태 (길고 얇음)
-                'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': np.deg2rad(-90.0)}  # 도로에 수직 (차량 초기 방향에 수직)
+                'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': np.deg2rad(-90.0)}  # 도로에 수직
             }
         ]
 
@@ -106,10 +99,9 @@ class SimulationPub(Node):
         # 로그 제어 변수
         self.last_mode_logged = None  # 마지막으로 로그에 출력한 모드
 
-        # 초기 차량 상태 파라미터 설정
+        # 초기 차량 상태 파라미터 설정 (GPS 시뮬레이션용)
         self.declare_parameter('initial_latitude', 37.630096)  # 미래관 주차장
         self.declare_parameter('initial_longitude', 127.081397)
-        
         # self.declare_parameter('initial_latitude', 37.239205)  # KCITY
         # self.declare_parameter('initial_longitude', 126.773193)
         self.declare_parameter('initial_yaw_deg', -70.0)
@@ -125,7 +117,7 @@ class SimulationPub(Node):
         self.velocity = 0.0  # 현재 속도 (m/s)
         self.steering_angle = 0.0  # 현재 조향각 (라디안)
         
-        # UTM 좌표로 변환
+        # UTM 좌표로 변환 (GPS 시뮬레이션용)
         self.x, self.y = self.transformer.transform(self.longitude, self.latitude)
         
         # 사용자 입력 구독자
@@ -262,8 +254,9 @@ class SimulationPub(Node):
             imu_msg.angular_velocity.z = 0.0
             
         self.publisher_imu.publish(imu_msg)
-        # self.publish_obstacle_marker()
-        self.publish_obstacle_posearray()
+        
+        # 장애물과 정지선 퍼블리시
+        self.publish_obstacle_markers()  # 함수명 변경
         self.publish_stopline_marker()
 
         # 모드 변경 시에만 로그 출력
@@ -272,83 +265,71 @@ class SimulationPub(Node):
             self.get_logger().info(f"현재 모드: {current_mode}")
             self.last_mode_logged = current_mode
 
+    def publish_obstacle_markers(self):
+        """장애물을 MarkerArray로 퍼블리시 (Map 좌표계, CYLINDER 타입)"""
+        marker_array = MarkerArray()
+        
+        # 각 장애물을 CYLINDER 마커로 생성
+        for i, obstacle in enumerate(self.obstacles):
+            marker = Marker()
+            marker.header.frame_id = "map"  # Map 좌표계
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "obstacles"
+            marker.id = i
+            marker.type = Marker.CYLINDER  # 원통 마커로 변경
+            marker.action = Marker.ADD
+            
+            # 위치 설정 (Map 좌표계)
+            marker.pose.position.x = float(obstacle['x'])
+            marker.pose.position.y = float(obstacle['y'])
+            marker.pose.position.z = float(obstacle['z'] + obstacle['height'] / 2)  # 원통 중심 높이
+            
+            # 방향 설정 (기본값: 단위 쿼터니언 - 수직으로 서있는 원통)
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0
+            
+            # 크기 설정 (원통: x,y는 지름, z는 높이)
+            marker.scale.x = obstacle['radius'] * 2  # 지름
+            marker.scale.y = obstacle['radius'] * 2  # 지름
+            marker.scale.z = obstacle['height']      # 높이
+            
+            # 색상 설정 (주황색 라바콘/드럼통 스타일)
+            marker.color.r = 1.0  # 빨간색
+            marker.color.g = 0.5  # 약간의 초록색 (주황색 효과)
+            marker.color.b = 0.0  # 파란색 없음
+            marker.color.a = 0.8  # 약간 투명
+            
+            # 마커 수명 설정 (지속적으로 표시)
+            marker.lifetime.sec = 0  # 0이면 무한대
+            marker.lifetime.nanosec = 0
+            
+            marker_array.markers.append(marker)
+        
+        # /obstacle_map 토픽으로 퍼블리시
+        self.obstacle_marker_pub.publish(marker_array)
 
-
-    # def publish_obstacle_marker(self):
-    #     marker_array = MarkerArray()
-        
-    #     # for문으로 장애물 마커들 생성
-    #     for i, obstacle in enumerate(self.obstacles):
-    #         marker = Marker()
-    #         marker.header.frame_id = "world"
-    #         marker.header.stamp = self.get_clock().now().to_msg()
-    #         marker.ns = "obstacles"
-    #         marker.id = i
-    #         marker.type = Marker.SPHERE
-    #         marker.action = Marker.ADD
-            
-    #         # 위치 설정
-    #         marker.pose.position.x = obstacle['x']
-    #         marker.pose.position.y = obstacle['y']
-    #         marker.pose.position.z = 0.0
-            
-    #         # 크기 설정
-    #         marker.scale.x = obstacle['scale']['x']
-    #         marker.scale.y = obstacle['scale']['y']
-    #         marker.scale.z = obstacle['scale']['z']
-            
-    #         # 색상 설정
-    #         marker.color = obstacle['color']
-            
-    #         marker_array.markers.append(marker)
-        
-    #     self.obstacle_marker_pub.publish(marker_array)
-
-    def publish_obstacle_posearray(self):
-        """장애물을 PoseArray로 퍼블리시"""
-        pose_array = PoseArray()
-        pose_array.header.frame_id = "world"  # 또는 "map"
-        pose_array.header.stamp = self.get_clock().now().to_msg()
-        
-        # 각 장애물을 Pose로 변환
-        for obstacle in self.obstacles:
-            pose = Pose()
-            
-            # 위치 설정
-            pose.position.x = float(obstacle['x'])
-            pose.position.y = float(obstacle['y'])
-            pose.position.z = float(obstacle['z'])
-            
-            # 방향 설정 (기본값: 단위 쿼터니언)
-            pose.orientation.x = 0.0
-            pose.orientation.y = 0.0
-            pose.orientation.z = 0.0
-            pose.orientation.w = 1.0
-            
-            # 라벨 정보는 orientation.z에 저장 (다른 곳에서 이렇게 사용하는 것으로 보임)
-            # pose.orientation.z = float(obstacle['label'])  # 필요시 사용
-            
-            pose_array.poses.append(pose)
-        
-        self.obstacle_pose_pub.publish(pose_array)
-        # 로그에 장애물 정보 추가 (로그 출력 제거)
-        # 장애물 마커만 발행하고 로그는 출력하지 않음
+    # 기존 PoseArray 퍼블리시 함수는 제거하고 위의 MarkerArray만 사용
+    # def publish_obstacle_posearray(self):
+    #     """이 함수는 더 이상 사용하지 않음"""
+    #     pass
 
     def publish_stopline_marker(self):
-        """정지선 마커 퍼블리시"""
+        """정지선 마커 퍼블리시 (Map 좌표계)"""
         marker_array = MarkerArray()
         
         # 정지선 마커들 생성
         for i, stopline in enumerate(self.stoplines):
             marker = Marker()
-            marker.header.frame_id = "world"
+            marker.header.frame_id = "map"  # Map 좌표계로 변경
             marker.header.stamp = self.get_clock().now().to_msg()
             marker.ns = "stoplines"
             marker.id = i
             marker.type = Marker.CUBE  # 정지선은 직육면체로 표현
             marker.action = Marker.ADD
             
-            # 위치 설정
+            # 위치 설정 (Map 좌표계)
             marker.pose.position.x = stopline['x']
             marker.pose.position.y = stopline['y']
             marker.pose.position.z = 0.05  # 지면보다 약간 위에
@@ -383,4 +364,4 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    main() 
+    main()

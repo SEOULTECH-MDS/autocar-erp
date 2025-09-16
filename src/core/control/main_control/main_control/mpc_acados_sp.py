@@ -56,6 +56,7 @@ class Control(Node):
         # self.obstacle_sub = self.create_subscription(MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10)
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10)
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
+        self.reverse_flag_sub = self.create_subscription(Float64, '/reverse_flag', self.reverse_flag_cb, 10)
 
         # 변수 초기화
         self.x = None
@@ -83,8 +84,8 @@ class Control(Node):
 
         self.stopline_distance = 1e6
 
-        self.target_vel = 4.0  # 목표 속도 (m/s)
-        # 추후에 모드에 따라 변경 고려
+        # self.target_vel = 3.0  # 목표 속도 (m/s)
+        # # TODO: 추후에 모드에 따라 변경 고려
 
         self.steering_angle = 0.0
         self.velocity = 0.0
@@ -103,14 +104,14 @@ class Control(Node):
         self.map_origin_y = None
 
         # 모드 상태
-        self.mode = 0
-        self.mode_description = "Drive" 
+        self.mode = 0 
+        self.mode_description = "Drive"  
     
-        self.is_reverse = False
+        self.is_reverse = False 
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([0.2, 0.2, 2.0, 0.1, 1.5, 0.3, 0.4]), # DRIVE
+            0: np.array([0.1, 0.3, 2.5, 0.1, 1.3, 0.4, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -119,6 +120,19 @@ class Control(Node):
             6: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN
         }        
         self.current_weights = self.mode_weights[self.mode]
+
+        # 모드별 목표 속도 설정
+        self.mode_target_vel = {
+            0: 4.0,  # DRIVE
+            1: 0.0,  # PAUSE
+            2: 2.0,  # OBSTACLE_STATIC 
+            3: 2.0,  # OBSTACLE_DYNAMIC
+            4: 3.0,  # DELIVERY
+            5: 3.0,  # PARKING
+            6: 3.0   # RETURN
+        }
+        self.target_vel = self.mode_target_vel[self.mode]
+
 
         # MPC Solver 초기화
         self.solver = acados_solver() 
@@ -182,12 +196,20 @@ class Control(Node):
             self.mode = msg.current_mode
             self.mode_description = msg.description
 
+            # 모드별 가중치 및 목표 속도 업데이트
             if self.mode in self.mode_weights:
                 self.current_weights = self.mode_weights[self.mode]
-                self.get_logger().info(f"모드 변경: {self.mode_description}, 가중치 변경")
+                # self.get_logger().info(f"모드 변경: {self.mode_description}, 가중치 변경")
             else: 
                 self.get_logger().warn(f"정의되지 않은 모드: {self.mode}, 기존 가중치 사용")
 
+            if self.mode in self.mode_target_vel:
+                self.target_vel = self.mode_target_vel[self.mode]
+            else:
+                self.get_logger().warn(f"정의되지 않은 모드: {self.mode}, 기존 목표 속도 사용")
+
+    def reverse_flag_cb(self, msg):
+        self.is_reverse = bool(msg.data)
 
     def calc_current_s(self, _cubic_spline):
         """
@@ -449,6 +471,14 @@ class Control(Node):
         u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a)
         x_opt = np.zeros((N, NX))  # 상태 변수 초기화 (x, y, yaw, v, s)
 
+        # if self.fail_count > 0:
+        #     try:
+        #         self.solver.set(0, "x", x0)
+        #         self.solver.constraints_set(0, "lbx", x0)
+        #         self.solver.constraints_set(0, "ubx", x0)
+        #     except Exception as e:
+        #         self.get_logger().error(f"Solver 상태 재설정 중 오류: {str(e)}")
+
         # Solver 초기 상태 변수 설정 
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
@@ -476,11 +506,13 @@ class Control(Node):
         if status != 0:
             self.fail_count += 1
             self.get_logger().error(f"MPC Solver failed with status {status}.")
-            # self.prev_steering_angle *= 0.98
+            self.prev_steering_angle *= 0.98
             self.prev_velocity *= 0.98  # solver failure 시 속도 감소
             self.set_vehicle_command(self.prev_steering_angle, self.prev_velocity) # 이전 제어 입력으로 차량에 입력
             return
         
+        self.fail_count = 0  # 성공 시 fail count 초기화
+
         # self.get_logger().info(f"tan_vec: {tan_vec}\
         #                        \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
         
@@ -491,8 +523,8 @@ class Control(Node):
 
         # 제어 입력
         # self.steering_angle = u_opt[1, 0] - 0.14137166941  # 조향각 (delta) alignment 보정 -8.0도
-        self.steering_angle = u_opt[1, 0]   # 조향각 (delta)
-        self.velocity = x_opt[1, 3]        # 속도 (v)
+        self.velocity = x_opt[1, 3]        # 속도 (v) -> 속도는 1step 뒤의 값을 사용
+        self.steering_angle = u_opt[0, 0]   # 조향각 (delta) -> 조향각은 0step의 값을 사용
 
         # 이전 제어 입력 저장 (다음 실패 시 fallback용)
         self.prev_steering_angle = self.steering_angle
@@ -500,10 +532,10 @@ class Control(Node):
 
         # s 값이 목표 지점에 도달했는지 확인 -> local path 활용 시 s의 끝에 도달했을 떄 속도를 0으로 설정
         remaining_distance = current_cubic_spline.s[-1] - self.s
-        if remaining_distance <= min(current_cubic_spline.s[-1]*0.1, 0.5): # s의 10% or 0.5m 이내에 도달했으면 정지
+        if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 0.5): # s의 20%(path가 2.5m보다 짧을 경우) or 0.5m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
-        if self.mode == 1 and self.stopline_distance < 1.5: # PAUSE 모드이고 정지선 까지 거리가 1.5m 이내이면 정지
+        if self.mode == 1 and self.stopline_distance < 2.5: # PAUSE 모드이고 정지선 까지 거리가 2.5m 이내이면 정지
             self.velocity = 0.0
 
         # 차량에 제어 명령 전송
@@ -536,7 +568,7 @@ class Control(Node):
         text_msg = OverlayText()
         text_msg.width = 500
         text_msg.height = 200
-        text_msg.text_size = 15.0
+        text_msg.text_size = 13.0
         text_msg.line_width = 2
 
         text_msg.bg_color = ColorRGBA(r=0.0, g=0.0, b=0.0, a=0.5) # 배경색 (반투명 검정)

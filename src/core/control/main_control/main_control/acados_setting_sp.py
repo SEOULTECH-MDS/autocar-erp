@@ -22,10 +22,10 @@ def acados_solver():
 
     # 제약 조건 설정
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
-    MAX_SPEED = 5.0  # 최대 속도 [m/s]
-    MIN_SPEED = -5.0  # 최소 속도 [m/s] 
+    MAX_SPEED = 6.0  # 최고 속도 [m/s]
+    MIN_SPEED = -6.0  # 최저 속도 [m/s] 
     MAX_ACCEL = 9.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
-    MIN_ACCEL = -1e3  # 최대 감속도 [m/s^2]
+    MIN_ACCEL = -5.0  # 최대 감속도 [m/s^2]
 
     NX = 5  # reference size (x, y, yaw, v, s)
     ND = 1 # 이전 조향각 입력 크기 (delta)
@@ -126,8 +126,8 @@ def acados_solver():
     # terminal cost function
     terminal_cost = We_v * ((vehicle_v - v_ref) ** 2) + \
                     We_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
-                    We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 
-                    # We_yaw * ((vehicle_yaw - yaw_ref) ** 2) #TODO: 후진일 떄 yaw error 고려 방법 고민                   
+                    We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
+                    We_yaw * ((vehicle_yaw - yaw_ref) ** 2) #TODO: 후진일 떄 yaw error 고려 방법 고민                   
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # constraints
@@ -140,7 +140,7 @@ def acados_solver():
     ocp.constraints.ubx = np.array([1e10, 1e10, 1e10, MAX_SPEED, 1e10])  # 상태 변수 상한
     ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4]) # 상태 변수 인덱스
 
-    r_safe = 0.5
+    r_safe = 1.5
     distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
     distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
     ocp.model.con_h_expr = vertcat(distance1, distance2)
@@ -162,9 +162,11 @@ def acados_solver():
     ocp.solver_options.nlp_solver_tol_ineq = 1e-4  
     ocp.solver_options.nlp_solver_tol_comp = 1e-4  
     ocp.solver_options.globalization = "MERIT_BACKTRACKING"  
-    ocp.solver_options.regularize_method = "CONVEXIFY"  
+    # ocp.solver_options.regularize_method = "CONVEXIFY" 
+    ocp.solver_options.regularize_method = "MIRROR" 
     ocp.solver_options.globalization_fixed_step_length = 0.05
     ocp.solver_options.levenberg_marquardt = 1e-4  
+    
 
     solver = AcadosOcpSolver(ocp)
 
