@@ -67,9 +67,20 @@ def generate_launch_description():
                 # 경로 생성 파라미터
                 {'path_resolution': 0.1},
                 {'auto_advance': True},
+                {'test_mode_immediate_s_curve': False},  # 테스트 모드: False=정상, True=S자 경로 즉시 생성
 
                 {'show_stage1_path': True},
-                {'publish_unified_waypoints': True},
+                {'publish_unified_waypoints': False},  # 현재 스테이지만 퍼블리시
+                
+                # S-Curve 파라미터
+                {'s_curve_enabled': True},
+                {'s_curve_radius1': 2.0},
+                {'s_curve_radius2': 2.0},
+                {'s_curve_middle_offset': 0.5},
+                {'s_curve_smoothing': True},
+                {'s_curve_resolution': 0.1},
+                {'s_curve_collision_resolution': 0.05},
+                {'s_curve_vehicle_radius': 1.0},
                 
                 # 프레임 설정
                 {'frame_id': 'world'},

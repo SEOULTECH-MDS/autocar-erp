@@ -78,7 +78,7 @@ def generate_launch_description():
                 # ema_alpha: 지수이동평균의 알파(0~1, 높을수록 반응 빠름/노이즈 큼)
                 'ema_alpha': 0.3,
                 # forget_time_sec: 관측 끊긴 트랙을 삭제하기까지 대기 시간(s)
-                'forget_time_sec': `1.5,
+                'forget_time_sec': 1.5,
                 # min_count_to_publish: 이 횟수 이상 관측된 트랙만 퍼블리시
                 'min_count_to_publish': 2,
                 # publish_rate_hz: 안정화 결과를 퍼블리시하는 주기(Hz)
