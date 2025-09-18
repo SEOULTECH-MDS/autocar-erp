@@ -187,7 +187,7 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   set_color(&cl_no_stopping_areas, 0.37, 0.37, 0.37, 0.5);
   set_color(&cl_speed_bumps, 0.56, 0.40, 0.27, 0.5);
   set_color(&cl_crosswalks, 0.80, 0.80, 0.0, 0.5);
-  set_color(&cl_obstacle_polygons, 0.4, 0.27, 0.27, 0.5);
+  set_color(&cl_obstacle_polygons, 0.4, 0.27, 0.27, 0.9);
   set_color(&cl_parking_lots, 1.0, 1.0, 1.0, 0.2);
   set_color(&cl_parking_spaces, 1.0, 1.0, 1.0, 0.3);
   set_color(&cl_lanelet_id, 0.5, 0.5, 0.5, 0.999);
@@ -345,6 +345,8 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   adjust_z_by_namespace("road_lanelets", -0.05);
   adjust_z_by_namespace("stop_lines", +0.05);
   adjust_z_by_namespace("stop_lines_raw", +0.05);
+  // Raise obstacles slightly to make them more visible above road surface
+  adjust_z_by_namespace("obstacles", +0.02);
 
   pub_marker_->publish(map_marker_array);
 }
