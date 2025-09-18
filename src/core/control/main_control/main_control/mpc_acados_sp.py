@@ -81,6 +81,10 @@ class Control(Node):
         self.obs1_y = 1e4
         self.obs2_x = 1e4
         self.obs2_y = 1e4
+        self.obs3_x = 1e4
+        self.obs3_y = 1e4
+        self.obs4_x = 1e4
+        self.obs4_y = 1e4
 
         self.stopline_distance = 1e6
 
@@ -107,11 +111,11 @@ class Control(Node):
         self.mode = 0 
         self.mode_description = "Drive"  
     
-        self.is_reverse = False 
+        self.is_reverse = False
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([0.1, 0.3, 2.5, 0.1, 1.3, 0.4, 0.4]), # DRIVE
+            0: np.array([0.1, 0.3, 1.0, 0.1, 1.4, 0.2, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -123,12 +127,12 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 4.0,  # DRIVE
+            0: 3.0,  # DRIVE
             1: 0.0,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC 
             3: 2.0,  # OBSTACLE_DYNAMIC
             4: 3.0,  # DELIVERY
-            5: 3.0,  # PARKING
+            5: 2.0,  # PARKING
             6: 3.0   # RETURN
         }
         self.target_vel = self.mode_target_vel[self.mode]
@@ -172,6 +176,7 @@ class Control(Node):
 
         if abs(self.v) < 0.001:
             self.v = 0.1
+            
         self.yawrate = msg.twist.twist.angular.z
 
         # if len(self.xs_global) > 0 or len(self.xs_local) > 0:
@@ -331,6 +336,7 @@ class Control(Node):
     def obstacle_cb(self, msg):
         """ 
         obstacle_map_node에서 변환된 장애물 위치 업데이트 (이미 map 좌표계)
+        최대 4개 장애물 지원 - 개수 변경 시 기존 정보 초기화
         """
         if len(msg.markers) == 0:
             self.get_logger().warn("장애물 데이터가 없습니다.")
@@ -352,23 +358,46 @@ class Control(Node):
                     obstacles.append((obs_x, obs_y))
                     self.get_logger().debug(f"장애물: ({obs_x:.2f}, {obs_y:.2f})")
             
-            # MPC용 장애물 설정 (최대 2개)
-            if len(obstacles) >= 2:
+            # 모든 장애물을 먼저 초기화**
+            self.obs1_x = 1e4
+            self.obs1_y = 1e4
+            self.obs2_x = 1e4
+            self.obs2_y = 1e4
+            self.obs3_x = 1e4
+            self.obs3_y = 1e4
+            self.obs4_x = 1e4
+            self.obs4_y = 1e4
+            
+            # 감지된 장애물 수에 따라 설정
+            if len(obstacles) >= 4:
                 self.obs1_x, self.obs1_y = obstacles[0]
                 self.obs2_x, self.obs2_y = obstacles[1]
+                self.obs3_x, self.obs3_y = obstacles[2]
+                self.obs4_x, self.obs4_y = obstacles[3]
+                self.get_logger().info(f"장애물 4개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), "
+                                    f"obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), "
+                                    f"obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f}), "
+                                    f"obs4: ({self.obs4_x:.2f}, {self.obs4_y:.2f})")
+            elif len(obstacles) == 3:
+                self.obs1_x, self.obs1_y = obstacles[0]
+                self.obs2_x, self.obs2_y = obstacles[1]
+                self.obs3_x, self.obs3_y = obstacles[2]
+                # obs4는 이미 1e4로 초기화됨
+                self.get_logger().info(f"장애물 3개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), "
+                                    f"obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), "
+                                    f"obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f})")
+            elif len(obstacles) == 2:
+                self.obs1_x, self.obs1_y = obstacles[0]
+                self.obs2_x, self.obs2_y = obstacles[1]
+                # obs3, obs4는 이미 1e4로 초기화됨
                 self.get_logger().info(f"장애물 2개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), "
-                                      f"obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f})")
+                                    f"obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f})")
             elif len(obstacles) == 1:
                 self.obs1_x, self.obs1_y = obstacles[0]
-                self.obs2_x, self.obs2_y = obstacles[0]  # 두 번째 장애물을 첫 번째와 동일하게 설정
-                self.get_logger().info(f"장애물 1개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), "
-                                      f"obs2: 동일 위치")
+                # obs2, obs3, obs4는 이미 1e4로 초기화됨
+                self.get_logger().info(f"장애물 1개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f})")
             else:
-                # 장애물이 없거나 모든 변환이 실패한 경우
-                self.obs1_x = 1e4
-                self.obs1_y = 1e4
-                self.obs2_x = 1e4
-                self.obs2_y = 1e4
+                # 모든 장애물이 이미 1e4로 초기화됨
                 self.get_logger().warn("유효한 장애물이 없습니다. 가상 위치로 설정")
 
         except Exception as e:
@@ -378,7 +407,11 @@ class Control(Node):
             self.obs1_y = 1e4
             self.obs2_x = 1e4
             self.obs2_y = 1e4
-
+            self.obs3_x = 1e4
+            self.obs3_y = 1e4
+            self.obs4_x = 1e4
+            self.obs4_y = 1e4
+            
     def stopline_cb(self, msg):
         """ 
         정지선 위치 업데이트 
@@ -466,7 +499,9 @@ class Control(Node):
         self.calc_current_s(current_cubic_spline)
         xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
         x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
-        obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y])
+        obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y, self.obs3_x, self.obs3_y, self.obs4_x, self.obs4_y])
+
+        # obs = np.array([1e4, 1e4, self.obs2_x, self.obs2_y])
 
         u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a)
         x_opt = np.zeros((N, NX))  # 상태 변수 초기화 (x, y, yaw, v, s)
@@ -567,7 +602,7 @@ class Control(Node):
     def publish_overlay_text(self):
         text_msg = OverlayText()
         text_msg.width = 500
-        text_msg.height = 200
+        text_msg.height = 250
         text_msg.text_size = 13.0
         text_msg.line_width = 2
 
@@ -581,7 +616,8 @@ class Control(Node):
             \n Mode: {self.mode} ({self.mode_description}) \
             \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f}) \
             \n weights: {self.current_weights} \
-            \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}) "
+            \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), \
+            Obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f}), Obs4: ({self.obs4_x:.2f}, {self.obs4_y:.2f}) "
 
 
         self.overlay_pub.publish(text_msg)

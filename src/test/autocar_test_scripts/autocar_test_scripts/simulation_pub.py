@@ -30,20 +30,27 @@ class SimulationPub(Node):
         self.publisher_gps = self.create_publisher(NavSatFix, '/ublox_gps_node/fix', 10)
         self.publisher_imu = self.create_publisher(Imu, '/imu/data', 10)
 
-        # 토픽명 변경: /sensor_fusion/obstacle -> /obstacle_map
+
         self.obstacle_marker_pub = self.create_publisher(MarkerArray, '/obstacle_map', 10)
         self.stopline_marker_pub = self.create_publisher(MarkerArray, '/stoplines/markers', 10)
         
         # 장애물 정보 설정 (Map 좌표계)
-        self.obstacle1_x =  -7.916111469268799
-        self.obstacle1_y = -11.816336631774902
 
-        self.obstacle2_x = -10.887680053710938
-        self.obstacle2_y = -14.245729446411133
-        # self.obstacle2_x =  -8.924687385559082
-        # self.obstacle2_y = -10.957145690917969
-  
+        # s자 회피 장애물 2개
+        # self.obstacle1_x =  -7.916111469268799
+        # self.obstacle1_y = -11.816336631774902
+        # self.obstacle2_x = -10.887680053710938
+        # self.obstacle2_y = -14.245729446411133
 
+        # s자 회피 장애물 4개
+        self.obstacle1_x = -8.015657424926758
+        self.obstacle1_y = -9.284770965576172
+        self.obstacle2_x = -7.257998943328857
+        self.obstacle2_y = -9.576468467712402
+        self.obstacle3_x = -9.711674690246582
+        self.obstacle3_y = -13.086746215820312
+        self.obstacle4_x = -10.706787109375
+        self.obstacle4_y = -12.743818283081055
 
 
         # 정지선 정보 설정 (Map 좌표계)
@@ -69,6 +76,20 @@ class SimulationPub(Node):
             {
                 'x': self.obstacle2_x,
                 'y': self.obstacle2_y,
+                'z': 0.0,
+                'height': 1.0,  # 원통 높이
+                'radius': 0.5   # 원통 반지름
+            },
+            {
+                'x': self.obstacle3_x,
+                'y': self.obstacle3_y,
+                'z': 0.0,
+                'height': 1.0,  # 원통 높이
+                'radius': 0.5   # 원통 반지름
+            },
+            {
+                'x': self.obstacle4_x,
+                'y': self.obstacle4_y,
                 'z': 0.0,
                 'height': 1.0,  # 원통 높이
                 'radius': 0.5   # 원통 반지름
