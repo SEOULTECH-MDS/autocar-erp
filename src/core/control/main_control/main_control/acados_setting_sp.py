@@ -25,7 +25,7 @@ def acados_solver():
     MAX_SPEED = 6.0  # 최고 속도 [m/s]
     MIN_SPEED = -6.0  # 최저 속도 [m/s] 
     MAX_ACCEL = 9.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
-    MIN_ACCEL = -5.0  # 최대 감속도 [m/s^2]
+    MIN_ACCEL = -12.0  # 최대 감속도 [m/s^2]
 
     NX = 5  # reference size (x, y, yaw, v, s)
     ND = 1 # 이전 조향각 입력 크기 (delta)
@@ -88,7 +88,7 @@ def acados_solver():
     tx = ocp.model.p[6]  # 접선 벡터 x
     ty = ocp.model.p[7]  # 접선 벡터 y
 
-    W_acc = ocp.model.p[8]  # 가속도 입력 크기 가중치 (대폭 감소 - 빠른 가속 적극 허용)
+    W_acc = ocp.model.p[8]  # 가속도 입력 크기 가중치 
     W_steer = ocp.model.p[9]  # 조향각 입력 크기 가중치 0.2
     W_steer_rate = ocp.model.p[10]  # 조향각 변화율 가중치
     W_v = ocp.model.p[11]  # 속도 error 가중치
@@ -131,7 +131,7 @@ def acados_solver():
     terminal_cost = We_v * ((vehicle_v - v_ref) ** 2) + \
                     We_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                     We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
-                    We_yaw * ((vehicle_yaw - yaw_ref) ** 2) #TODO: 후진일 떄 yaw error 고려 방법 고민                   
+                    We_yaw * ((vehicle_yaw - yaw_ref) ** 2)                    
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # constraints
@@ -144,7 +144,7 @@ def acados_solver():
     ocp.constraints.ubx = np.array([1e10, 1e10, 1e10, MAX_SPEED, 1e10])  # 상태 변수 상한
     ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4]) # 상태 변수 인덱스
 
-    r_safe = 0.8
+    r_safe = 1.0
     distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
     distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
     distance3 = (vehicle_x - obs3_x)**2 + (vehicle_y - obs3_y)**2

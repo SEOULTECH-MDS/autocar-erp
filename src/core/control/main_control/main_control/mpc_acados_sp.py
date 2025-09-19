@@ -52,8 +52,6 @@ class Control(Node):
 
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
-        # self.obstacle_sub = self.create_subscription(PoseArray, '/sensor_fusion/obstacle', self.obstacle_cb, 10)
-        # self.obstacle_sub = self.create_subscription(MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10)
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10)
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
         self.reverse_flag_sub = self.create_subscription(Float64, '/reverse_flag', self.reverse_flag_cb, 10)
@@ -93,7 +91,8 @@ class Control(Node):
 
         self.steering_angle = 0.0
         self.velocity = 0.0
-        
+        self.acc = 0.0
+
         # 이전 제어 입력 저장용 변수 (solver 실패 시 fallback용)
         self.prev_steering_angle = 0.0
         self.prev_velocity = 0.0
@@ -111,11 +110,12 @@ class Control(Node):
         self.mode = 0 
         self.mode_description = "Drive"  
     
+        # self.is_reverse = True
         self.is_reverse = False
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([0.1, 0.3, 1.0, 0.1, 1.4, 0.2, 0.4]), # DRIVE
+            0: np.array([0.1, 0.3, 2.0, 0.1, 2.0, 0.4, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -457,7 +457,10 @@ class Control(Node):
                 current_s = s
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
-                xref[2, i] = cubic_spline.calc_yaw(s)
+                if self.is_reverse:
+                    xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
+                else:
+                    xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
                 xref[3, i] = target_vel
                 xref[4, i] = s 
 
@@ -557,9 +560,10 @@ class Control(Node):
         self.visualize_predicted_trajectory(x_opt)
 
         # 제어 입력
-        # self.steering_angle = u_opt[1, 0] - 0.14137166941  # 조향각 (delta) alignment 보정 -8.0도
         self.velocity = x_opt[1, 3]        # 속도 (v) -> 속도는 1step 뒤의 값을 사용
         self.steering_angle = u_opt[0, 0]   # 조향각 (delta) -> 조향각은 0step의 값을 사용
+
+        self.acc = u_opt[0, 1] # 가속도 (a) (실제 cmd_vel로는 속도 값 이용, 디버그용)
 
         # 이전 제어 입력 저장 (다음 실패 시 fallback용)
         self.prev_steering_angle = self.steering_angle
@@ -611,6 +615,7 @@ class Control(Node):
 
         # 표시할 텍스트 설정
         text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
+            \n Acc: {self.acc:.2f}m/s² \
             \n Fail Count: {self.fail_count}\
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \

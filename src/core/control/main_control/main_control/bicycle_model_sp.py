@@ -14,7 +14,7 @@ def export_spline_bicycle_model() -> AcadosModel:
     WB = 1.566
     MASS = 1000.0  # 차량 질량 [kg]
     ROLLING_RESISTANCE = 0.015  # 굴림 저항 계수
-    AIR_DRAG = 0.3  # 공기 저항 계수
+    # AIR_DRAG = 0.3  # 공기 저항 계수s
 
     # states
     x = SX.sym("x")
