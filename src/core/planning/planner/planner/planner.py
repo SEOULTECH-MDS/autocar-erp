@@ -113,48 +113,98 @@ class PlannerNode(Node):
         super().__init__('planner_node')
 
         # ==================== 주차 계획 파라미터 ====================
-        # Stage-1 (전진 이동) 관련 파라미터
-        self.declare_parameter('yaw_offset_deg', 0.0)      # Stage-1에서 좌측으로 선회할 각도 [도]
-        self.declare_parameter('s_overshoot', 1.0)          # [사용안함] 슬롯 중심을 지나칠 거리 [m]
-        self.declare_parameter('front_margin', 3)         # 주차 공간 전방 경계에서 추가 여유 [m]
-        self.declare_parameter('clear_lateral', 1.3)        # 주차 공간 옆쪽(도로쪽) 여유 [m]
-        self.declare_parameter('default_slot_len', 5.0)     # 주차 공간 길이 기본값 [m]
-        self.declare_parameter('default_slot_width', 2.5)   # 주차 공간 폭 기본값 [m]
-        self.declare_parameter('angle_eps_deg', 5.0)        # [사용안함] 평행/수직 분류 각도 허용치 [도]
-        self.declare_parameter('prefer_near_open_slot', False)  # [사용안함] 가까운 주차 공간 선호
-        self.declare_parameter('near_radius', 8.0)          # [사용안함] 가까운 주차 공간 반경 [m]
         
-        # [사용안함] 도로 중심선 기반 측면 배치
-        self.declare_parameter('prefer_centerline_lateral', False)
-        self.declare_parameter('centerline_left_margin', 0.1)  # 도로 중심선 기준 왼쪽 여유 [m]
+        # ==================== 공통 파라미터 ====================
+        # 차량 물리적 특성
+        self.declare_parameter('vehicle_width', 1.16)           # 차량 폭 [m]
+        self.declare_parameter('vehicle_length', 2.02)          # 차량 길이 [m]
+        self.declare_parameter('safety_margin', 0.1)            # 충돌 회피를 위한 안전 여유 [m]
+        self.declare_parameter('path_resolution', 0.01)         # 경로 점들 사이의 간격 [m]
         
-        # 경로 생성 및 회전 관련 파라미터
-        self.declare_parameter('turn_radius', 0.5)          # Stage-2 원호 경로의 회전 반경 [m]
-        self.declare_parameter('path_resolution', 0.01)     # 경로 점들 사이의 간격 [m]
-        self.declare_parameter('vehicle_width', 1.16)       # 차량 폭 [m]
-        self.declare_parameter('vehicle_length', 2.02)      # 차량 길이 [m]
-        self.declare_parameter('safety_margin', 0.1)        # 충돌 회피를 위한 안전 여유 [m]
-        self.declare_parameter('show_stage1_path', True)    # Stage-1 경로 시각화 여부
-        # Stage-2 (후진 주차) 관련 파라미터
+        # 주차 공간 기본 정보
+        self.declare_parameter('default_slot_len', 5.0)         # 주차 공간 길이 기본값 [m]
+        self.declare_parameter('default_slot_width', 2.5)       # 주차 공간 폭 기본값 [m]
+        
+        # ==================== Stage-1 (전진 이동) 파라미터 ====================
+        self.declare_parameter('front_margin', 3)               # 주차 공간 전방 경계에서 추가 여유 [m]
+        self.declare_parameter('clear_lateral', 1.3)            # 주차 공간 옆쪽(도로쪽) 여유 [m]
+        self.declare_parameter('yaw_offset_deg', 0.0)           # Stage-1에서 좌측으로 선회할 각도 [도]
+        self.declare_parameter('show_stage1_path', True)        # Stage-1 경로 시각화 여부
+        
+        # ==================== Stage-2 목표 계산 파라미터 ====================
         self.declare_parameter('stage2_use_map_y_offset', False)  # Stage-2 목표를 map 프레임 y 오프셋으로 설정
         self.declare_parameter('stage2_goal_offset_y', 0.0)     # map 프레임 y축 오프셋 [m]
         self.declare_parameter('stage2_back_offset', 0.0)       # 슬롯 진행축 기준 뒤로 이동 거리 [m] (대체 옵션)
-        
         self.declare_parameter('stage2_inside_margin', 0.2)     # 주차 공간 내부 안전 여유 [m]
-        self.declare_parameter('stage2_k_lat', 0.8)            # [사용안함] 측면 제어 게인
-        self.declare_parameter('stage2_k_yaw', 0.8)            # [사용안함] 방향 제어 게인
-        self.declare_parameter('stage2_max_steps', 800)        # [사용안함] 최대 스텝 수
-        self.declare_parameter('stage2_lookahead', 1.0)        # [사용안함] 전방 예측 거리 [m]
+
+        # ==================== Stage-3 (최종 정렬) 파라미터 ====================
+        self.declare_parameter('stage3_enabled', True)          # Stage-3 (최종 정렬) 활성화 여부
+        # [사용안함] Stage-3 관련 파라미터들
+        self.declare_parameter('stage3_preview', True)          # [사용안함] Stage-3 미리보기
         
-        # Stage-3 (최종 정렬) 관련 파라미터
-        self.declare_parameter('stage3_preview', True)         # [사용안함] Stage-3 미리보기
+        # ==================== Stage-2 경로 생성 우선순위별 파라미터 ====================
         
-        # 스테이지 제어 관련 파라미터
-        self.declare_parameter('auto_advance', False)          # 오도메트리 기반 자동 스테이지 전환 여부
-        self.declare_parameter('test_mode_immediate_s_curve', True)  # 테스트 모드: 주차 포즈 수신 시 즉시 S자 경로 생성
+        # === 1순위: 작년 로직 (Old-logic) - 3개 직선 구간 경로 ===
+        self.declare_parameter('oldlogic_use', True)            # 작년 로직 사용 여부 (최우선)
+        self.declare_parameter('oldlogic_pre_reverse', 1.5)     # Stage-1 골에서 반대방향 직진 거리 [m]
+        self.declare_parameter('oldlogic_pre_straight', 0.2)    # 초기 직선 step 크기 [m]
+        self.declare_parameter('oldlogic_center_offset', 1.5)   # 구역 중심 오프셋 (주차위치에서 앞으로) [m]
+        # [사용안함] 작년 로직 관련 파라미터들
+        self.declare_parameter('oldlogic_min_R', 2.55)          # [사용안함] 최소 회전 반경 [m]
+        self.declare_parameter('oldlogic_spot_dx', 1.15)        # [사용안함] p3 보정: 세로 이동 [m]
+        self.declare_parameter('oldlogic_spot_dy', 1.20)        # [사용안함] p3 보정: 가로 이동 [m]
+        self.declare_parameter('oldlogic_arc_points', 15)       # [사용안함] 각 원호 샘플 점 수
+        
+        # === 2순위: 하드코딩 S-curve 경로 ===
+        self.declare_parameter('stage2_use_hardcoded', True)    # 하드코딩 경로 사용 (2순위)
+        self.declare_parameter('hc_wall_clear', 0.35)           # 벽과 최소 간격 [m]
+        self.declare_parameter('hc_straight_len', 1.6)          # 벽 따라 곧게 내려오는 길이 [m]
+        self.declare_parameter('hc_c1', 0.8)                    # 베지어 제어점 길이(시작쪽) [m]
+        self.declare_parameter('hc_c2', 1.2)                    # 베지어 제어점 길이(끝쪽) [m]
+        self.declare_parameter('hc_goal_back', 0.8)             # 슬롯 중심에서 뒤로(−x) 얼마나 들어갈지 [m]
+        self.declare_parameter('hc_inside_margin', 0.20)        # 슬롯 안쪽으로 들어갈 y 여유 [m]
+        self.declare_parameter('hc_ds', 0.04)                   # 샘플 간격 [m]
+        
+        # === 3순위: 벽 따라 S-curve 경로 (곡률 프로파일 기반) ===
+        self.declare_parameter('stage2_shape_mode', 's_curve')  # s_curve / single_turn
+        self.declare_parameter('shape_total_length', 8.0)       # [m] 전체 아크길이 (매우 길게)
+        self.declare_parameter('shape_kappa_max', 0.60)         # [1/m] 꺾임 강도 (매우 강하게)
+        self.declare_parameter('shape_switch_pos', 0.80)        # S전환 위치 (매우 늦게)
+        self.declare_parameter('shape_gamma', 4.0)              # 펄스 폭 (매우 부드럽게)
+        self.declare_parameter('shape_ds', 0.08)                # [m] 샘플 간격 (더 거칠게)
+        self.declare_parameter('shape_wall_clearance', 0.15)    # [m] 벽과 최소 간격 (매우 가깝게)
+        self.declare_parameter('shape_wall_hold_s', 4.0)        # [m] 시작~여기까지 벽 따라 내려오기 (매우 길게)
+        self.declare_parameter('shape_wall_softness', 20.0)     # 부드러운 제약 (매우 강하게)
+        self.declare_parameter('wheelbase', 1.10)               # [m] 휠베이스
+        self.declare_parameter('delta_max_deg', 35.0)           # [deg] 최대 조향각
+        
+        # === 4순위: 기존 S-curve 경로 (베지어 곡선 기반) ===
+        self.declare_parameter('s_curve_enabled', True)         # S자 경로 사용 여부 (4순위)
+        self.declare_parameter('s_curve_resolution', 0.1)       # S자 경로 점들 사이의 간격 [m]
+        self.declare_parameter('s_curve_collision_resolution', 0.05)  # S자 경로 충돌 검사 해상도 [m]
+        self.declare_parameter('s_curve_vehicle_radius', 1.0)   # S자 경로 충돌 검사용 차량 반경 [m]
+        # [사용안함] 기존 S-curve 관련 파라미터들
+        self.declare_parameter('s_curve_radius1', 2.0)          # [사용안함] S자 경로 첫 번째 원호 반경 [m]
+        self.declare_parameter('s_curve_radius2', 2.0)          # [사용안함] S자 경로 두 번째 원호 반경 [m]
+        self.declare_parameter('s_curve_middle_offset', 0.5)    # [사용안함] S자 경로 중간점 오프셋 [m]
+        self.declare_parameter('s_curve_smoothing', True)       # [사용안함] 곡률 스무딩 활성화
+        
+
+        
+        # ==================== 스테이지 제어 파라미터 ====================
+        self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
+        self.declare_parameter('test_mode_immediate_s_curve', False)  # 테스트 모드: 주차 포즈 수신 시 즉시 S자 경로 생성
         self.declare_parameter('stage_position_tolerance', 0.25)  # 스테이지 완료 위치 허용 오차 [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 8.0)    # 스테이지 완료 방향 허용 오차 [도]
         self.declare_parameter('publish_unified_waypoints', False)  # 현재 스테이지만 /waypoints 퍼블리시 여부
+        
+        # ==================== 디버그 파라미터 ====================
+        self.declare_parameter('publish_debug_paths', True)     # 디버그 경로 퍼블리싱 여부 (시각화용)
+        
+        # ==================== 주차 완료 파라미터 ====================
+        self.declare_parameter('parking_stop_duration', 3.0)    # 주차 완료 시 정지 시간 [초]
+        self.declare_parameter('parking_complete_yaw_tolerance_deg', 5.0)  # 주차 완료 방향 임계치 [도]
+        
         # ==================== 배달 미션 파라미터 ====================
         self.declare_parameter('delivery_position_tolerance', 0.3)  # 배달 목표 위치 허용 오차 [m]
         self.declare_parameter('delivery_yaw_tolerance_deg', 12.0)  # 배달 목표 방향 허용 오차 [도]
@@ -162,52 +212,18 @@ class PlannerNode(Node):
         self.declare_parameter('delivery_auto_activate', False)    # 배달 토픽 수신 시 자동 모드 전환 (기본 OFF)
         self.declare_parameter('enable_delivery_planning', False)  # 배달 경로 생성 전체 활성화 (기본 OFF)
         
-        # ==================== S자 경로 계획 파라미터 ====================
-        self.declare_parameter('s_curve_enabled', True)           # Stage-2에서 S자 경로 사용 여부
-        self.declare_parameter('s_curve_radius1', 2.0)            # S자 경로 첫 번째 원호 반경 [m]
-        self.declare_parameter('s_curve_radius2', 2.0)            # S자 경로 두 번째 원호 반경 [m]
-        self.declare_parameter('s_curve_middle_offset', 0.5)      # S자 경로 중간점 오프셋 [m]
-        self.declare_parameter('s_curve_smoothing', True)         # [사용안함] 곡률 스무딩 활성화
-        self.declare_parameter('s_curve_resolution', 0.1)         # S자 경로 점들 사이의 간격 [m]
-        self.declare_parameter('s_curve_collision_resolution', 0.05)  # S자 경로 충돌 검사 해상도 [m]
-        self.declare_parameter('s_curve_vehicle_radius', 1.0)     # S자 경로 충돌 검사용 차량 반경 [m]
-        
-        # === Stage-2: '벽 따라 S-curve' 형태 파라미터 ===
-        self.declare_parameter('stage2_shape_mode', 's_curve')  # s_curve / single_turn
-        self.declare_parameter('shape_total_length', 8.0)       # [m] 전체 아크길이 (매우 길게)
-        self.declare_parameter('shape_kappa_max', 0.60)         # [1/m] 꺾임 강도 (매우 강하게)
-        self.declare_parameter('shape_switch_pos', 0.80)        # S전환 위치 (매우 늦게)
-        self.declare_parameter('shape_gamma', 4.0)              # 펄스 폭 (매우 부드럽게)
-        self.declare_parameter('shape_ds', 0.08)                # [m] 샘플 간격 (더 거칠게)
-        
-        # '벽 따라' 옵션
-        self.declare_parameter('shape_wall_clearance', 0.15)    # [m] 벽과 최소 간격 (매우 가깝게)
-        self.declare_parameter('shape_wall_hold_s', 4.0)        # [m] 시작~여기까지 벽 따라 내려오기 (매우 길게)
-        self.declare_parameter('shape_wall_softness', 20.0)     # 부드러운 제약 (매우 강하게)
-        
-        # 차량 한계(곡률 클리핑)
-        self.declare_parameter('wheelbase', 1.10)               # [m] (일반적인 휠베이스)
-        self.declare_parameter('delta_max_deg', 35.0)           # [deg] (더 큰 조향각)
-        
-        # === Stage-2 HARDCODED wall-follow S path ===
-        self.declare_parameter('stage2_use_hardcoded', True)     # 하드코딩 경로 사용
-        self.declare_parameter('hc_wall_clear', 0.35)            # 벽과 최소 간격 [m]
-        self.declare_parameter('hc_straight_len', 1.6)           # 벽 따라 곧게 내려오는 길이 [m]
-        self.declare_parameter('hc_c1', 0.8)                     # 베지어 제어점 길이(시작쪽) [m]
-        self.declare_parameter('hc_c2', 1.2)                     # 베지어 제어점 길이(끝쪽) [m]
-        self.declare_parameter('hc_goal_back', 0.8)              # 슬롯 중심에서 뒤로(−x) 얼마나 들어갈지 [m]
-        self.declare_parameter('hc_inside_margin', 0.20)         # 슬롯 안쪽으로 들어갈 y 여유 [m]
-        self.declare_parameter('hc_ds', 0.04)                    # 샘플 간격 [m]
-        
-        # === Old-logic S-curve (Stage-2) ===
-        self.declare_parameter('oldlogic_use', True)        # 이 로직 사용 여부
-        self.declare_parameter('oldlogic_min_R', 2.55)      # 최소 회전 반경 [m] (작년 코드 min_R)
-        self.declare_parameter('oldlogic_spot_dx', 1.15)    # p3 보정: 세로(슬롯 진행축 +x) 이동 [m]
-        self.declare_parameter('oldlogic_spot_dy', 1.20)    # p3 보정: 가로(도로쪽 +y) 이동 [m]
-        self.declare_parameter('oldlogic_pre_straight', 0.2) # 초기 직선 step 크기 [m]
-        self.declare_parameter('oldlogic_arc_points', 15)   # 각 원호 샘플 점 수
-        self.declare_parameter('oldlogic_pre_reverse', 1.5) # Stage-1 골에서 반대방향 직진 거리 [m]
-        self.declare_parameter('oldlogic_center_offset', 1.5) # 구역 중심 오프셋 (주차위치에서 앞으로) [m]
+        # ==================== [사용안함] 레거시 파라미터들 ====================
+        self.declare_parameter('s_overshoot', 1.0)              # [사용안함] 슬롯 중심을 지나칠 거리 [m]
+        self.declare_parameter('angle_eps_deg', 5.0)            # [사용안함] 평행/수직 분류 각도 허용치 [도]
+        self.declare_parameter('prefer_near_open_slot', False)  # [사용안함] 가까운 주차 공간 선호
+        self.declare_parameter('near_radius', 8.0)              # [사용안함] 가까운 주차 공간 반경 [m]
+        self.declare_parameter('prefer_centerline_lateral', False)  # [사용안함] 도로 중심선 기반 측면 배치
+        self.declare_parameter('centerline_left_margin', 0.1)   # [사용안함] 도로 중심선 기준 왼쪽 여유 [m]
+        self.declare_parameter('turn_radius', 0.5)              # [사용안함] Stage-2 원호 경로의 회전 반경 [m]
+        self.declare_parameter('stage2_k_lat', 0.8)             # [사용안함] 측면 제어 게인
+        self.declare_parameter('stage2_k_yaw', 0.8)             # [사용안함] 방향 제어 게인
+        self.declare_parameter('stage2_max_steps', 800)         # [사용안함] 최대 스텝 수
+        self.declare_parameter('stage2_lookahead', 1.0)         # [사용안함] 전방 예측 거리 [m]
         
         # ==================== 좌표계 설정 ====================
         self.declare_parameter('frame_id', 'map')  # 기본 좌표계
@@ -238,6 +254,11 @@ class PlannerNode(Node):
         self._delivery_pick_target: Optional[PoseStamped] = None  # 상차 목표 위치
         self._delivery_drop_target: Optional[PoseStamped] = None  # 하차 목표 위치
         
+        # 주차 완료 관련 상태
+        self._parking_complete_state: str = 'normal'           # 주차 완료 상태: 'normal', 'stopping', 'completed'
+        self._parking_stop_timer: Optional[float] = None       # 주차 정지 타이머 시작 시간
+        self._parking_complete_triggered: bool = False         # 주차 완료 트리거 여부
+        
         # ==================== 좌표 변환 설정 ====================
         self._tf_buffer = tf2_ros.Buffer()                      # TF 변환 버퍼
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)  # TF 리스너
@@ -247,6 +268,8 @@ class PlannerNode(Node):
         self._waypoints_pub = self.create_publisher(Path, '/waypoints', 10)
         self._waypoints_points_pub = self.create_publisher(PoseArray, '/waypoints_points', 10)
         self._reverse_flag_pub = self.create_publisher(Bool, '/reverse_flag', 10)  # 후진 모드 플래그
+        self._parking_stop_flag_pub = self.create_publisher(Bool, '/parking_stop_flag', 10)  # 주차 완료 3초 정지 플래그
+        self._parking_complete_flag_pub = self.create_publisher(Bool, '/parking_complete_flag', 10)  # 주차 종료 플래그
 
         # 디버그 토픽: 각 스테이지별 경로/목표 및 시각화 마커
         self._goal_pub = self.create_publisher(PoseStamped, '/stage1_goal', 10)           # Stage-1 목표
@@ -268,8 +291,17 @@ class PlannerNode(Node):
         self._delivery_pick_points_pub = self.create_publisher(PoseArray, '/delivery_pick_waypoints', 10)  # 상차 웨이포인트
         self._delivery_drop_points_pub = self.create_publisher(PoseArray, '/delivery_drop_waypoints', 10)  # 하차 웨이포인트
         
-        # 초기 후진 플래그 설정 (Stage-1은 전진)
-        self._publish_reverse_flag(False)
+        # 초기 플래그 설정
+        self._publish_reverse_flag(False)  # Stage-1은 전진
+        
+        # 주차 완료 관련 플래그 초기화
+        stop_msg = Bool()
+        stop_msg.data = False
+        self._parking_stop_flag_pub.publish(stop_msg)
+        
+        complete_msg = Bool()
+        complete_msg.data = False
+        self._parking_complete_flag_pub.publish(complete_msg)
 
         # ==================== 구독자 설정 ====================
         # 주차 관련 정보 구독
@@ -598,11 +630,17 @@ class PlannerNode(Node):
                 current_pos.y - self._last_stage2_goal.pose.position.y
             )
             if distance < tolerance:
-                self._stage = 3
-                self.get_logger().info(f"스테이지 전환: 2 → 3 (거리={distance:.2f}m < {tolerance}m)")
-                
-                # Stage-3에서는 전진 모드 (최종 정렬)
-                self._publish_reverse_flag(False)
+                # Stage-3 활성화 여부 확인
+                if bool(self.get_parameter('stage3_enabled').value):
+                    self._stage = 3
+                    self.get_logger().info(f"스테이지 전환: 2 → 3 (거리={distance:.2f}m < {tolerance}m)")
+                    
+                    # Stage-3에서는 전진 모드 (최종 정렬)
+                    self._publish_reverse_flag(False)
+                else:
+                    self.get_logger().info(f"Stage-3 비활성화됨 - 주차 완료 (거리={distance:.2f}m < {tolerance}m)")
+                    # Stage-3가 비활성화된 경우 주차 완료로 처리
+                    self.get_logger().info("주차 미션 완료 (Stage-3 생략)")
         
         return self._stage != old_stage
 
@@ -616,6 +654,92 @@ class PlannerNode(Node):
         self._reverse_flag_pub.publish(reverse_msg)
         mode = "후진" if reverse else "전진"
         self.get_logger().info(f"후진 모드 플래그 발행: {mode}")
+
+    def _check_parking_completion(self) -> bool:
+        """주차 완료 조건 확인 및 3초 정지 시작
+        Returns:
+            주차 완료가 감지되었으면 True, 아니면 False
+        """
+        if self._parking_complete_triggered:
+            return False  # 이미 트리거됨
+            
+        if self._odom is None or self._parking_pose is None:
+            return False
+            
+        # UTM 좌표를 map 프레임으로 변환
+        transformed_pose = self._transform_odom_to_map(self._odom)
+        if transformed_pose is None:
+            return False
+            
+        # 방향 임계치 확인
+        yaw_tolerance = math.radians(float(self.get_parameter('parking_complete_yaw_tolerance_deg').value))
+        current_yaw = quaternion_to_yaw(transformed_pose.pose.orientation)
+        parking_yaw = quaternion_to_yaw(self._parking_pose.pose.orientation)
+        yaw_diff = abs(wrap_to_pi(current_yaw - parking_yaw))
+        
+        self.get_logger().info(f"주차 완료 체크 - 현재 방향: {math.degrees(current_yaw):.1f}°, 주차 방향: {math.degrees(parking_yaw):.1f}°, 차이: {math.degrees(yaw_diff):.1f}°")
+        
+        # Stage-3 활성화 여부에 따른 분기
+        stage3_enabled = bool(self.get_parameter('stage3_enabled').value)
+        
+        if stage3_enabled:
+            # Stage-3가 활성화된 경우: Stage-3 골에 도달했는지 확인
+            if self._stage == 3 and self._last_stage3_goal is not None:
+                pos_tol = float(self.get_parameter('stage_position_tolerance').value)
+                if self._is_near_pose(transformed_pose, self._last_stage3_goal, pos_tol, yaw_tolerance):
+                    self.get_logger().info("🎯 Stage-3 골 도달 - 주차 완료 조건 만족!")
+                    return True
+        else:
+            # Stage-3가 비활성화된 경우: Stage-2에서 주차 위치 도달 확인
+            if self._stage == 2 and self._last_stage2_goal is not None:
+                pos_tol = float(self.get_parameter('stage_position_tolerance').value)
+                if self._is_near_pose(transformed_pose, self._last_stage2_goal, pos_tol, yaw_tolerance):
+                    self.get_logger().info("🎯 Stage-2에서 주차 위치 도달 - 주차 완료 조건 만족!")
+                    return True
+                    
+        return False
+
+    def _start_parking_stop_timer(self) -> None:
+        """주차 완료 3초 정지 타이머 시작"""
+        if self._parking_complete_state != 'normal':
+            return  # 이미 진행 중
+            
+        self._parking_complete_state = 'stopping'
+        self._parking_stop_timer = self.get_clock().now().nanoseconds / 1e9  # 현재 시간 (초)
+        self._parking_complete_triggered = True
+        
+        # 3초 정지 플래그 발행
+        stop_msg = Bool()
+        stop_msg.data = True
+        self._parking_stop_flag_pub.publish(stop_msg)
+        
+        stop_duration = float(self.get_parameter('parking_stop_duration').value)
+        self.get_logger().info(f"🛑 주차 완료 감지 - {stop_duration}초 정지 시작")
+
+    def _check_parking_stop_timer(self) -> None:
+        """주차 정지 타이머 확인 및 완료 처리"""
+        if self._parking_complete_state != 'stopping' or self._parking_stop_timer is None:
+            return
+            
+        current_time = self.get_clock().now().nanoseconds / 1e9
+        elapsed_time = current_time - self._parking_stop_timer
+        stop_duration = float(self.get_parameter('parking_stop_duration').value)
+        
+        if elapsed_time >= stop_duration:
+            # 3초 경과 - 주차 종료 플래그 발행
+            self._parking_complete_state = 'completed'
+            
+            # 주차 종료 플래그 발행
+            complete_msg = Bool()
+            complete_msg.data = True
+            self._parking_complete_flag_pub.publish(complete_msg)
+            
+            # 정지 플래그 해제
+            stop_msg = Bool()
+            stop_msg.data = False
+            self._parking_stop_flag_pub.publish(stop_msg)
+            
+            self.get_logger().info("✅ 주차 미션 완료 - 주차 종료 플래그 발행")
 
     def _maybe_publish_goal(self) -> None:
         """현재 스테이지의 경로를 계산하고 통합 waypoint로 발행
@@ -760,31 +884,47 @@ class PlannerNode(Node):
             self.get_logger().info("=== Stage-2 디버그 종료 ===")
         
         elif self._stage == 3:
-            # Stage-3 목표와 경로 (최종 정렬)
-            stage3_goal = self._compute_stage3_goal(self._parking_pose)
-            if stage3_goal is not None:
-                self._stage3_goal_pub.publish(stage3_goal)
-                self.get_logger().info(f"Stage-3 목표 발행: ({stage3_goal.pose.position.x:.2f}, {stage3_goal.pose.position.y:.2f})")
-                yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
-                current_path = self._compute_stage3_path(current_odom, yaw_slot)
-                
-                if current_path is not None:
-                    self._stage3_path_pub.publish(current_path)
-                    self._publish_points(self._stage3_points_pub, current_path)
-                    self.get_logger().info(f"Stage-3 경로 생성: {len(current_path.poses)}개 점")
+            # Stage-3 활성화 여부 확인
+            if bool(self.get_parameter('stage3_enabled').value):
+                # Stage-3 목표와 경로 (최종 정렬)
+                stage3_goal = self._compute_stage3_goal(self._parking_pose)
+                if stage3_goal is not None:
+                    self._stage3_goal_pub.publish(stage3_goal)
+                    self.get_logger().info(f"Stage-3 목표 발행: ({stage3_goal.pose.position.x:.2f}, {stage3_goal.pose.position.y:.2f})")
+                    yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
+                    current_path = self._compute_stage3_path(current_odom, yaw_slot)
+                    
+                    if current_path is not None:
+                        self._stage3_path_pub.publish(current_path)
+                        self._publish_points(self._stage3_points_pub, current_path)
+                        self.get_logger().info(f"Stage-3 경로 생성: {len(current_path.poses)}개 점")
+                else:
+                    self.get_logger().warn("Stage-3 목표 계산 실패")
             else:
-                self.get_logger().warn("Stage-3 목표 계산 실패")
+                self.get_logger().warn("Stage-3가 비활성화되어 있음 - 경로 생성 중단")
         
-        # 현재 스테이지 경로를 메인 waypoints 토픽으로 발행
+        # 현재 스테이지 경로를 메인 waypoints 토픽으로 발행 (방향 정보 제거)
         if current_path is not None:
-            self._waypoints_pub.publish(current_path)
-            self._publish_points(self._waypoints_points_pub, current_path)
-            self.get_logger().info(f"스테이지 {self._stage} 웨이포인트 발행: {len(current_path.poses)}개 점")
+            # 방향 정보를 제거한 깨끗한 경로 생성 (제어 파트용)
+            clean_path = self._remove_orientation_from_path(current_path)
+            self._waypoints_pub.publish(clean_path)
+            self._publish_points(self._waypoints_points_pub, clean_path)
+            self.get_logger().info(f"스테이지 {self._stage} 웨이포인트 발행: {len(clean_path.poses)}개 점 (방향 정보 제거됨)")
         else:
             self.get_logger().warn(f"스테이지 {self._stage}에 사용 가능한 경로 없음")
         
+        # 주차 완료 체크 및 처리
+        if self._parking_complete_state == 'normal':
+            # 주차 완료 조건 확인
+            if self._check_parking_completion():
+                self._start_parking_stop_timer()
+        elif self._parking_complete_state == 'stopping':
+            # 3초 정지 타이머 확인
+            self._check_parking_stop_timer()
+        
         # 디버그: 모든 스테이지 목표와 경로도 발행 (시각화용)
-        self._publish_all_debug_paths(current_odom)
+        if bool(self.get_parameter('publish_debug_paths').value):
+            self._publish_all_debug_paths(current_odom)
     
     def _publish_all_debug_paths(self, current_odom: Odometry) -> None:
         """모든 스테이지의 목표와 경로를 디버그 토픽으로 발행 (시각화용)
@@ -823,17 +963,18 @@ class PlannerNode(Node):
                         self._stage2_path_pub.publish(stage2_path)
                         self._publish_points(self._stage2_points_pub, stage2_path)
                 
-                # Stage-3 목표와 경로
-                stage3_goal = self._compute_stage3_goal(self._parking_pose)
-                if stage3_goal is not None:
-                    self._stage3_goal_pub.publish(stage3_goal)
-                    self._last_stage3_goal = stage3_goal
-                    
-                    yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
-                    stage3_path = self._compute_stage3_path(current_odom, yaw_slot)
-                    if stage3_path is not None:
-                        self._stage3_path_pub.publish(stage3_path)
-                        self._publish_points(self._stage3_points_pub, stage3_path)
+                # Stage-3 목표와 경로 (활성화된 경우에만)
+                if bool(self.get_parameter('stage3_enabled').value):
+                    stage3_goal = self._compute_stage3_goal(self._parking_pose)
+                    if stage3_goal is not None:
+                        self._stage3_goal_pub.publish(stage3_goal)
+                        self._last_stage3_goal = stage3_goal
+                        
+                        yaw_slot = quaternion_to_yaw(self._parking_pose.pose.orientation)
+                        stage3_path = self._compute_stage3_path(current_odom, yaw_slot)
+                        if stage3_path is not None:
+                            self._stage3_path_pub.publish(stage3_path)
+                            self._publish_points(self._stage3_points_pub, stage3_path)
         except Exception as e:
             self.get_logger().warn(f"디버그 경로 발행 실패: {e}")
 
@@ -997,13 +1138,44 @@ class PlannerNode(Node):
                 self.get_logger().warn("_get_start_pose: TF 변환 실패")
         return None
 
+    def _remove_orientation_from_path(self, path: Path) -> Path:
+        """Path에서 방향 정보를 제거하여 반환 (제어 파트용)
+        Args:
+            path: 원본 Path 메시지
+        Returns:
+            방향 정보가 제거된 Path 메시지
+        """
+        clean_path = Path()
+        clean_path.header = path.header
+        for p in path.poses:
+            clean_pose = PoseStamped()
+            clean_pose.header = p.header
+            clean_pose.pose.position = p.pose.position
+            # 방향 정보 제거 - 제어 파트에서 원하지 않음
+            clean_pose.pose.orientation.w = 1.0  # 기본 쿼터니언 (방향 정보 없음)
+            clean_pose.pose.orientation.x = 0.0
+            clean_pose.pose.orientation.y = 0.0
+            clean_pose.pose.orientation.z = 0.0
+            clean_path.poses.append(clean_pose)
+        return clean_path
+
     def _publish_points(self, pub, path: Path) -> None:
+        """Path를 PoseArray로 변환하여 발행 (방향 정보 제거, 위치만 포함)
+        Args:
+            pub: PoseArray 퍼블리셔
+            path: 발행할 Path 메시지
+        """
         arr = PoseArray()
         arr.header = path.header
         for p in path.poses:
             pose = Pose()
             pose.position = p.pose.position
-            pose.orientation = p.pose.orientation
+            # 방향 정보 제거 - 제어 파트에서 원하지 않음
+            # pose.orientation = p.pose.orientation  # 제거됨
+            pose.orientation.w = 1.0  # 기본 쿼터니언 (방향 정보 없음)
+            pose.orientation.x = 0.0
+            pose.orientation.y = 0.0
+            pose.orientation.z = 0.0
             arr.poses.append(pose)
         pub.publish(arr)
 
@@ -1027,15 +1199,25 @@ class PlannerNode(Node):
             if self._is_near_pose(transformed_pose, self._last_stage1_goal, pos_tol, yaw_tol):
                 self._stage = 2
                 self.get_logger().info('Stage-1 complete -> Stage-2')
+                # Stage-1 도착 시 후진 모드 활성화
+                self._publish_reverse_flag(True)
                 return True
 
         elif self._stage == 2:
             if self._last_stage2_goal is not None:
                 # 변환된 pose 사용
                 if self._is_near_pose(transformed_pose, self._last_stage2_goal, pos_tol, yaw_tol):
-                    self._stage = 3
-                    self.get_logger().info('Stage-2 complete -> Stage-3')
-                    return True
+                    # Stage-3 활성화 여부 확인
+                    if bool(self.get_parameter('stage3_enabled').value):
+                        self._stage = 3
+                        self.get_logger().info('Stage-2 complete -> Stage-3')
+                        # Stage-3에서는 전진 모드 (최종 정렬)
+                        self._publish_reverse_flag(False)
+                        return True
+                    else:
+                        self.get_logger().info('Stage-2 complete -> 주차 완료 (Stage-3 비활성화)')
+                        # Stage-3가 비활성화된 경우 주차 완료로 처리
+                        return False
 
         elif self._stage == 3:
             # 목표: 슬롯 중심에서 yaw 정렬
