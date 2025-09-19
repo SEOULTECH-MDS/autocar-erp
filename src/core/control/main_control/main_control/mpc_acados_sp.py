@@ -115,7 +115,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([0.1, 0.3, 2.0, 0.1, 2.0, 0.4, 0.4]), # DRIVE
+            0: np.array([0.1, 0.3, 2.0, 0.5, 2.0, 0.4, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -127,7 +127,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 3.0,  # DRIVE
+            0: 4.0,  # DRIVE
             1: 0.0,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC 
             3: 2.0,  # OBSTACLE_DYNAMIC
@@ -170,7 +170,7 @@ class Control(Node):
 
 
         if self.is_reverse:
-            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state
+            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state (solver의 state s가 v에 의해 업데이트되므로)
         else:
             self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 정상 주행일 때 양수 속도 state
 

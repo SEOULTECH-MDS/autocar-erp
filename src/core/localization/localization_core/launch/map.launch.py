@@ -17,6 +17,7 @@ def generate_launch_description():
         'map_name',
         # default_value='kcity_v5',
         default_value='mirae_map',
+        # default_value='mirae_v2',
         # default_value='aerum_map',
         description='Name of the map folder in localization_core/data'
     )
