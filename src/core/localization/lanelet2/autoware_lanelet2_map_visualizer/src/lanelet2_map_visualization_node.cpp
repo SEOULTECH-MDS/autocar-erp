@@ -174,6 +174,9 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   std_msgs::msg::ColorRGBA cl_intersection_area;
   std_msgs::msg::ColorRGBA cl_bus_stop_area;
   std_msgs::msg::ColorRGBA cl_bicycle_lane;
+  std_msgs::msg::ColorRGBA cl_dashed_lines;
+  std_msgs::msg::ColorRGBA cl_virtual_lines;
+  std_msgs::msg::ColorRGBA cl_general_lines;
   set_color(&cl_road, 0.27, 0.27, 0.27, 0.999);
   set_color(&cl_shoulder, 0.15, 0.15, 0.15, 0.999);
   set_color(&cl_cross, 0.27, 0.3, 0.27, 0.5);
@@ -200,8 +203,29 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   set_color(&cl_intersection_area, 0.16, 1.0, 0.69, 0.5);
   set_color(&cl_bus_stop_area, 0.863, 0.863, 0.863, 0.5);
   set_color(&cl_bicycle_lane, 0.0, 0.3843, 0.6274, 0.5);
+  set_color(&cl_dashed_lines, 0.7, 0.7, 0.7, 0.8);
+  set_color(&cl_virtual_lines, 0.0, 0.9, 0.9, 0.6);
+  set_color(&cl_general_lines, 0.6, 0.6, 0.6, 0.9);
 
   visualization_msgs::msg::MarkerArray map_marker_array;
+
+  // Collect thin dashed/virtual line strings from raw layer
+  lanelet::ConstLineStrings3d thin_dashed;
+  lanelet::ConstLineStrings3d thin_virtual;
+  lanelet::ConstLineStrings3d thin_general;
+  for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
+    const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
+    if (type == "line_thin") {
+      const std::string subtype = ls.attributeOr(lanelet::AttributeName::Subtype, "none");
+      if (subtype == "dashed") {
+        thin_dashed.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "virtual") {
+        thin_virtual.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else {
+        thin_general.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      }
+    }
+  }
 
   insert_marker_array(
     &map_marker_array,
@@ -329,6 +353,20 @@ void Lanelet2MapVisualizationNode::on_map_bin(
     &map_marker_array, lanelet::visualization::laneletsAsTriangleMarkerArray(
                          "bicycle_lane_lanelets", bicycle_lane_lanelets, cl_bicycle_lane));
 
+  // Visualize thin dashed/virtual line strings
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_dashed, "dashed_lines", cl_dashed_lines,
+                                                     0.15));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_virtual, "virtual_lines", cl_virtual_lines,
+                                                     0.15));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_general, "general_lines", cl_general_lines,
+                                                     0.15));
+
   // Z-offset adjustments to mitigate z-fighting
   auto adjust_z_by_namespace = [&](const std::string & ns, const double dz) {
     for (auto & mk : map_marker_array.markers) {
@@ -345,6 +383,9 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   adjust_z_by_namespace("road_lanelets", -0.05);
   adjust_z_by_namespace("stop_lines", +0.05);
   adjust_z_by_namespace("stop_lines_raw", +0.05);
+  adjust_z_by_namespace("dashed_lines", +0.03);
+  adjust_z_by_namespace("virtual_lines", +0.035);
+  adjust_z_by_namespace("general_lines", +0.025);
   // Raise obstacles slightly to make them more visible above road surface
   adjust_z_by_namespace("obstacles", +0.02);
 
