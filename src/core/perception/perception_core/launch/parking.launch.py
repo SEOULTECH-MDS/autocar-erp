@@ -29,8 +29,8 @@ def generate_launch_description():
 
         Node(
             package='perception',
-            executable='sensor_fusion_object',
-            name='sensor_fusion_object',
+            executable='sensor_fusion_rubber',
+            name='sensor_fusion_rubber',
             output='screen',
             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
             remappings=[('/markers', '/adaptive_clustering/markers')],

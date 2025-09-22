@@ -11,14 +11,14 @@ def generate_launch_description():
         #    output='screen'
         #),
 
-        Node( # 라바콘 인식 (드럼통 대신)
+        Node( # 드럼통 인식
             package='perception',
-            executable='rubber_detect',
-            name='rubber_detect',
+            executable='drum_detect',
+            name='drum_detect',
             output='screen'
         ),
 
-        Node(
+        Node( # 차 인식
             package='perception',
             executable='car_detect',
             name='car_detect',

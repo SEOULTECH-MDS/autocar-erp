@@ -37,11 +37,11 @@ class SensorFusion(Node):
         # ROS
         # Subscriber
         self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
-        self.bbox_sub_rubber = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber')
+        self.bbox_sub_drum = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/drum')
         self.bbox_sub_car = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/car")
 
         self.sync = message_filters.ApproximateTimeSynchronizer(
-            [self.cluster_sub, self.bbox_sub_rubber, self.bbox_sub_car], queue_size=10,
+            [self.cluster_sub, self.bbox_sub_drum, self.bbox_sub_car], queue_size=10,
             slop=0.5, allow_headerless=True)
         self.sync.registerCallback(self.callback_fusion)
 
@@ -51,23 +51,23 @@ class SensorFusion(Node):
 
         self.get_logger().info('🚀  Camera & 3D LiDAR fusion node started.')
 
-    def callback_fusion(self, cluster_msg, bbox_msg_rubber, bbox_msg_car):        
+    def callback_fusion(self, cluster_msg, bbox_msg_drum, bbox_msg_car):        
         first_time = time.perf_counter()
 
         # Clustering points to np array
         clusters = cluster_for_fusion(cluster_msg) # 클러스터링 중점을 계산 (3D)
 
         # 2D bounding boxes
-        rubber_bboxes, rubber_labels = bounding_boxes(bbox_msg_rubber)
+        drum_bboxes, drum_labels = bounding_boxes(bbox_msg_drum)
         car_bboxes, car_labels = bounding_boxes(bbox_msg_car)
 
         # 두 bbox 데이터를 합치기
-        if rubber_bboxes.size > 0 and car_bboxes.size > 0:
-            all_bboxes = np.vstack([rubber_bboxes, car_bboxes])
-            all_labels = rubber_labels + car_labels
-        elif rubber_bboxes.size > 0:
-            all_bboxes = rubber_bboxes
-            all_labels = rubber_labels
+        if drum_bboxes.size > 0 and car_bboxes.size > 0:
+            all_bboxes = np.vstack([drum_bboxes, car_bboxes])
+            all_labels = drum_labels + car_labels
+        elif drum_bboxes.size > 0:
+            all_bboxes = drum_bboxes
+            all_labels = drum_labels
         elif car_bboxes.size > 0:
             all_bboxes = car_bboxes
             all_labels = car_labels
