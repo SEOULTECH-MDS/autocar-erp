@@ -19,7 +19,7 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Pose, PoseArray
 
 package_share = get_package_share_directory('perception')
-WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'best_drum.pt')
+WEIGHTS = os.path.join(package_share, 'yolov11', 'weights', 'best_drum3.pt')
 IMG_SIZE = 640
 CONF_THRES = 0.60
 IOU_THRES = 0.45
