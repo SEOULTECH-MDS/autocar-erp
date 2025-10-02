@@ -195,11 +195,18 @@ def main():
 
     path_gdf = load_layer(args.input_dir, 'path')
     dashed_gdf = load_layer(args.input_dir, 'dashed_line')
-    virtual_gdf = load_layer(args.input_dir, 'lr_virtual')
-    lr_gdf = load_layer(args.input_dir, 'left_right_lines')
+    virtual_gdf = load_layer(args.input_dir, 'virtual_line')
+    lr_gdf = load_layer(args_input_dir := args.input_dir, 'left_right_line')
+    roadborder_gdf = load_layer(args_input_dir, 'roadborder')
+    markings_gdf = load_layer(args_input_dir, 'Markings')
+    crosswalk_lines_gdf = load_layer(args_input_dir, 'crosswalk')  # zebra lines
+    dashed_markings_poly_gdf = load_layer(args_input_dir, 'dashed_markings')  # polygons
+    stopline_gdf = load_layer(args_input_dir, 'stopline')
+    parking_area_gdf = load_layer(args_input_dir, 'parking_area')  # polygons
+    parking_space_gdf = load_layer(args_input_dir, 'parking_space')  # optional, lines
 
     if (lr_gdf is None) and (dashed_gdf is None) and (virtual_gdf is None):
-        print('Error: No side line layers found (left_right_lines, dashed_line, LR_virtual).')
+        print('Error: No side line layers found (left_right_line, dashed_line, virtual_line).')
         sys.exit(1)
 
     # Helper to resolve column name robustly
@@ -329,17 +336,27 @@ def main():
             return max(merged.geoms, key=lambda ln: ln.length) if merged.geoms else None
         return None
 
-    # Choose side geometry with priority: solid > dashed > virtual
+    # Choose side geometry: merge all available segments (solid/dashed/virtual) for that lane id and side
+    # This allows a single boundary even if the source is split into multiple types (e.g., solid-dashed-solid)
     def choose_side_geom(lane_id: str, side: str) -> Tuple[Optional[LineString], Optional[str]]:
+        segments: List[LineString] = []
         if side == 'left':
-            for source, tag in ((left_solid, 'solid'), (left_dashed, 'dashed'), (left_virtual, 'virtual')):
-                if lane_id in source:
-                    return unify_lines(source[lane_id]), tag
+            if lane_id in left_solid:
+                segments.extend(left_solid[lane_id])
+            if lane_id in left_dashed:
+                segments.extend(left_dashed[lane_id])
+            if lane_id in left_virtual:
+                segments.extend(left_virtual[lane_id])
         else:
-            for source, tag in ((right_solid, 'solid'), (right_dashed, 'dashed'), (right_virtual, 'virtual')):
-                if lane_id in source:
-                    return unify_lines(source[lane_id]), tag
-        return None, None
+            if lane_id in right_solid:
+                segments.extend(right_solid[lane_id])
+            if lane_id in right_dashed:
+                segments.extend(right_dashed[lane_id])
+            if lane_id in right_virtual:
+                segments.extend(right_virtual[lane_id])
+        merged = unify_lines(segments)
+        # Use 'solid' as default visual subtype for lanelet boundary way; detailed dashed segments are still exported separately
+        return (merged, 'solid') if merged is not None else (None, None)
 
     # Build centerline from left/right by sampling midpoints
     def centerline_from_sides(left_ls: LineString, right_ls: LineString, samples: int = 200) -> Optional[LineString]:
@@ -458,7 +475,7 @@ def main():
             builder.add_lanelet_relation(left_way, right_way, center_way, lane_id, prefer_relation_id=lane_id)
 
     # Emit non-path lines for visualization
-    def emit_lines(gdf: Optional[gpd.GeoDataFrame], subtype: str):
+    def emit_lines_with_type(gdf: Optional[gpd.GeoDataFrame], line_type: str):
         if gdf is None or gdf.empty:
             return
         col_is = col(gdf, 'is_path')
@@ -470,26 +487,128 @@ def main():
         ll_df = df.to_crs(epsg=4326)
         for geom in ll_df.geometry:
             if isinstance(geom, LineString):
-                builder.add_linestring_way(geom, {'type': 'line_thin', 'subtype': subtype})
+                builder.add_linestring_way(geom, {'type': line_type})
             elif isinstance(geom, MultiLineString):
                 for ln in geom.geoms:
-                    builder.add_linestring_way(ln, {'type': 'line_thin', 'subtype': subtype})
+                    builder.add_linestring_way(ln, {'type': line_type})
 
-    emit_lines(dashed_gdf, 'dashed')
-    emit_lines(virtual_gdf, 'virtual')
+    # Named output per request
+    emit_lines_with_type(lr_gdf, 'left_right_line')  # 일반 선들
+    emit_lines_with_type(dashed_gdf, 'dashed_line')  # 점선들
+    emit_lines_with_type(virtual_gdf, 'virtual_line')  # 가상선들
+    emit_lines_with_type(roadborder_gdf, 'roadborder')  # 도로 가장자리 보조선
+    emit_lines_with_type(markings_gdf, 'Markings')  # 보조선/영역 테두리
+    emit_lines_with_type(crosswalk_lines_gdf, 'crosswalk')  # 횡단보도 라인
     # Left/right lines that are not path
-    if lr_gdf is not None and not lr_gdf.empty:
-        col_is_lr = col(lr_gdf, 'is_path')
-        df_lr = lr_gdf
-        if col_is_lr and col_is_lr in lr_gdf.columns:
-            df_lr = lr_gdf[lr_gdf[col_is_lr].astype(float) != 1.0]
-        ll_df = df_lr.to_crs(epsg=4326)
+    # stop lines
+    if stopline_gdf is not None and not stopline_gdf.empty:
+        ll_df = stopline_gdf.to_crs(epsg=4326)
         for geom in ll_df.geometry:
             if isinstance(geom, LineString):
-                builder.add_linestring_way(geom, {'type': 'line_thin', 'subtype': 'solid'})
+                builder.add_linestring_way(geom, {'type': 'stopline'})
             elif isinstance(geom, MultiLineString):
                 for ln in geom.geoms:
-                    builder.add_linestring_way(ln, {'type': 'line_thin', 'subtype': 'solid'})
+                    builder.add_linestring_way(ln, {'type': 'stopline'})
+
+    # Emit parking areas (optional): polygons tagged as parking_lot
+    def emit_parking_area(gdf: Optional[gpd.GeoDataFrame]):
+        if gdf is None or gdf.empty:
+            return
+        ll_df = gdf.to_crs(epsg=4326)
+        for geom in ll_df.geometry:
+            try:
+                if isinstance(geom, Polygon):
+                    coords = list(geom.exterior.coords)
+                    # Ensure closure
+                    if coords[0] != coords[-1]:
+                        coords.append(coords[0])
+                    node_ids: List[str] = []
+                    for x, y, *_ in coords:
+                        nid = builder.add_node(float(x), float(y))
+                        if not node_ids or node_ids[-1] != nid:
+                            node_ids.append(nid)
+                    if len(node_ids) >= 4:
+                        wid = str(builder.way_id)
+                        builder.way_id += 1
+                        builder.ways[wid] = {
+                            'nodes': node_ids,
+                            'tags': {'area': 'yes', 'type': 'parking_area'}
+                        }
+                elif isinstance(geom, MultiPolygon):
+                    for pg in geom.geoms:
+                        if isinstance(pg, Polygon):
+                            coords = list(pg.exterior.coords)
+                            if coords[0] != coords[-1]:
+                                coords.append(coords[0])
+                            node_ids: List[str] = []
+                            for x, y, *_ in coords:
+                                nid = builder.add_node(float(x), float(y))
+                                if not node_ids or node_ids[-1] != nid:
+                                    node_ids.append(nid)
+                            if len(node_ids) >= 4:
+                                wid = str(builder.way_id)
+                                builder.way_id += 1
+                                builder.ways[wid] = {
+                                    'nodes': node_ids,
+                                    'tags': {'area': 'yes', 'type': 'parking_area'}
+                                }
+            except Exception:
+                pass
+
+    emit_parking_area(parking_area_gdf)
+
+    # Emit parking spaces (optional): lines tagged as parking_space
+    if parking_space_gdf is not None and not parking_space_gdf.empty:
+        ll_df = parking_space_gdf.to_crs(epsg=4326)
+        for geom in ll_df.geometry:
+            if isinstance(geom, LineString):
+                builder.add_linestring_way(geom, {'type': 'parking_space'})
+            elif isinstance(geom, MultiLineString):
+                for ln in geom.geoms:
+                    builder.add_linestring_way(ln, {'type': 'parking_space'})
+
+    # Emit dashed_markings polygons and crosswalk polygons if provided as polygon layer names
+    def emit_area_polys(gdf: Optional[gpd.GeoDataFrame], type_name: str):
+        if gdf is None or gdf.empty:
+            return
+        ll_df = gdf.to_crs(epsg=4326)
+        for geom in ll_df.geometry:
+            try:
+                polys = []
+                if isinstance(geom, Polygon):
+                    polys = [geom]
+                elif isinstance(geom, MultiPolygon):
+                    polys = list(geom.geoms)
+                for poly in polys:
+                    ext = list(poly.exterior.coords)
+                    node_ids: List[str] = []
+                    for x, y, *_ in ext:
+                        nid = builder.add_node(float(x), float(y))
+                        if not node_ids or node_ids[-1] != nid:
+                            node_ids.append(nid)
+                    if len(node_ids) >= 4:
+                        wid = str(builder.way_id)
+                        builder.way_id += 1
+                        builder.ways[wid] = {
+                            'nodes': node_ids,
+                            'tags': {'area': 'yes', 'type': type_name}
+                        }
+            except Exception:
+                pass
+
+    emit_area_polys(dashed_markings_poly_gdf, 'dashed_markings')
+
+    # Final prune: remove invalid lanelet relations without exactly one left/right/centerline
+    def prune_invalid_lanelets():
+        to_del = []
+        for rid, rel in builder.relations.items():
+            roles = [r[2] for r in rel.get('members', [])]
+            if roles.count('left') != 1 or roles.count('right') != 1 or roles.count('centerline') != 1:
+                to_del.append(rid)
+        for rid in to_del:
+            del builder.relations[rid]
+
+    prune_invalid_lanelets()
 
     os.makedirs(os.path.dirname(args.output_osm), exist_ok=True)
     builder.save(args.output_osm)
