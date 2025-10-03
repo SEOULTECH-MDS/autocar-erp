@@ -500,15 +500,36 @@ def main():
     emit_lines_with_type(markings_gdf, 'Markings')  # 보조선/영역 테두리
     emit_lines_with_type(crosswalk_lines_gdf, 'crosswalk')  # 횡단보도 라인
     # Left/right lines that are not path
-    # stop lines
+    # stop lines with attributes: ref_lane -> ref_lanelet_id, type -> stopline_type
     if stopline_gdf is not None and not stopline_gdf.empty:
         ll_df = stopline_gdf.to_crs(epsg=4326)
-        for geom in ll_df.geometry:
+        stop_type_col = col(ll_df, 'type')
+        ref_lane_col = col(ll_df, 'ref_lane')
+        for _, row in ll_df.iterrows():
+            geom = row.geometry
+            tags = {'type': 'stop_line'}
+            if stop_type_col and stop_type_col in ll_df.columns:
+                try:
+                    sv = row[stop_type_col]
+                    if sv is not None and str(sv).lower() != 'nan':
+                        tags['stopline_type'] = str(sv)
+                except Exception:
+                    pass
+            if ref_lane_col and ref_lane_col in ll_df.columns:
+                try:
+                    rv = row[ref_lane_col]
+                    if rv is not None and str(rv).lower() != 'nan':
+                        try:
+                            tags['ref_lanelet_id'] = str(int(rv))
+                        except Exception:
+                            tags['ref_lanelet_id'] = str(rv)
+                except Exception:
+                    pass
             if isinstance(geom, LineString):
-                builder.add_linestring_way(geom, {'type': 'stopline'})
+                builder.add_linestring_way(geom, tags)
             elif isinstance(geom, MultiLineString):
                 for ln in geom.geoms:
-                    builder.add_linestring_way(ln, {'type': 'stopline'})
+                    builder.add_linestring_way(ln, tags)
 
     # Emit parking areas (optional): polygons tagged as parking_lot
     def emit_parking_area(gdf: Optional[gpd.GeoDataFrame]):

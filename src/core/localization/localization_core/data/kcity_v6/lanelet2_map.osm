@@ -6958,71 +6958,90 @@
   <node id="6956" lat="37.2424986" lon="126.7744536"/>
   <node id="6957" lat="37.2424996" lon="126.7744939"/>
   <node id="6958" lat="37.2425006" lon="126.7745332"/>
-  <node id="6959" lat="37.2425012" lon="126.7745573"/>
+  <node id="6959" lat="37.2425022" lon="126.7745951"/>
   <node id="6960" lat="37.2415502" lon="126.7744196"/>
   <node id="6961" lat="37.2415501" lon="126.7744393"/>
   <node id="6962" lat="37.24155" lon="126.7744591"/>
   <node id="6963" lat="37.2415499" lon="126.774479"/>
   <node id="6964" lat="37.2415499" lon="126.7744989"/>
   <node id="6965" lat="37.2415498" lon="126.7745187"/>
-  <node id="6966" lat="37.2415498" lon="126.7745378"/>
-  <node id="6967" lat="37.2396269" lon="126.773982"/>
-  <node id="6968" lat="37.2420667" lon="126.7745078"/>
-  <node id="6969" lat="37.2420675" lon="126.7745472"/>
-  <node id="6970" lat="37.2420679" lon="126.7745671"/>
-  <node id="6971" lat="37.2420682" lon="126.7745818"/>
-  <node id="6972" lat="37.2393389" lon="126.7732582"/>
-  <node id="6973" lat="37.2393422" lon="126.7733127"/>
-  <node id="6974" lat="37.2393213" lon="126.7733157"/>
-  <node id="6975" lat="37.2393636" lon="126.7732765"/>
-  <node id="6976" lat="37.23934" lon="126.7732787"/>
-  <node id="6977" lat="37.2394122" lon="126.7733077"/>
-  <node id="6978" lat="37.2393896" lon="126.7733085"/>
-  <node id="6979" lat="37.2394133" lon="126.7733254"/>
-  <node id="6980" lat="37.2394582" lon="126.7733892"/>
-  <node id="6981" lat="37.2394365" lon="126.7733899"/>
-  <node id="6982" lat="37.2394352" lon="126.7733416"/>
-  <node id="6983" lat="37.2394925" lon="126.773202"/>
-  <node id="6984" lat="37.2394805" lon="126.7732348"/>
-  <node id="6985" lat="37.2394408" lon="126.7732086"/>
-  <node id="6986" lat="37.2394541" lon="126.7731758"/>
-  <node id="6987" lat="37.2394541" lon="126.7731759"/>
-  <node id="6988" lat="37.2394406" lon="126.7732086"/>
-  <node id="6989" lat="37.2393993" lon="126.7731813"/>
-  <node id="6990" lat="37.2394121" lon="126.7731484"/>
-  <node id="6991" lat="37.2393993" lon="126.7731814"/>
-  <node id="6992" lat="37.2393482" lon="126.7731477"/>
-  <node id="6993" lat="37.2393624" lon="126.773116"/>
-  <node id="6994" lat="37.239554" lon="126.7739042"/>
-  <node id="6995" lat="37.2394725" lon="126.7740447"/>
-  <node id="6996" lat="37.2395726" lon="126.773805"/>
-  <node id="6997" lat="37.2395683" lon="126.7738166"/>
-  <node id="6998" lat="37.2395652" lon="126.7738249"/>
-  <node id="6999" lat="37.2395605" lon="126.7738414"/>
-  <node id="7000" lat="37.2395571" lon="126.7738576"/>
-  <node id="7001" lat="37.2395555" lon="126.7738713"/>
-  <node id="7002" lat="37.239554" lon="126.7738878"/>
-  <node id="7003" lat="37.2417652" lon="126.7744608"/>
-  <node id="7004" lat="37.2419923" lon="126.7744527"/>
-  <node id="7005" lat="37.2419947" lon="126.7744881"/>
-  <node id="7006" lat="37.2422403" lon="126.7744435"/>
-  <node id="7007" lat="37.2421724" lon="126.774482"/>
-  <node id="7008" lat="37.2421675" lon="126.774484"/>
-  <node id="7009" lat="37.2421634" lon="126.7744855"/>
-  <node id="7010" lat="37.2421603" lon="126.7744858"/>
-  <node id="7011" lat="37.2421599" lon="126.7744468"/>
-  <node id="7012" lat="37.2412504" lon="126.7749555"/>
-  <node id="7013" lat="37.2412334" lon="126.7749531"/>
-  <node id="7014" lat="37.2411864" lon="126.7749342"/>
-  <node id="7015" lat="37.2411341" lon="126.7749155"/>
-  <node id="7016" lat="37.2410735" lon="126.7748935"/>
-  <node id="7017" lat="37.2409849" lon="126.7748516"/>
-  <node id="7018" lat="37.2408982" lon="126.7748033"/>
-  <node id="7019" lat="37.2408785" lon="126.7747898"/>
-  <node id="7020" lat="37.2408421" lon="126.7747653"/>
-  <node id="7021" lat="37.2408032" lon="126.7747409"/>
-  <node id="7022" lat="37.240765" lon="126.7747207"/>
-  <node id="7023" lat="37.2410409" lon="126.7748578"/>
+  <node id="6966" lat="37.24155" lon="126.7745517"/>
+  <node id="6967" lat="37.2420667" lon="126.7745078"/>
+  <node id="6968" lat="37.2420675" lon="126.7745472"/>
+  <node id="6969" lat="37.2420679" lon="126.7745671"/>
+  <node id="6970" lat="37.2420689" lon="126.7746051"/>
+  <node id="6971" lat="37.2404672" lon="126.7745478"/>
+  <node id="6972" lat="37.2404544" lon="126.7745774"/>
+  <node id="6973" lat="37.2398026" lon="126.7741403"/>
+  <node id="6974" lat="37.2397879" lon="126.7741745"/>
+  <node id="6975" lat="37.2397827" lon="126.7733873"/>
+  <node id="6976" lat="37.2397544" lon="126.7733667"/>
+  <node id="6977" lat="37.2418322" lon="126.7749666"/>
+  <node id="6978" lat="37.2418326" lon="126.7750068"/>
+  <node id="6979" lat="37.2427061" lon="126.7749754"/>
+  <node id="6980" lat="37.2427068" lon="126.7750146"/>
+  <node id="6981" lat="37.2402089" lon="126.774406"/>
+  <node id="6982" lat="37.2401941" lon="126.7744439"/>
+  <node id="6983" lat="37.2393389" lon="126.7732582"/>
+  <node id="6984" lat="37.2393422" lon="126.7733127"/>
+  <node id="6985" lat="37.2393213" lon="126.7733157"/>
+  <node id="6986" lat="37.2393636" lon="126.7732765"/>
+  <node id="6987" lat="37.23934" lon="126.7732787"/>
+  <node id="6988" lat="37.2394122" lon="126.7733077"/>
+  <node id="6989" lat="37.2393896" lon="126.7733085"/>
+  <node id="6990" lat="37.2394133" lon="126.7733254"/>
+  <node id="6991" lat="37.2394582" lon="126.7733892"/>
+  <node id="6992" lat="37.2394365" lon="126.7733899"/>
+  <node id="6993" lat="37.2394352" lon="126.7733416"/>
+  <node id="6994" lat="37.2394925" lon="126.773202"/>
+  <node id="6995" lat="37.2394805" lon="126.7732348"/>
+  <node id="6996" lat="37.2394408" lon="126.7732086"/>
+  <node id="6997" lat="37.2394541" lon="126.7731758"/>
+  <node id="6998" lat="37.2394541" lon="126.7731759"/>
+  <node id="6999" lat="37.2394406" lon="126.7732086"/>
+  <node id="7000" lat="37.2393993" lon="126.7731813"/>
+  <node id="7001" lat="37.2394121" lon="126.7731484"/>
+  <node id="7002" lat="37.2393993" lon="126.7731814"/>
+  <node id="7003" lat="37.2393482" lon="126.7731477"/>
+  <node id="7004" lat="37.2393624" lon="126.773116"/>
+  <node id="7005" lat="37.239554" lon="126.7739042"/>
+  <node id="7006" lat="37.2394725" lon="126.7740447"/>
+  <node id="7007" lat="37.2395726" lon="126.773805"/>
+  <node id="7008" lat="37.2395683" lon="126.7738166"/>
+  <node id="7009" lat="37.2395652" lon="126.7738249"/>
+  <node id="7010" lat="37.2395605" lon="126.7738414"/>
+  <node id="7011" lat="37.2395571" lon="126.7738576"/>
+  <node id="7012" lat="37.2395555" lon="126.7738713"/>
+  <node id="7013" lat="37.239554" lon="126.7738878"/>
+  <node id="7014" lat="37.2417652" lon="126.7744608"/>
+  <node id="7015" lat="37.2419923" lon="126.7744527"/>
+  <node id="7016" lat="37.2419947" lon="126.7744881"/>
+  <node id="7017" lat="37.2422403" lon="126.7744435"/>
+  <node id="7018" lat="37.2421724" lon="126.774482"/>
+  <node id="7019" lat="37.2421675" lon="126.774484"/>
+  <node id="7020" lat="37.2421634" lon="126.7744855"/>
+  <node id="7021" lat="37.2421603" lon="126.7744858"/>
+  <node id="7022" lat="37.2421599" lon="126.7744468"/>
+  <node id="7023" lat="37.2412504" lon="126.7749555"/>
+  <node id="7024" lat="37.2412334" lon="126.7749531"/>
+  <node id="7025" lat="37.2411864" lon="126.7749342"/>
+  <node id="7026" lat="37.2411341" lon="126.7749155"/>
+  <node id="7027" lat="37.2410735" lon="126.7748935"/>
+  <node id="7028" lat="37.2409849" lon="126.7748516"/>
+  <node id="7029" lat="37.2408982" lon="126.7748033"/>
+  <node id="7030" lat="37.2408785" lon="126.7747898"/>
+  <node id="7031" lat="37.2408421" lon="126.7747653"/>
+  <node id="7032" lat="37.2408032" lon="126.7747409"/>
+  <node id="7033" lat="37.240765" lon="126.7747207"/>
+  <node id="7034" lat="37.2410409" lon="126.7748578"/>
+  <node id="7035" lat="37.239749" lon="126.7740591"/>
+  <node id="7036" lat="37.2397212" lon="126.7741306"/>
+  <node id="7037" lat="37.2396905" lon="126.7741107"/>
+  <node id="7038" lat="37.2397181" lon="126.7740388"/>
+  <node id="7039" lat="37.2401659" lon="126.7743346"/>
+  <node id="7040" lat="37.2401376" lon="126.7744074"/>
+  <node id="7041" lat="37.2401065" lon="126.7743872"/>
+  <node id="7042" lat="37.2401348" lon="126.7743134"/>
   <way id="1">
     <nd ref="1"/>
     <nd ref="2"/>
@@ -24419,25 +24438,33 @@
     <nd ref="164"/>
     <nd ref="6949"/>
     <nd ref="1481"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="nonstop"/>
+    <tag k="ref_lanelet_id" v="11"/>
   </way>
   <way id="2606">
     <nd ref="422"/>
     <nd ref="6950"/>
     <nd ref="409"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="straight"/>
+    <tag k="ref_lanelet_id" v="17"/>
   </way>
   <way id="2607">
     <nd ref="436"/>
     <nd ref="6951"/>
     <nd ref="520"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="nonstop"/>
+    <tag k="ref_lanelet_id" v="19"/>
   </way>
   <way id="2608">
     <nd ref="70"/>
     <nd ref="6952"/>
     <nd ref="127"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="nonstop"/>
+    <tag k="ref_lanelet_id" v="1"/>
   </way>
   <way id="2609">
     <nd ref="4425"/>
@@ -24445,7 +24472,9 @@
     <nd ref="775"/>
     <nd ref="6953"/>
     <nd ref="765"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="straight"/>
+    <tag k="ref_lanelet_id" v="3"/>
   </way>
   <way id="2610">
     <nd ref="792"/>
@@ -24453,7 +24482,9 @@
     <nd ref="801"/>
     <nd ref="4537"/>
     <nd ref="4548"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="straight"/>
+    <tag k="ref_lanelet_id" v="5"/>
   </way>
   <way id="2611">
     <nd ref="2745"/>
@@ -24466,7 +24497,9 @@
     <nd ref="6958"/>
     <nd ref="906"/>
     <nd ref="6959"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="right"/>
+    <tag k="ref_lanelet_id" v="9"/>
   </way>
   <way id="2612">
     <nd ref="6960"/>
@@ -24476,42 +24509,74 @@
     <nd ref="6964"/>
     <nd ref="6965"/>
     <nd ref="6966"/>
-    <tag k="type" v="stopline"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="straight"/>
+    <tag k="ref_lanelet_id" v="7"/>
   </way>
   <way id="2613">
-    <nd ref="461"/>
-    <nd ref="6967"/>
-    <nd ref="493"/>
-    <tag k="type" v="stopline"/>
-  </way>
-  <way id="2614">
     <nd ref="2799"/>
-    <nd ref="6968"/>
+    <nd ref="6967"/>
     <nd ref="4126"/>
+    <nd ref="6968"/>
     <nd ref="6969"/>
     <nd ref="6970"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="nonstop"/>
+    <tag k="ref_lanelet_id" v="9"/>
+  </way>
+  <way id="2614">
     <nd ref="6971"/>
-    <tag k="type" v="stopline"/>
+    <nd ref="6972"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="straight"/>
+    <tag k="ref_lanelet_id" v="15"/>
   </way>
   <way id="2615">
-    <nd ref="6972"/>
     <nd ref="6973"/>
     <nd ref="6974"/>
-    <nd ref="4708"/>
-    <nd ref="6972"/>
-    <tag k="area" v="yes"/>
-    <tag k="type" v="parking_area"/>
+    <tag k="type" v="stop_line"/>
   </way>
   <way id="2616">
     <nd ref="6975"/>
-    <nd ref="4712"/>
-    <nd ref="4711"/>
     <nd ref="6976"/>
-    <nd ref="6975"/>
+    <tag k="type" v="stop_line"/>
+  </way>
+  <way id="2617">
+    <nd ref="6977"/>
+    <nd ref="6978"/>
+    <tag k="type" v="stop_line"/>
+    <tag k="stopline_type" v="straight"/>
+    <tag k="ref_lanelet_id" v="13"/>
+  </way>
+  <way id="2618">
+    <nd ref="6979"/>
+    <nd ref="6980"/>
+    <tag k="type" v="stop_line"/>
+  </way>
+  <way id="2619">
+    <nd ref="6981"/>
+    <nd ref="6982"/>
+    <tag k="type" v="stop_line"/>
+  </way>
+  <way id="2620">
+    <nd ref="6983"/>
+    <nd ref="6984"/>
+    <nd ref="6985"/>
+    <nd ref="4708"/>
+    <nd ref="6983"/>
     <tag k="area" v="yes"/>
     <tag k="type" v="parking_area"/>
   </way>
-  <way id="2617">
+  <way id="2621">
+    <nd ref="6986"/>
+    <nd ref="4712"/>
+    <nd ref="4711"/>
+    <nd ref="6987"/>
+    <nd ref="6986"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="parking_area"/>
+  </way>
+  <way id="2622">
     <nd ref="4718"/>
     <nd ref="4717"/>
     <nd ref="4716"/>
@@ -24520,117 +24585,135 @@
     <tag k="area" v="yes"/>
     <tag k="type" v="parking_area"/>
   </way>
-  <way id="2618">
-    <nd ref="6977"/>
+  <way id="2623">
+    <nd ref="6988"/>
     <nd ref="4722"/>
     <nd ref="4723"/>
-    <nd ref="6978"/>
-    <nd ref="6977"/>
-    <tag k="area" v="yes"/>
-    <tag k="type" v="parking_area"/>
-  </way>
-  <way id="2619">
-    <nd ref="4726"/>
-    <nd ref="4727"/>
-    <nd ref="4728"/>
-    <nd ref="6979"/>
-    <nd ref="4726"/>
-    <tag k="area" v="yes"/>
-    <tag k="type" v="parking_area"/>
-  </way>
-  <way id="2620">
-    <nd ref="4731"/>
-    <nd ref="6980"/>
-    <nd ref="6981"/>
-    <nd ref="6982"/>
-    <nd ref="4731"/>
-    <tag k="area" v="yes"/>
-    <tag k="type" v="parking_area"/>
-  </way>
-  <way id="2621">
-    <nd ref="6983"/>
-    <nd ref="6984"/>
-    <nd ref="6985"/>
-    <nd ref="6986"/>
-    <nd ref="6983"/>
-    <tag k="area" v="yes"/>
-    <tag k="type" v="parking_area"/>
-  </way>
-  <way id="2622">
-    <nd ref="6987"/>
-    <nd ref="6988"/>
     <nd ref="6989"/>
-    <nd ref="6990"/>
-    <nd ref="6987"/>
-    <tag k="area" v="yes"/>
-    <tag k="type" v="parking_area"/>
-  </way>
-  <way id="2623">
-    <nd ref="4697"/>
-    <nd ref="6991"/>
-    <nd ref="6992"/>
-    <nd ref="6993"/>
-    <nd ref="4697"/>
+    <nd ref="6988"/>
     <tag k="area" v="yes"/>
     <tag k="type" v="parking_area"/>
   </way>
   <way id="2624">
+    <nd ref="4726"/>
+    <nd ref="4727"/>
+    <nd ref="4728"/>
+    <nd ref="6990"/>
+    <nd ref="4726"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="parking_area"/>
+  </way>
+  <way id="2625">
+    <nd ref="4731"/>
+    <nd ref="6991"/>
+    <nd ref="6992"/>
+    <nd ref="6993"/>
+    <nd ref="4731"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="parking_area"/>
+  </way>
+  <way id="2626">
     <nd ref="6994"/>
     <nd ref="6995"/>
     <nd ref="6996"/>
     <nd ref="6997"/>
+    <nd ref="6994"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="parking_area"/>
+  </way>
+  <way id="2627">
     <nd ref="6998"/>
     <nd ref="6999"/>
     <nd ref="7000"/>
     <nd ref="7001"/>
-    <nd ref="7002"/>
-    <nd ref="6994"/>
+    <nd ref="6998"/>
     <tag k="area" v="yes"/>
-    <tag k="type" v="dashed_markings"/>
+    <tag k="type" v="parking_area"/>
   </way>
-  <way id="2625">
+  <way id="2628">
+    <nd ref="4697"/>
+    <nd ref="7002"/>
     <nd ref="7003"/>
     <nd ref="7004"/>
-    <nd ref="7005"/>
-    <nd ref="7003"/>
+    <nd ref="4697"/>
     <tag k="area" v="yes"/>
-    <tag k="type" v="dashed_markings"/>
+    <tag k="type" v="parking_area"/>
   </way>
-  <way id="2626">
+  <way id="2629">
+    <nd ref="7005"/>
     <nd ref="7006"/>
     <nd ref="7007"/>
     <nd ref="7008"/>
     <nd ref="7009"/>
     <nd ref="7010"/>
     <nd ref="7011"/>
-    <nd ref="7006"/>
+    <nd ref="7012"/>
+    <nd ref="7013"/>
+    <nd ref="7005"/>
     <tag k="area" v="yes"/>
     <tag k="type" v="dashed_markings"/>
   </way>
-  <way id="2627">
-    <nd ref="7012"/>
-    <nd ref="7013"/>
+  <way id="2630">
     <nd ref="7014"/>
     <nd ref="7015"/>
     <nd ref="7016"/>
+    <nd ref="7014"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="dashed_markings"/>
+  </way>
+  <way id="2631">
     <nd ref="7017"/>
     <nd ref="7018"/>
     <nd ref="7019"/>
     <nd ref="7020"/>
     <nd ref="7021"/>
     <nd ref="7022"/>
+    <nd ref="7017"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="dashed_markings"/>
+  </way>
+  <way id="2632">
+    <nd ref="7023"/>
+    <nd ref="7024"/>
+    <nd ref="7025"/>
+    <nd ref="7026"/>
+    <nd ref="7027"/>
+    <nd ref="7028"/>
+    <nd ref="7029"/>
+    <nd ref="7030"/>
+    <nd ref="7031"/>
+    <nd ref="7032"/>
+    <nd ref="7033"/>
     <nd ref="4745"/>
     <nd ref="4744"/>
     <nd ref="4743"/>
     <nd ref="4742"/>
     <nd ref="4741"/>
     <nd ref="4740"/>
-    <nd ref="7023"/>
+    <nd ref="7034"/>
     <nd ref="4738"/>
     <nd ref="4737"/>
     <nd ref="4736"/>
     <nd ref="4735"/>
-    <nd ref="7012"/>
+    <nd ref="7023"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="dashed_markings"/>
+  </way>
+  <way id="2633">
+    <nd ref="7035"/>
+    <nd ref="7036"/>
+    <nd ref="7037"/>
+    <nd ref="7038"/>
+    <nd ref="7035"/>
+    <tag k="area" v="yes"/>
+    <tag k="type" v="dashed_markings"/>
+  </way>
+  <way id="2634">
+    <nd ref="7039"/>
+    <nd ref="7040"/>
+    <nd ref="7041"/>
+    <nd ref="7042"/>
+    <nd ref="7039"/>
     <tag k="area" v="yes"/>
     <tag k="type" v="dashed_markings"/>
   </way>

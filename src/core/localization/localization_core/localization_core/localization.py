@@ -21,6 +21,8 @@ import math
 
 from tf2_ros import TransformListener, Buffer
 import tf2_geometry_msgs
+import threading
+import time
 
 
 class Localization(Node):
@@ -40,6 +42,7 @@ class Localization(Node):
         self.declare_parameter('allowed_lanelet_subtypes', ['road'])
         self.declare_parameter('max_select_distance', 3.0)
         self.declare_parameter('stopline_ahead_margin', 0.2)
+        self.declare_parameter('status_log_hz', 2.0)
 
         self.map_frame = self.get_parameter('map_frame').get_parameter_value().string_value
         map_origin_lat = self.get_parameter('map_origin.lat').get_parameter_value().double_value
@@ -47,6 +50,11 @@ class Localization(Node):
         self.max_select_distance = self.get_parameter('max_select_distance').get_parameter_value().double_value
         self.allowed_lanelet_subtypes = list(self.get_parameter('allowed_lanelet_subtypes').get_parameter_value().string_array_value)
         self.stopline_ahead_margin = self.get_parameter('stopline_ahead_margin').get_parameter_value().double_value
+        try:
+            status_hz = float(self.get_parameter('status_log_hz').get_parameter_value().double_value)
+        except Exception:
+            status_hz = 2.0
+        self._status_log_interval = 1.0 / status_hz if status_hz and status_hz > 0.0 else 1.0
 
         self.projector = UtmProjector(Origin(map_origin_lat, map_origin_lon))
         # Compute UTM origin (to switch between absolute/local frames)
@@ -86,13 +94,13 @@ class Localization(Node):
                         try:
                             ltype = self._get_attr(ls.attributes, 'type').lower()
                             subtype = self._get_attr(ls.attributes, 'subtype').lower()
-                            if ltype == 'stop_line' or subtype == 'stop_line':
+                            if (ltype in ('stop_line', 'stopline')) or (subtype in ('stop_line', 'stopline')):
                                 self.stopline_linestrings.append(ls)
                         except Exception:
                             pass
-                    self.get_logger().info(f"Found {len(self.stopline_linestrings)} stop_line LineStrings")
+                    self.get_logger().info(f"Found {len(self.stopline_linestrings)} stop line LineStrings (including 'stopline')")
                 except Exception as e:
-                    self.get_logger().warn(f"Failed to scan stop_line LineStrings: {e}")
+                    self.get_logger().warn(f"Failed to scan stop line LineStrings: {e}")
 
                 # Heuristic: determine whether lanelet coords are absolute UTM (large values) or local
                 self.lanelet_coords_are_absolute = False
@@ -122,6 +130,7 @@ class Localization(Node):
                         f"Lanelet->stopline links (by ref): {len(self.lanelet_id_to_stoplines)} lanelets have stoplines")
                 except Exception as e:
                     self.get_logger().warn(f"Failed to map stoplines by ref id: {e}")
+
             except Exception as e:
                 self.get_logger().error(f"Failed to load lanelet2 map: {e}")
 
@@ -138,8 +147,10 @@ class Localization(Node):
         self.last_stopline_proj_distance = None
         self.last_stopline_type = None
 
-        # Periodic status print (1 Hz)
-        self.status_timer = self.create_timer(1.0, self._print_status)
+        # Periodic status print (1 Hz) using wall clock (independent of ROS time)
+        self._status_stop_event = threading.Event()
+        self._status_thread = threading.Thread(target=self._status_wall_loop, daemon=True)
+        self._status_thread.start()
         # Periodic republish lanelet id (for latched/late subscribers downstream)
         self.repub_timer = self.create_timer(1.0, self._republish_lanelet)
 
@@ -251,11 +262,8 @@ class Localization(Node):
             msg = Int64()
             msg.data = int(chosen_id)
             self.current_lanelet_pub.publish(msg)
-            self.get_logger().info(f"Current lanelet id: {chosen_id}")
-            try:
-                print(f"Current lanelet id: {chosen_id}", flush=True)
-            except Exception:
-                pass
+            self.get_logger().info(f"현재 lanelet 업데이트 됨: {chosen_id}")
+            # console print removed to avoid duplicate logs
 
         # Publish projection distance (signed along vehicle heading) to the nearest stop line
         try:
@@ -347,8 +355,27 @@ class Localization(Node):
         dist = self.last_stopline_proj_distance if self.last_stopline_proj_distance is not None else 'NaN'
         stype = self.last_stopline_type if self.last_stopline_type is not None else 'no_stopline'
         self.get_logger().info(f"현재 Lanelet: {status}, 정지선 거리: {dist}, 정지선 타입: {stype}")
+        # console print removed to avoid duplicate logs
+
+    def _status_wall_loop(self):
+        # Wall-clock based periodic logger, unaffected by use_sim_time or /clock
+        while rclpy.ok() and not self._status_stop_event.is_set():
+            try:
+                self._print_status()
+            except Exception as e:
+                try:
+                    self.get_logger().warn(f"Status print failed: {e}")
+                except Exception:
+                    pass
+            time.sleep(self._status_log_interval)
+
+    def shutdown(self):
         try:
-            print(f"현재 Lanelet: {status}, 정지선 거리: {dist}, 정지선 타입: {stype}", flush=True)
+            if hasattr(self, '_status_stop_event'):
+                self._status_stop_event.set()
+            # Give the thread a brief moment to exit
+            if hasattr(self, '_status_thread') and self._status_thread.is_alive():
+                self._status_thread.join(timeout=0.2)
         except Exception:
             pass
 
@@ -366,6 +393,10 @@ def main(args=None):
     try:
         rclpy.spin(node)
     finally:
+        try:
+            node.shutdown()
+        except Exception:
+            pass
         node.destroy_node()
         rclpy.shutdown()
 
