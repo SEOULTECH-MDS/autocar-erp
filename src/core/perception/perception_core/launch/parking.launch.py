@@ -12,12 +12,12 @@ def generate_launch_description():
 
     return LaunchDescription([
         use_sim_time_arg,
-        #Node(
+        # Node(
         #    package='perception',
         #    executable='camera_rubber',
         #    name='camera_rubber',
         #    output='screen'
-        #),
+        # ),
 
         Node(
             package='perception',

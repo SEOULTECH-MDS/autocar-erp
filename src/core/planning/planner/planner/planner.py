@@ -119,7 +119,7 @@ class PlannerNode(Node):
         self.declare_parameter('vehicle_width', 1.16)           # 차량 폭 [m]
         self.declare_parameter('vehicle_length', 2.02)          # 차량 길이 [m]
         self.declare_parameter('safety_margin', 0.1)            # 충돌 회피를 위한 안전 여유 [m]
-        self.declare_parameter('path_resolution', 0.01)         # 경로 점들 사이의 간격 [m]
+        self.declare_parameter('path_resolution', 0.3)         # 경로 점들 사이의 간격 [m]
         
         # 주차 공간 기본 정보
         self.declare_parameter('default_slot_len', 5.0)         # 주차 공간 길이 기본값 [m]
@@ -194,8 +194,8 @@ class PlannerNode(Node):
         # ==================== 스테이지 제어 파라미터 ====================
         self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
         self.declare_parameter('test_mode_immediate_s_curve', False)  # 테스트 모드: 주차 포즈 수신 시 즉시 S자 경로 생성
-        self.declare_parameter('stage_position_tolerance', 0.25)  # 스테이지 완료 위치 허용 오차 [m]
-        self.declare_parameter('stage_yaw_tolerance_deg', 8.0)    # 스테이지 완료 방향 허용 오차 [도]
+        self.declare_parameter('stage_position_tolerance', 0.5)  # 스테이지 완료 위치 허용 오차 [m]
+        self.declare_parameter('stage_yaw_tolerance_deg', 100.0)    # 스테이지 완료 방향 허용 오차 [도]
         self.declare_parameter('publish_unified_waypoints', False)  # 현재 스테이지만 /waypoints 퍼블리시 여부
         
         # ==================== 디버그 파라미터 ====================

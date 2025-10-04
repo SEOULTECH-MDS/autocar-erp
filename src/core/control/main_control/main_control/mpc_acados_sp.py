@@ -6,7 +6,7 @@ import math
 import rclpy
 from geometry_msgs.msg import PoseStamped, Twist, PoseArray, PointStamped
 from rclpy.node import Node
-from std_msgs.msg import Float64, Header
+from std_msgs.msg import Float64, Header, Bool
 from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry, Path
 from autocar_utils.euler_from_quaternion import euler_from_quaternion
@@ -54,7 +54,7 @@ class Control(Node):
 
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10)
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
-        self.reverse_flag_sub = self.create_subscription(Float64, '/reverse_flag', self.reverse_flag_cb, 10)
+        self.reverse_flag_sub = self.create_subscription(Bool, '/reverse_flag', self.reverse_flag_cb, 10)
 
         # 변수 초기화
         self.x = None
@@ -109,25 +109,27 @@ class Control(Node):
         # 모드 상태
         self.mode = 0 
         self.mode_description = "Drive"  
+        # self.mode = 5
+        # self.mode_description = "Parking"
     
         # self.is_reverse = True
         self.is_reverse = False
 
         # 모드별 가중치 설정
-        self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
+        self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
             0: np.array([0.1, 0.3, 2.0, 0.5, 2.0, 0.4, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
             4: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY
-            5: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # PARKING
+            5: np.array([0.1, 0.3, 2.0, 0.5, 2.0, 0.4, 0.4]), # PARKING
             6: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN
         }        
         self.current_weights = self.mode_weights[self.mode]
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 4.0,  # DRIVE
+            0: 1.5,  # DRIVE
             1: 0.0,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC 
             3: 2.0,  # OBSTACLE_DYNAMIC
@@ -214,7 +216,7 @@ class Control(Node):
                 self.get_logger().warn(f"정의되지 않은 모드: {self.mode}, 기존 목표 속도 사용")
 
     def reverse_flag_cb(self, msg):
-        self.is_reverse = bool(msg.data)
+        self.is_reverse = msg.data
 
     def calc_current_s(self, _cubic_spline):
         """
@@ -307,8 +309,10 @@ class Control(Node):
         self.xs_local, self.ys_local = [], []  # waypoint 리스트
         if self.map_origin_x is not None and self.map_origin_y is not None:
             for node in path_msg.poses:
-                self.xs_local.append(node.pose.position.x - self.map_origin_x)
-                self.ys_local.append(node.pose.position.y - self.map_origin_y)
+                # self.xs_local.append(node.pose.position.x - self.map_origin_x)
+                # self.ys_local.append(node.pose.position.y - self.map_origin_y)
+                self.xs_local.append(node.pose.position.x)
+                self.ys_local.append(node.pose.position.y)
         else:
             self.get_logger().warn("Map origin 정보가 설정되지 않았습니다. Local waypoints를 업데이트할 수 없습니다.")
             return
@@ -619,6 +623,7 @@ class Control(Node):
             \n Fail Count: {self.fail_count}\
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \
+            \n Reverse: {self.is_reverse} \
             \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f}) \
             \n weights: {self.current_weights} \
             \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), \
