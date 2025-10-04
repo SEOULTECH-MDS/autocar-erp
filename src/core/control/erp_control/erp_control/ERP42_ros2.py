@@ -5,7 +5,6 @@ import os
 import time
 import serial
 import numpy as np
-import matplotlib.pyplot as plt
 
 import rclpy
 from rclpy.node import Node
@@ -38,11 +37,11 @@ cur_ENC_backup=0
 class erp42(Node):
   def __init__(self):
     super().__init__('erp42')
+    
     self.ackermann_subscriber = self.create_subscription(AckermannDriveStamped, '/erp/cmd_vel', self.acker_callback, 10)
     self.state_sub = self.create_subscription(Odometry, '/autocar/location', self.vehicle_callback, 10)
-    # self.state_sub = self.create_subscription(Odometry, '/data/encoder_vel_two', self.vehicle_callback, 10)
-    # self.ser = serial.Serial("/dev/ttyERP", baudrate=115200, timeout=1)
-    self.ser = serial.Serial("/dev/ttyUSB0", baudrate=115200, timeout=1)
+
+    self.ser = serial.Serial("/dev/ttyERP", baudrate=115200, timeout=1)
     self.departure = time.time()
     self.target_speed = 0.0
     self.velocity = 0.0
@@ -63,23 +62,7 @@ class erp42(Node):
     self.t = 0
     self.dt = 0.3
 
-    ## PID const
-    self.kp = 1.7
-    self.ki = 0
-    self.kd = 0.0
-    self.prev_error = 0
-    self.integral = 0
-
-    # plot variable
-    self.time = time.time()
-    self.times = []
-    self.target_value = []
-    self.actual_value = []
-    self.brake_value = []
-    self.input_value = []
-
     self.timer1 = self.create_timer(0.1, self.timer_callback)
-    self.timer2 = self.create_timer(0.1, self.plot_creator)
 
   def GetAorM(self):
     AorM = 0x01
@@ -193,6 +176,15 @@ class erp42(Node):
 
   def acker_callback(self, msg):
     self.target_speed = msg.drive.speed
+    
+    # 속도가 음수이면 후진 기어(2)로 설정, 양수이면 전진 기어(0)로 설정
+    if msg.drive.speed < 0:
+        self.gear = 2  # 후진
+        self.speed = abs(msg.drive.speed)  # 속도는 절댓값으로 사용
+    else:
+        self.gear = int(msg.drive.acceleration) if msg.drive.acceleration in [0, 1, 2] else 0  # 전진 또는 기존 로직
+        self.speed = msg.drive.speed
+    
     # target speed 0일때 급정지
     if msg.drive.speed == 0.0:
       self.speed = 0.0
@@ -202,7 +194,6 @@ class erp42(Node):
 
     cmd_steer = np.rad2deg(msg.drive.steering_angle)
     self.steer = self.real_steer(cmd_steer)
-    self.gear = int(msg.drive.acceleration)
     parking = bool(msg.drive.jerk)
 
     if parking:
@@ -214,21 +205,12 @@ class erp42(Node):
       elif self.velocity < 0.5:
         self.speed = 15/3.6
       else:
-        self.speed = msg.drive.speed
+        self.speed = abs(msg.drive.speed)  # 후진일 경우를 고려하여 절댓값 사용
 
     else:
-      if self.velocity - msg.drive.speed >= 2.5/3.6 : # 0.42 : 1.5km/h,  0.28 : 1km/h
-        self.speed = msg.drive.speed
-        self.brake = 57
-      elif self.velocity - msg.drive.speed < -3/3.6:  # msg.drive.speed <= 10 and
-        if msg.drive.speed < 8/3.6:
-          self.speed = msg.drive.speed + 4/3.6
-        else:
-          self.speed = msg.drive.speed + 2/3.6
-        self.brake = 1
-      else:
-        self.speed = msg.drive.speed
-        self.brake = 1
+      # 단순하게 목표 속도 그대로 사용
+      self.speed = abs(msg.drive.speed)
+      self.brake = 1
 
 
   def timer_callback(self):
@@ -238,35 +220,6 @@ class erp42(Node):
           "Brake :", self.brake, " %\t", 									"Gear :", self.dir[self.gear])
     self.Send_to_ERP42(self.gear, self.speed, -self.steer, self.brake)
 
-  def plot_creator(self):
-    elapsed_time = time.time() - self.time
-    self.times.append(elapsed_time)
-    self.target_value.append(self.target_speed * 3.6)
-    self.input_value.append(self.speed * 3.6)
-    self.actual_value.append(self.velocity * 3.6)
-    self.brake_value.append(self.brake/10)
-
-  def save(self, output_folder):
-    count = 0
-    output = os.path.join(output_folder, f'speed_graph_{count}.png')
-    while os.path.exists(output):
-        count += 1
-        output = os.path.join(output_folder, f'speed_graph_{count}.png')
-
-    # 그래프 그리기
-    plt.figure(figsize=(10, 6))
-    plt.plot(self.times, self.target_value, label='target_speed', color='blue')
-    plt.plot(self.times, self.actual_value, label='actual_speed', color='red')
-    plt.plot(self.times, self.brake_value, label='brake_force', color='black')
-    plt.plot(self.times, self.input_value, label='input', color='yellow')
-    plt.xlabel("Time (s)")
-    plt.ylabel("Speed (km/h)")
-    plt.title("Speed Data Graph")
-    plt.legend()
-
-    plt.savefig(output)
-    plt.show()
-
 def main(args=None):
   rclpy.init(args=args)
   node = erp42()
@@ -275,10 +228,7 @@ def main(args=None):
     rclpy.spin(node)
 
   except KeyboardInterrupt:
-    home_folder = os.path.expanduser("~")
-    plot_folder = os.path.join(home_folder, 'dataset')
-    node.save(plot_folder)
-    node.get_logger().info('Plot Img Saved')
+    node.get_logger().info('Node stopped')
 
   finally:
     node.destroy_node()
