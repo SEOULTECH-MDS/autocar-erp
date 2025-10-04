@@ -360,9 +360,9 @@ class Control(Node):
                                       f"obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f})")
             elif len(obstacles) == 1:
                 self.obs1_x, self.obs1_y = obstacles[0]
-                self.obs2_x, self.obs2_y = obstacles[0]  # 두 번째 장애물을 첫 번째와 동일하게 설정
-                self.get_logger().info(f"장애물 1개 감지 - obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), "
-                                      f"obs2: 동일 위치")
+                self.obs2_x, self.obs2_y = 1e4, 1e4
+                self.get_logger().info(f"장애물 1개 감지 - obs1: ({self.obs1_x:.2f}")
+                                      
             else:
                 # 장애물이 없거나 모든 변환이 실패한 경우
                 self.obs1_x = 1e4
