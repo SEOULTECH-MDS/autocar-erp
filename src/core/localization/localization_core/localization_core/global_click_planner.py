@@ -279,7 +279,22 @@ class LaneletClickPlanner(QMainWindow):
         road_pen = QPen(QColor(100, 100, 100), 2)
         highlight_pen = QPen(QColor(0, 0, 255, 150), 3)
 
+        # Draw only allowed lanelets (e.g., subtype == 'road')
+        allowed_ids = getattr(self, 'allowed_lanelet_ids', set())
         for lanelet in self.lanelet_map.laneletLayer:
+            if self.allowed_lanelet_subtypes and allowed_ids:
+                if lanelet.id not in allowed_ids:
+                    continue
+            elif self.allowed_lanelet_subtypes:
+                # Fallback: filter on-the-fly by attributes if allowed set not prepared
+                subtype_val = self._get_attr(lanelet.attributes, 'subtype').lower()
+                ped_val = self._get_attr(lanelet.attributes, 'participant:pedestrian').lower()
+                ltype_val = self._get_attr(lanelet.attributes, 'type').lower()
+                if subtype_val not in (s.lower() for s in self.allowed_lanelet_subtypes):
+                    continue
+                if ped_val == 'yes' or ltype_val == 'stop_line':
+                    continue
+
             pen = highlight_pen if lanelet.id in self.selected_lanelet_ids else road_pen
             
             # Draw left bound

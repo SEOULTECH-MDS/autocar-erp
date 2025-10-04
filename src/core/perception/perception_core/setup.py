@@ -50,9 +50,10 @@ setup(
             "object_tracker3D = perception.tracker.src.object_tracker3D:main",
             "rubber_visualizer = perception.rubber_visualizer.src.rubber_visualizer:main",
 
-            # 장애물 (차)
+            # 장애물
             'camera_obstacle = perception.yolov11.camera_obstacle:main',
-            "car_detect = perception.yolov11.car_detect:main",
+            "car_detect = perception.yolov11.car_detect:main", # 차
+            "drum_detect = perception.yolov11.drum_detect:main", # 드럼통
             "sensor_fusion_obstacle = perception.sensor_fusion.src.obstacle.sensor_fusion:main",
 
             # 표지판

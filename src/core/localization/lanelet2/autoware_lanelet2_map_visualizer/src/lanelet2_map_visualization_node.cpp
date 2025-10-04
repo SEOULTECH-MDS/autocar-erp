@@ -131,6 +131,13 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   lanelet::ConstLineStrings3d parking_spaces =
     lanelet::utils::query::getAllParkingSpaces(viz_lanelet_map_);
   lanelet::ConstPolygons3d parking_lots = lanelet::utils::query::getAllParkingLots(viz_lanelet_map_);
+  // Also accept polygons explicitly tagged with type=parking_area
+  for (const auto & pg : viz_lanelet_map_->polygonLayer) {
+    const std::string pt = pg.attributeOr(lanelet::AttributeName::Type, "none");
+    if (pt == "parking_area") {
+      parking_lots.push_back(static_cast<lanelet::ConstPolygon3d>(pg));
+    }
+  }
   lanelet::ConstPolygons3d obstacle_polygons =
     lanelet::utils::query::getAllObstaclePolygons(viz_lanelet_map_);
   lanelet::ConstPolygons3d no_obstacle_segmentation_area =
@@ -140,6 +147,9 @@ void Lanelet2MapVisualizationNode::on_map_bin(
       viz_lanelet_map_, "no_obstacle_segmentation_area_for_run_out");
   lanelet::ConstPolygons3d hatched_road_markings_area =
     lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map_, "hatched_road_markings");
+  // Accept dashed_markings as hatched-like area visualization
+  lanelet::ConstPolygons3d dashed_markings_area_poly =
+    lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map_, "dashed_markings");
   lanelet::ConstPolygons3d intersection_areas =
     lanelet::utils::query::getAllPolygonsByType(viz_lanelet_map_, "intersection_area");
   std::vector<lanelet::NoParkingAreaConstPtr> no_parking_reg_elems =
@@ -174,6 +184,9 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   std_msgs::msg::ColorRGBA cl_intersection_area;
   std_msgs::msg::ColorRGBA cl_bus_stop_area;
   std_msgs::msg::ColorRGBA cl_bicycle_lane;
+  std_msgs::msg::ColorRGBA cl_dashed_lines;
+  std_msgs::msg::ColorRGBA cl_virtual_lines;
+  std_msgs::msg::ColorRGBA cl_general_lines;
   set_color(&cl_road, 0.27, 0.27, 0.27, 0.999);
   set_color(&cl_shoulder, 0.15, 0.15, 0.15, 0.999);
   set_color(&cl_cross, 0.27, 0.3, 0.27, 0.5);
@@ -186,22 +199,56 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   set_color(&cl_detection_areas, 0.27, 0.27, 0.37, 0.5);
   set_color(&cl_no_stopping_areas, 0.37, 0.37, 0.37, 0.5);
   set_color(&cl_speed_bumps, 0.56, 0.40, 0.27, 0.5);
-  set_color(&cl_crosswalks, 0.80, 0.80, 0.0, 0.5);
-  set_color(&cl_obstacle_polygons, 0.4, 0.27, 0.27, 0.5);
-  set_color(&cl_parking_lots, 1.0, 1.0, 1.0, 0.2);
+  set_color(&cl_crosswalks, 0.00, 0.80, 0.0, 0.5);
+  set_color(&cl_obstacle_polygons, 0.4, 0.27, 0.27, 0.9);
+  set_color(&cl_parking_lots, 1.0, 0.0, 0.0, 0.7);
   set_color(&cl_parking_spaces, 1.0, 1.0, 1.0, 0.3);
+  // Collect additional markings: generic thin markings and stop_line already handled; parking handled already
+  lanelet::ConstLineStrings3d thin_markings;
+  lanelet::ConstLineStrings3d crosswalk_lines;
+  for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
+    const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
+    const std::string subtype = ls.attributeOr(lanelet::AttributeName::Subtype, "none");
+    if (type == "road_marking" || type == "marking" || type == "Markings" ||
+        (type == "line_thin" && (subtype == "marking" || subtype == "Markings"))) {
+      thin_markings.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+    } else if (type == "crosswalk") {
+      crosswalk_lines.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+    }
+  }
   set_color(&cl_lanelet_id, 0.5, 0.5, 0.5, 0.999);
   set_color(&cl_no_obstacle_segmentation_area, 0.37, 0.37, 0.27, 0.5);
   set_color(&cl_no_obstacle_segmentation_area_for_run_out, 0.37, 0.7, 0.27, 0.5);
-  set_color(&cl_hatched_road_markings_area, 0.3, 0.3, 0.3, 0.5);
+  set_color(&cl_hatched_road_markings_area, 0.9, 0.9, 0.0, 0.7);
   set_color(&cl_hatched_road_markings_line, 0.5, 0.5, 0.5, 0.999);
   set_color(&cl_no_parking_areas, 0.42, 0.42, 0.42, 0.5);
-  set_color(&cl_curbstones, 0.1, 0.1, 0.2, 0.999);
+  set_color(&cl_curbstones, 0.5, 0.5, 0.5, 0.9);
   set_color(&cl_intersection_area, 0.16, 1.0, 0.69, 0.5);
   set_color(&cl_bus_stop_area, 0.863, 0.863, 0.863, 0.5);
   set_color(&cl_bicycle_lane, 0.0, 0.3843, 0.6274, 0.5);
+  set_color(&cl_dashed_lines, 0.9, 0.9, 0.0, 0.5);
+  set_color(&cl_virtual_lines, 0.0, 0.9, 0.9, 0.3);
+  set_color(&cl_general_lines, 0.6, 0.6, 0.6, 0.9);
 
   visualization_msgs::msg::MarkerArray map_marker_array;
+
+  // Collect thin dashed/virtual line strings from raw layer
+  lanelet::ConstLineStrings3d thin_dashed;
+  lanelet::ConstLineStrings3d thin_virtual;
+  lanelet::ConstLineStrings3d thin_general;
+  for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
+    const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
+    if (type == "line_thin") {
+      const std::string subtype = ls.attributeOr(lanelet::AttributeName::Subtype, "none");
+      if (subtype == "dashed") {
+        thin_dashed.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "virtual") {
+        thin_virtual.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else {
+        thin_general.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      }
+    }
+  }
 
   insert_marker_array(
     &map_marker_array,
@@ -301,11 +348,52 @@ void Lanelet2MapVisualizationNode::on_map_bin(
 
   insert_marker_array(
     &map_marker_array,
+    lanelet::visualization::hatchedRoadMarkingsAreaAsMarkerArray(
+      dashed_markings_area_poly, cl_hatched_road_markings_area, cl_hatched_road_markings_line));
+
+  insert_marker_array(
+    &map_marker_array,
     lanelet::visualization::noParkingAreasAsMarkerArray(no_parking_reg_elems, cl_no_parking_areas));
 
   insert_marker_array(
     &map_marker_array,
     lanelet::visualization::lineStringsAsMarkerArray(curbstones, "curbstone", cl_curbstones, 0.2));
+
+  // Visualize generic road markings
+  // Use higher alpha and slightly thicker width to improve visibility
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_markings, "road_markings", cl_pedestrian_markings,
+                                                     0.2));
+
+  // Crosswalk zebra lines from lineStrings tagged as type=crosswalk
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(crosswalk_lines, "crosswalk_lines", cl_crosswalks,
+                                                     0.2));
+
+  // Additional named line types for compatibility
+  lanelet::ConstLineStrings3d left_right_line, dashed_line_new, virtual_line_new, roadborder, stopline_new;
+  for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
+    const std::string t = ls.attributeOr(lanelet::AttributeName::Type, "none");
+    if (t == "left_right_line") left_right_line.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+    else if (t == "dashed_line") dashed_line_new.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+    else if (t == "virtual_line") virtual_line_new.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+    else if (t == "roadborder") roadborder.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+    else if (t == "stopline") stopline_new.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+  }
+  insert_marker_array(&map_marker_array, lanelet::visualization::lineStringsAsMarkerArray(left_right_line, "left_right_line", cl_general_lines, 0.15));
+  insert_marker_array(&map_marker_array, lanelet::visualization::lineStringsAsMarkerArray(dashed_line_new, "dashed_line", cl_dashed_lines, 0.15));
+  insert_marker_array(&map_marker_array, lanelet::visualization::lineStringsAsMarkerArray(virtual_line_new, "virtual_line", cl_virtual_lines, 0.15));
+  insert_marker_array(&map_marker_array, lanelet::visualization::lineStringsAsMarkerArray(roadborder, "roadborder", cl_curbstones, 0.15));
+  insert_marker_array(&map_marker_array, lanelet::visualization::lineStringsAsMarkerArray(stopline_new, "stopline", cl_stoplines, 0.2));
+
+  // Show dashed_markings areas if present
+  // dashed_markings_area_poly already populated above; reuse here for visualization
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::hatchedRoadMarkingsAreaAsMarkerArray(
+      dashed_markings_area_poly, cl_hatched_road_markings_area, cl_hatched_road_markings_line));
 
   insert_marker_array(
     &map_marker_array, lanelet::visualization::intersectionAreaAsMarkerArray(
@@ -329,6 +417,20 @@ void Lanelet2MapVisualizationNode::on_map_bin(
     &map_marker_array, lanelet::visualization::laneletsAsTriangleMarkerArray(
                          "bicycle_lane_lanelets", bicycle_lane_lanelets, cl_bicycle_lane));
 
+  // Visualize thin dashed/virtual line strings
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_dashed, "dashed_lines", cl_dashed_lines,
+                                                     0.15));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_virtual, "virtual_lines", cl_virtual_lines,
+                                                     0.15));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_general, "general_lines", cl_general_lines,
+                                                     0.15));
+
   // Z-offset adjustments to mitigate z-fighting
   auto adjust_z_by_namespace = [&](const std::string & ns, const double dz) {
     for (auto & mk : map_marker_array.markers) {
@@ -345,6 +447,11 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   adjust_z_by_namespace("road_lanelets", -0.05);
   adjust_z_by_namespace("stop_lines", +0.05);
   adjust_z_by_namespace("stop_lines_raw", +0.05);
+  adjust_z_by_namespace("dashed_lines", +0.03);
+  adjust_z_by_namespace("virtual_lines", +0.035);
+  adjust_z_by_namespace("general_lines", +0.025);
+  // Raise obstacles slightly to make them more visible above road surface
+  adjust_z_by_namespace("obstacles", +0.02);
 
   pub_marker_->publish(map_marker_array);
 }

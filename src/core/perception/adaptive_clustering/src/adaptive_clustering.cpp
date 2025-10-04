@@ -45,9 +45,25 @@ public:
     this->declare_parameter<float>("y_axis_max", 4.0);
     this->declare_parameter<float>("z_axis_min", -0.5);
     this->declare_parameter<float>("z_axis_max", 0.5);
+    // this->declare_parameter<float>("x_axis_max", 20.0);  // 20m까지 탐지 범위 확장
+    // this->declare_parameter<float>("y_axis_min", -6.0);  // 좌우 범위도 확장
+    // this->declare_parameter<float>("y_axis_max", 6.0);
+    // this->declare_parameter<float>("z_axis_min", -0.8);  // 지면 변화 고려
+    // this->declare_parameter<float>("z_axis_max", 1.2);   // 높은 차량 고려
     this->declare_parameter<int>("cluster_size_min", 3);
     this->declare_parameter<int>("cluster_size_max", 10000);
     this->declare_parameter<float>("tolerance_offset", 0.1);
+    // this->declare_parameter<int>("cluster_size_min", 5);     // 멀리 있는 차량도 탐지하기 위해 최소값 유지
+    // this->declare_parameter<int>("cluster_size_max", 15000); // 큰 차량도 처리 가능하도록
+    // this->declare_parameter<float>("tolerance_offset", 0.15); // 거리별 허용 오차 증가
+
+    // Car detection parameters (more realistic for actual vehicles)
+    // this->declare_parameter<float>("car_length_min", 1.8);  // 부분적으로 보이는 차량 고려
+    // this->declare_parameter<float>("car_length_max", 7.0);  // 큰 차량까지 포함
+    // this->declare_parameter<float>("car_width_min", 1.0);   // 좁게 보이는 차량 고려
+    // this->declare_parameter<float>("car_width_max", 3.0);   // 넓은 차량까지 포함
+    // this->declare_parameter<float>("car_height_min", 0.8);  // 낮은 차량 고려
+    // this->declare_parameter<float>("car_height_max", 2.5);  // 높은 차량까지 포함
     
     this->get_parameter("sensor_model", sensor_model_);
     this->get_parameter("print_fps", print_fps_);
@@ -60,6 +76,14 @@ public:
     this->get_parameter("cluster_size_min", cluster_size_min_);
     this->get_parameter("cluster_size_max", cluster_size_max_);
     this->get_parameter("tolerance_offset", tolerance_offset_);
+
+    // Get car detection parameters
+    // this->get_parameter("car_length_min", car_length_min_);
+    // this->get_parameter("car_length_max", car_length_max_);
+    // this->get_parameter("car_width_min", car_width_min_);
+    // this->get_parameter("car_width_max", car_width_max_);
+    // this->get_parameter("car_height_min", car_height_min_);
+    // this->get_parameter("car_height_max", car_height_max_);
 
     if(sensor_model_.compare("VLP-16") == 0) {
       regions_[0] = 2; regions_[1] = 3; regions_[2] = 3; regions_[3] = 3; regions_[4] = 3;
@@ -244,11 +268,57 @@ private:
 
         marker.lifetime = rclcpp::Duration::from_seconds(0.1);
 
+        // 기존 라바콘만 탐지시 사용한 코드
         if (size_z_ > 0.2 && size_x_ <1 && size_y_ <1 && size_z_ <1.5) 
         {
           marker_array.markers.push_back(marker);
         }
+
+        // Small object detection (pedestrian, bicycle, etc.)
+        // bool is_small_object = (size_z_ > 0.2 && size_x_ < 1 && size_y_ < 1 && size_z_ < 1.5);
+        // 
+        // Car detection with more restrictive constraints
+        // bool is_car_size = (size_x_ >= car_length_min_ && size_x_ <= car_length_max_ &&
+        //                    size_y_ >= car_width_min_ && size_y_ <= car_width_max_ &&
+        //                    size_z_ >= car_height_min_ && size_z_ <= car_height_max_);
+        // 
+        // More restrictive car shape constraints
+        // float length_width_ratio = size_x_ / size_y_;
+        // float width_height_ratio = size_y_ / size_z_;
+        // float length_height_ratio = size_x_ / size_z_;
+        // 
+        // Stricter car shape validation
+        // bool is_car_shape = (length_width_ratio > 1.5 && length_width_ratio < 3.5) &&  // Cars are typically 1.5-3.5 times longer than wide
+        //                    (width_height_ratio > 1.0 && width_height_ratio < 2.5) &&   // Width should be 1.0-2.5 times height
+        //                    (length_height_ratio > 2.0 && length_height_ratio < 6.0) &&  // Length should be 2-6 times height
+        //                    (size_z_ < 2.0);  // Cars are rarely taller than 2m
+
+        // More flexible car shape validation (especially for distant/partial vehicles)
+        // bool is_car_shape = (length_width_ratio > 1.0 && length_width_ratio < 5.0) &&  // 더 넓은 비율 허용
+        //                    (width_height_ratio > 0.5 && width_height_ratio < 4.0) &&   // 더 관대한 폭:높이 비율
+        //                    (length_height_ratio > 1.0 && length_height_ratio < 8.0) &&  // 더 관대한 길이:높이 비율
+        //                    (size_z_ > 0.3 && size_z_ < 3.0);  // 높이 범위 확장
+        // 
+        // bool is_car = is_car_size && is_car_shape;
+        // 
+        // if (is_small_object || is_car) 
+        // {
+        //   // Set different colors based on object type
+        //   if (is_car) {
+        //     // Red color for cars
+        //     marker.color.r = 1.0;
+        //     marker.color.g = 0.0;
+        //     marker.color.b = 0.0;
+        //   } else if (is_small_object) {
+        //     // Green color for small objects
+        //     marker.color.r = 0.0;
+        //     marker.color.g = 1.0;
+        //     marker.color.b = 0.0;
+        //   }
+        //   marker_array.markers.push_back(marker);
+        // }
         
+
         marker.header.stamp = this->get_clock()->now();
         marker.ns = "clustering_pose";
         marker.id = i;
@@ -267,6 +337,7 @@ private:
         marker.color.b = 1.5;
         marker.lifetime = rclcpp::Duration::from_seconds(0.1);
 
+        // 기존 라바콘만 탐지시 사용한 코드
         if ( size_z_ > 0.2 && size_x_ <1 && size_y_ <1 && size_z_ <1.5 )
         {
           marker_pose.markers.push_back(marker);
@@ -283,6 +354,23 @@ private:
           pose.orientation.w = 1;
           pose_array.poses.push_back(pose);
         }
+
+        // if (is_small_object || is_car)
+        // {
+        //   marker_pose.markers.push_back(marker);
+        //   Eigen::Vector4f centroid;
+        //   pcl::compute3DCentroid(*clusters[i], centroid);
+          
+        //   geometry_msgs::msg::Pose pose;
+        //   pose.position.x = centroid[0];
+        //   pose.position.y = centroid[1];
+        //   pose.position.z = centroid[2];
+        //   pose.orientation.x = std::abs(max[0]-min[0]);
+        //   pose.orientation.y = std::abs(max[1]-min[1]);
+        //   pose.orientation.z = std::abs(max[2]-min[2]);
+        //   pose.orientation.w = 1;
+        //   pose_array.poses.push_back(pose);
+        // }
       }
     }
     
@@ -321,6 +409,14 @@ private:
   float size_x_;
   float size_y_;
   float size_z_;
+
+  // Car detection parameters
+  float car_length_min_;
+  float car_length_max_;
+  float car_width_min_;
+  float car_width_max_;
+  float car_height_min_;
+  float car_height_max_;
 
   static const int region_max_ = 10;
   int regions_[13];
