@@ -575,7 +575,7 @@ class Control(Node):
 
         # s 값이 목표 지점에 도달했는지 확인 -> local path 활용 시 s의 끝에 도달했을 떄 속도를 0으로 설정
         remaining_distance = current_cubic_spline.s[-1] - self.s
-        if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 0.5): # s의 20%(path가 2.5m보다 짧을 경우) or 0.5m 이내에 도달했으면 정지
+        if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 0.8): # s의 20%(path가 4.0m보다 짧을 경우) or 0.8m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
         if self.mode == 1 and self.stopline_distance < 2.5: # PAUSE 모드이고 정지선 까지 거리가 2.5m 이내이면 정지
