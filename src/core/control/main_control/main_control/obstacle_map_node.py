@@ -47,7 +47,7 @@ class ObstacleMap(Node):
         self.obstacle_map_pub = self.create_publisher(MarkerArray, '/obstacle_map', 10)
 
         # 주기적 퍼블리시 (더 높은 주파수)
-        self.timer_pub = self.create_timer(0.1, self.publish_obstacles)  # 10Hz
+        self.timer_pub = self.create_timer(0.05, self.publish_obstacles)  # 20Hz
 
         # 성능 통계
         self.transform_count = 0

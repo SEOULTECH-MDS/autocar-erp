@@ -107,34 +107,34 @@ class Control(Node):
         self.map_origin_y = None
 
         # 모드 상태
-        self.mode = 0 
-        self.mode_description = "Drive"  
-        # self.mode = 5
-        # self.mode_description = "Parking"
+        # self.mode = 0 
+        # self.mode_description = "Drive"  
+        self.mode = 5
+        self.mode_description = "Parking"
     
         # self.is_reverse = True
         self.is_reverse = False
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([0.1, 0.3, 2.0, 0.5, 2.0, 0.4, 0.4]), # DRIVE
+            0: np.array([0.1, 0.3, 2.0, 0.8, 2.0, 0.5, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
             4: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY
-            5: np.array([0.1, 0.3, 2.0, 0.5, 2.0, 0.4, 0.4]), # PARKING
+            5: np.array([0.1, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
             6: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN
         }        
         self.current_weights = self.mode_weights[self.mode]
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 1.5,  # DRIVE
+            0: 3.5,  # DRIVE
             1: 0.0,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC 
             3: 2.0,  # OBSTACLE_DYNAMIC
             4: 3.0,  # DELIVERY
-            5: 2.0,  # PARKING
+            5: 2.5,  # PARKING
             6: 3.0   # RETURN
         }
         self.target_vel = self.mode_target_vel[self.mode]

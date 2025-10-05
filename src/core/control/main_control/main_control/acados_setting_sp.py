@@ -24,7 +24,7 @@ def acados_solver():
     MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
     MAX_SPEED = 6.0  # 최고 속도 [m/s]
     MIN_SPEED = -6.0  # 최저 속도 [m/s] 
-    MAX_ACCEL = 9.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
+    MAX_ACCEL = 10.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
     MIN_ACCEL = -12.0  # 최대 감속도 [m/s^2]
 
     NX = 5  # reference size (x, y, yaw, v, s)
@@ -144,7 +144,7 @@ def acados_solver():
     ocp.constraints.ubx = np.array([1e10, 1e10, 1e10, MAX_SPEED, 1e10])  # 상태 변수 상한
     ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4]) # 상태 변수 인덱스
 
-    r_safe = 1.0
+    r_safe = 1.3
     distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
     distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
     distance3 = (vehicle_x - obs3_x)**2 + (vehicle_y - obs3_y)**2
