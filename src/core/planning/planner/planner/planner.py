@@ -139,8 +139,6 @@ class PlannerNode(Node):
         
         # (삭제됨) 3,4순위 S-curve 관련 파라미터
         
-
-        
         # ==================== 스테이지 제어 파라미터 ====================
         self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
         self.declare_parameter('test_mode_immediate_s_curve', False)  # 테스트 모드: 주차 포즈 수신 시 즉시 S자 경로 생성

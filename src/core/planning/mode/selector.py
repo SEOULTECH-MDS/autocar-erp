@@ -46,9 +46,9 @@ class ModeSelector(Node):
         self.declare_parameter('publish_rate', 10.0)
         self.declare_parameter('default_mode', ModeType.DRIVING)
         
-        # 구역 ID 설정 (리스트로 유연하게 관리)
-        self.declare_parameter('parking_zone_ids', [1, 2, 3])
-        self.declare_parameter('dropoff_zone_ids', [4, 5, 6])
+        # 구역 ID 설정 (mirae_v2 맵의 실제 Lanelet ID 사용)
+        self.declare_parameter('parking_zone_ids', [39, 44])    # 후반부 구간을 주차 구역으로
+        self.declare_parameter('dropoff_zone_ids', [55, 60])    # 마지막 구간을 하차 구역으로
 
         # ===========================================
         # Publisher 설정
@@ -260,32 +260,24 @@ class ModeSelector(Node):
             int: 해당하는 Map ID (구역 번호)
             
         Note:
-            mirae_map의 실제 Lanelet ID (1~8)를 기반으로 한 매핑입니다.
-            맵 구성이 변경되면 이 매핑도 함께 수정해야 합니다.
+            mirae_v2 맵의 실제 Lanelet ID들: 7, 12, 23, 28, 39, 44, 55, 60
+            OSM에서 확인한 실제 ID를 기반으로 한 매핑입니다.
         """
-        # mirae_map 실제 Lanelet ID 범위: 1~8
+        # mirae_v2 맵의 실제 Lanelet ID들 (OSM에서 확인됨)
+        # lanelet (7, 3members), lanelet (12, 3members), ... 등
         
-        # 주차 구역 매핑 (parking_zone_ids: [1, 2, 3])
-        if lanelet_id == 1:
-            return 1  # 주차구역 1
-        elif lanelet_id == 2:
-            return 2  # 주차구역 2  
-        elif lanelet_id == 3:
-            return 3  # 주차구역 3
+        # 실제 Lanelet ID를 그대로 Map ID로 사용
+        if lanelet_id in [7, 12, 23, 28, 39, 44, 55, 60]:
+            return lanelet_id  # Lanelet ID = Map ID
             
-        # 하차 구역 매핑 (dropoff_zone_ids: [4, 5, 6])
-        elif lanelet_id == 4:
-            return 4  # 하차구역 1
-        elif lanelet_id == 5:
-            return 5  # 하차구역 2
-        elif lanelet_id == 6:
-            return 6  # 하차구역 3
-            
-        # 일반 도로 구역
-        elif lanelet_id == 7:
-            return 7  # 일반 도로 1
-        elif lanelet_id == 8:
-            return 8  # 일반 도로 2
+        # 구역별 분류 (선택사항)
+        # 주차 구역으로 사용할 Lanelet ID들
+        # if lanelet_id in [39, 44]:  # 후반부 구간을 주차로
+        #     return lanelet_id
+        #     
+        # 하차 구역으로 사용할 Lanelet ID들  
+        # if lanelet_id in [55, 60]:  # 마지막 구간을 하차로
+        #     return lanelet_id
             
         # 기타 구역 (예상치 못한 Lanelet ID)
         else:
