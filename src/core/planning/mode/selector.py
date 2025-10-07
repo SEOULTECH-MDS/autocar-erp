@@ -1,38 +1,67 @@
 #!/usr/bin/env python3
-
-"""모드 셀렉터 노드 (v2.0)
-- 차량의 현재 상황을 종합하여 5가지 주행 모드를 결정합니다.
-- DRIVING(기본), PAUSE(신호대기), PARKING(주차), 배달_상차, 배달_하차
-"""
-
 from typing import List, Optional
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
-from std_msgs.msg import String, Int32, Int64, Bool
+from std_msgs.msg import String, Int32, Int64, Bool, Float64
+from nav_msgs.msg import Odometry
 from planning_msgs.msg import ModeState
 
 
+class CompetitionType:
+    """대회 타입 정의"""
+    PRELIMINARY = "preliminary"      # 예선
+    FINAL = "final"                 # 본선
+
+class MapType:
+    """맵 타입 정의"""
+    KCITY = "kcity"                 # K-City 맵
+    MIRAE = "mirae"                 # 미래관 맵
+
+class PreliminaryMode:
+    """예선 모드 정의"""
+    PRELIMINARY_DRIVING = "PRELIMINARY_DRIVING"      # 예선 일반 주행
+    PRELIMINARY_PARKING = "PRELIMINARY_PARKING"      # 예선 주차
+    PRELIMINARY_UTURN = "PRELIMINARY_UTURN"          # 예선 유턴
+    PRELIMINARY_GPS_OFF = "PRELIMINARY_GPS_OFF"      # 예선 GPS 차단
+
+class FinalMode:
+    """본선 모드 정의"""
+    FINAL_DRIVING = "FINAL_DRIVING"                  # 본선 일반 주행
+    FINAL_PARKING = "FINAL_PARKING"                  # 본선 주차
+    FINAL_PAUSE = "FINAL_PAUSE"                      # 본선 신호 대기
+    FINAL_DELIVERY_PICKUP = "FINAL_배달_상차"         # 본선 배달 상차
+    FINAL_DELIVERY_DROPOFF = "FINAL_배달_하차"        # 본선 배달 하차
+
 class ModeType:
-    """모드 타입 정의"""
-    DRIVING = "DRIVING"              # 일반 주행 모드
-    PAUSE = "PAUSE"                  # 신호 대기 모드  
-    PARKING = "PARKING"              # 주차 모드
-    DELIVERY_PICKUP = "배달_상차"     # 배달 상차 모드
-    DELIVERY_DROPOFF = "배달_하차"    # 배달 하차 모드
+    """통합 모드 접근용 (하위 호환성)"""
+    # 예선 모드들
+    PRELIMINARY_DRIVING = PreliminaryMode.PRELIMINARY_DRIVING
+    PRELIMINARY_PARKING = PreliminaryMode.PRELIMINARY_PARKING
+    PRELIMINARY_UTURN = PreliminaryMode.PRELIMINARY_UTURN
+    PRELIMINARY_GPS_OFF = PreliminaryMode.PRELIMINARY_GPS_OFF
+    
+    # 본선 모드들
+    FINAL_DRIVING = FinalMode.FINAL_DRIVING
+    FINAL_PARKING = FinalMode.FINAL_PARKING
+    FINAL_PAUSE = FinalMode.FINAL_PAUSE
+    FINAL_DELIVERY_PICKUP = FinalMode.FINAL_DELIVERY_PICKUP
+    FINAL_DELIVERY_DROPOFF = FinalMode.FINAL_DELIVERY_DROPOFF
 
 
 class ModeSelector(Node):
-    """모드 셀렉터 v2.0
-    
+    """
     입력 토픽:
     - /traffic_sign: 교통 신호 상태 (String: "Green", "Red", "Left", "Straightleft")
-    - /current_lanelet_id: 현재 Lanelet ID (Int64) - Map ID로 변환됨
+    - /current_lanelet_id: 현재 Lanelet ID (Int64)
     - /target_sign: 표지판 인식 (Int32: 1,2,3=상차 | 4,5,6=하차)
     - /parking_complete_flag: 주차 미션 완료 (Bool)
-    
+    - /delivery_complete_flag: 배달 미션 완료 (Bool)
+    - /stopline_distance: 정지선까지의 거리 (Float64)
+    - /stopline_type: 정지선 타입 (String: "right", "left", "straight", "nonstop", "no_stopline")
+    - /autocar/location: 차량 위치 및 속도 정보 (Odometry)
     출력 토픽:
     - /mode_state: 현재 모드 상태 (ModeState)
     """
@@ -44,11 +73,41 @@ class ModeSelector(Node):
         # 파라미터 설정
         # ===========================================
         self.declare_parameter('publish_rate', 10.0)
-        self.declare_parameter('default_mode', ModeType.DRIVING)
         
-        # 구역 ID 설정 (mirae_v2 맵의 실제 Lanelet ID 사용)
-        self.declare_parameter('parking_zone_ids', [39, 44])    # 후반부 구간을 주차 구역으로
-        self.declare_parameter('dropoff_zone_ids', [55, 60])    # 마지막 구간을 하차 구역으로
+        # 대회 및 맵 구분 (먼저 선언)
+        self.declare_parameter('competition_type', CompetitionType.PRELIMINARY)  # "preliminary" | "final" 예선 / 본선
+        self.declare_parameter('map_type', MapType.KCITY)                       # "kcity" | "mirae"
+
+        # 대회 타입에 따른 기본 모드 설정
+        competition_type = str(self.get_parameter('competition_type').value)
+        if competition_type == CompetitionType.PRELIMINARY:
+            self.declare_parameter('default_mode', ModeType.PRELIMINARY_DRIVING)
+        else:
+            self.declare_parameter('default_mode', ModeType.FINAL_DRIVING)
+        
+        # 우회전 정지선 관련 파라미터
+        self.declare_parameter('stopline_pause_distance', 5.0)                  # 정지선 감지 거리 (m)
+        self.declare_parameter('stopline_pause_duration', 3.2)                  # 정지선 정지 시간 (s)
+        self.declare_parameter('enable_distance_condition', False)               # 거리 조건 사용 여부 on/off
+        self.declare_parameter('vehicle_stop_velocity_threshold', 0.1)          # 차량 정지 판단 속도 임계값 (m/s)
+
+        # 신호등 전환 타이머 파라미터
+        self.declare_parameter('traffic_signal_confirm_duration', 0.3)          # 신호등 전환 확인 시간 (s)
+        
+        # K-City 맵 구역 설정 (예선/본선 분리)
+        self.declare_parameter('kcity_preliminary_parking_zones', [1])          # 예선 주차 구역
+        self.declare_parameter('kcity_uturn_zones', [200, 201])                 # 예선 유턴 구역 (아직 못바꿈)
+        self.declare_parameter('kcity_gps_off_zones', [300, 301])               # 예선 GPS 차단 구역 (아직 못바꿈)
+        self.declare_parameter('kcity_delivery_zones', [1, 15])                 # 본선 배달 구역
+        self.declare_parameter('kcity_final_parking_zones', [21])               # 본선 주차 구역
+        self.declare_parameter('kcity_right_pause_zones', [9, 10])              # 본선 우회전 정지선 구역
+
+        # 미래관 맵 구역 설정 (예선/본선 구분 없이 통일)
+        self.declare_parameter('mirae_parking_zones', [7])                      # 주차 구역 
+        self.declare_parameter('mirae_uturn_zones', [39])                       # 유턴 구역
+        self.declare_parameter('mirae_gps_off_zones', [23])                     # GPS 차단 구역
+        self.declare_parameter('mirae_delivery_zones', [28])                    # 배달 구역
+        self.declare_parameter('mirae_right_pause_zones', [55, 60])             # 우회전 정지선 구역
 
         # ===========================================
         # Publisher 설정
@@ -62,6 +121,16 @@ class ModeSelector(Node):
         # 교통 신호
         self.traffic_sign_sub = self.create_subscription(
             String, '/traffic_sign', self._traffic_sign_cb, 10)
+            
+        # 정지선 정보 (우회전 정지선 처리용)
+        self.stopline_distance_sub = self.create_subscription(
+            Float64, '/stopline_distance', self._stopline_distance_cb, 10)
+        self.stopline_type_sub = self.create_subscription(
+            String, '/stopline_type', self._stopline_type_cb, 10)
+            
+        # 차량 위치 및 속도 정보 (정지 판단용)
+        self.location_sub = self.create_subscription(
+            Odometry, '/autocar/location', self._location_cb, 10)
         
         # 위치/맵 정보 (Lanelet ID를 Map ID로 변환)
         self.lanelet_id_sub = self.create_subscription(
@@ -85,14 +154,47 @@ class ModeSelector(Node):
         
         # 입력 상태들
         self.traffic_sign: Optional[str] = None             # "Green", "Red", "Left", "Straightleft"
-        self.current_map_id: Optional[int] = None
+        self.current_lanelet_id: Optional[int] = None       # 현재 차량이 위치한 Lanelet ID
         self.target_sign: Optional[int] = None              # 1,2,3=상차 | 4,5,6=하차
         self.parking_complete_flag: bool = False
         self.delivery_complete_flag: bool = False
         
-        # 구역 ID 리스트 가져오기
-        self.parking_zone_ids: List[int] = list(self.get_parameter('parking_zone_ids').value)
-        self.dropoff_zone_ids: List[int] = list(self.get_parameter('dropoff_zone_ids').value)
+        # 정지선 관련 상태
+        self.stopline_distance: float = float('inf')        # 정지선까지의 거리
+        self.stopline_type: Optional[str] = None            # 정지선 타입
+        self.stopline_pause_start_time: Optional[float] = None  # 정지선 정지 시작 시간
+        
+        # 차량 속도 상태
+        self.current_velocity: float = 0.0                  # 현재 차량 속도 (m/s)
+        
+        # 신호등 전환 타이머 상태
+        self.traffic_signal_change_start_time: Optional[float] = None  # 신호등 변경 시작 시간
+        self.pending_traffic_signal: Optional[str] = None              # 대기 중인 신호등 상태
+        
+        # 대회 및 맵 설정 가져오기
+        self.competition_type: str = str(self.get_parameter('competition_type').value)
+        self.map_type: str = str(self.get_parameter('map_type').value)
+        
+        # 현재 맵과 대회 타입에 따른 구역 ID 설정
+        if self.map_type == MapType.KCITY:
+            # K-City 맵 구역 설정
+            if self.competition_type == CompetitionType.PRELIMINARY:
+                self.parking_zone_ids: List[int] = list(self.get_parameter('kcity_preliminary_parking_zones').value)
+            else:  # FINAL
+                self.parking_zone_ids: List[int] = list(self.get_parameter('kcity_final_parking_zones').value)
+                
+            self.uturn_zone_ids: List[int] = list(self.get_parameter('kcity_uturn_zones').value)
+            self.gps_off_zone_ids: List[int] = list(self.get_parameter('kcity_gps_off_zones').value)
+            self.delivery_zone_ids: List[int] = list(self.get_parameter('kcity_delivery_zones').value)
+            self.right_pause_zone_ids: List[int] = list(self.get_parameter('kcity_right_pause_zones').value)
+            
+        else:  # MIRAE
+            # 미래관 맵 구역 설정 (예선/본선 구분 없이 통일)
+            self.parking_zone_ids: List[int] = list(self.get_parameter('mirae_parking_zones').value)
+            self.uturn_zone_ids: List[int] = list(self.get_parameter('mirae_uturn_zones').value)
+            self.gps_off_zone_ids: List[int] = list(self.get_parameter('mirae_gps_off_zones').value)
+            self.delivery_zone_ids: List[int] = list(self.get_parameter('mirae_delivery_zones').value)
+            self.right_pause_zone_ids: List[int] = list(self.get_parameter('mirae_right_pause_zones').value)
         
         # 미션 상태 플래그 (한 번만 수행되는 미션들)
         self.parking_mission_started: bool = False
@@ -100,11 +202,18 @@ class ModeSelector(Node):
         
         # 모드 매핑 (String → ModeState 상수)
         self.mode_mapping = {
-            ModeType.DRIVING: ModeState.DRIVE,
-            ModeType.PAUSE: ModeState.PAUSE,
-            ModeType.PARKING: ModeState.PARKING,
-            ModeType.DELIVERY_PICKUP: ModeState.DELIVERY,
-            ModeType.DELIVERY_DROPOFF: ModeState.DELIVERY,
+            # 예선 모드들
+            ModeType.PRELIMINARY_DRIVING: ModeState.DRIVE,
+            ModeType.PRELIMINARY_PARKING: ModeState.PARKING,
+            ModeType.PRELIMINARY_UTURN: ModeState.UTURN,        
+            ModeType.PRELIMINARY_GPS_OFF: ModeState.GPS_OFF,    
+            
+            # 본선 모드들
+            ModeType.FINAL_DRIVING: ModeState.DRIVE,
+            ModeType.FINAL_PARKING: ModeState.PARKING,
+            ModeType.FINAL_PAUSE: ModeState.PAUSE,
+            ModeType.FINAL_DELIVERY_PICKUP: ModeState.DELIVERY,
+            ModeType.FINAL_DELIVERY_DROPOFF: ModeState.DELIVERY,
         }
 
         # ===========================================
@@ -114,8 +223,14 @@ class ModeSelector(Node):
         self.create_timer(period, self._on_timer)
 
         self.get_logger().info(f'Mode Selector v2.0 started.')
-        self.get_logger().info(f'Parking zones: {self.parking_zone_ids}')
-        self.get_logger().info(f'Dropoff zones: {self.dropoff_zone_ids}')
+        self.get_logger().info(f'Competition: {self.competition_type}, Map: {self.map_type}')
+        self.get_logger().info(f'Parking zones ({self.competition_type}): {self.parking_zone_ids}')
+        
+        if self.competition_type == CompetitionType.PRELIMINARY:
+            self.get_logger().info(f'Uturn zones: {self.uturn_zone_ids}')
+            self.get_logger().info(f'GPS-off zones: {self.gps_off_zone_ids}')
+        else:  # FINAL
+            self.get_logger().info(f'Delivery zones: {self.delivery_zone_ids}')
 
     # ===========================================
     # 콜백 함수들
@@ -127,11 +242,36 @@ class ModeSelector(Node):
             self.traffic_sign = signal
             self.get_logger().debug(f'Traffic sign: {signal}')
 
+    def _stopline_distance_cb(self, msg: Float64) -> None:
+        """정지선 거리 수신"""
+        try:
+            self.stopline_distance = float(msg.data)
+            self.get_logger().debug(f'Stopline distance: {self.stopline_distance:.2f}m')
+        except Exception:
+            self.stopline_distance = float('inf')
+
+    def _stopline_type_cb(self, msg: String) -> None:
+        """정지선 타입 수신"""
+        stopline_type = (msg.data or '').strip()
+        if stopline_type in ('no_stopline', 'nonstop', 'straight', 'right', 'left'):
+            self.stopline_type = stopline_type
+            self.get_logger().debug(f'Stopline type: {stopline_type}')
+        else:
+            self.stopline_type = 'no_stopline'
+
+    def _location_cb(self, msg: Odometry) -> None:
+        """차량 위치 및 속도 수신"""
+        try:
+            # 속력 계산 (절댓값)
+            self.current_velocity = abs(msg.twist.twist.linear.x)
+            self.get_logger().debug(f'Current velocity: {self.current_velocity:.2f} m/s')
+        except Exception:
+            self.current_velocity = 0.0
+
     def _lanelet_id_cb(self, msg: Int64) -> None:
-        """현재 Lanelet ID 수신 및 Map ID로 변환"""
-        lanelet_id = int(msg.data)
-        self.current_map_id = self._lanelet_to_map_id(lanelet_id)
-        self.get_logger().debug(f'Current lanelet ID: {lanelet_id}, Map ID: {self.current_map_id}')
+        """현재 Lanelet ID 수신"""
+        self.current_lanelet_id = int(msg.data)
+        self.get_logger().debug(f'Current lanelet ID: {self.current_lanelet_id}')
 
     def _target_sign_cb(self, msg: Int32) -> None:
         """표지판 인식 수신 (1,2,3=상차 | 4,5,6=하차)"""
@@ -176,124 +316,259 @@ class ModeSelector(Node):
         self.mode_pub.publish(msg)
 
     def _determine_mode(self) -> str:
-        """현재 상황을 종합하여 모드 결정"""
+        """현재 상황을 종합하여 모드 결정 (예선/본선 구분)"""
         
         # ===========================================
         # 1. 미션 완료 처리 (최우선)
         # ===========================================
-        if self.parking_complete_flag and self.current_mode == ModeType.PARKING:
-            self.parking_complete_flag = False  # 플래그 리셋
+        # 예선 주차 완료
+        if (self.parking_complete_flag and 
+            self.current_mode == ModeType.PRELIMINARY_PARKING):
+            self.parking_complete_flag = False
             self.parking_mission_started = False
-            return ModeType.DRIVING
-
-        # ===========================================
-        # 2. 신호등 처리 (PAUSE 모드)
-        # ===========================================
-        if self.traffic_sign == "Red" and self.current_mode == ModeType.DRIVING:
-            return ModeType.PAUSE
+            return ModeType.PRELIMINARY_DRIVING
             
-        if self.traffic_sign in ("Green", "Left", "Straightleft") and self.current_mode == ModeType.PAUSE:
-            return ModeType.DRIVING
-
+        # 본선 주차 완료
+        if (self.parking_complete_flag and 
+            self.current_mode == ModeType.FINAL_PARKING):
+            self.parking_complete_flag = False
+            self.parking_mission_started = False
+            return ModeType.FINAL_DRIVING
+            
+        # 예선/본선에 따른 모드 결정 분기
+        if self.competition_type == CompetitionType.PRELIMINARY:
+            return self._determine_preliminary_mode()
+        else:  # FINAL
+            return self._determine_final_mode()
+    
+    def _determine_preliminary_mode(self) -> str:
+        """예선 모드 결정 로직"""
+        
         # ===========================================
-        # 3. 주차 미션 처리
+        # 예선 모드: PRELIMINARY_DRIVING, PRELIMINARY_PARKING, PRELIMINARY_UTURN, PRELIMINARY_GPS_OFF
         # ===========================================
-        if (self.current_map_id is not None and 
-            self.current_map_id in self.parking_zone_ids and 
+        
+        # 1. 주차 미션 처리
+        if (self.current_lanelet_id is not None and 
+            self.current_lanelet_id in self.parking_zone_ids and 
             not self.parking_mission_started and
-            self.current_mode == ModeType.DRIVING):
+            self.current_mode == ModeType.PRELIMINARY_DRIVING):
             
             self.parking_mission_started = True
-            return ModeType.PARKING
+            return ModeType.PRELIMINARY_PARKING
+        
+        # 2. 유턴 구역 처리
+        if (self.current_lanelet_id is not None and 
+            self.current_lanelet_id in self.uturn_zone_ids):
+            
+            if self.current_mode == ModeType.PRELIMINARY_DRIVING:
+                return ModeType.PRELIMINARY_UTURN
+            elif self.current_mode == ModeType.PRELIMINARY_UTURN:
+                return ModeType.PRELIMINARY_UTURN  # 구역 내에서 유턴 모드 유지
+            
+        # 유턴 구역을 벗어났을 때 DRIVING 모드로 복귀
+        elif self.current_mode == ModeType.PRELIMINARY_UTURN:
+            return ModeType.PRELIMINARY_DRIVING
+            
+        # 3. GPS 차단 구역 처리
+        if (self.current_lanelet_id is not None and 
+            self.current_lanelet_id in self.gps_off_zone_ids):
+            
+            if self.current_mode == ModeType.PRELIMINARY_DRIVING:
+                return ModeType.PRELIMINARY_GPS_OFF
+            elif self.current_mode == ModeType.PRELIMINARY_GPS_OFF:
+                return ModeType.PRELIMINARY_GPS_OFF  # 구역 내에서 GPS_OFF 모드 유지
+                
+        # GPS 차단 구역을 벗어났을 때 DRIVING 모드로 복귀
+        elif self.current_mode == ModeType.PRELIMINARY_GPS_OFF:
+            return ModeType.PRELIMINARY_DRIVING
+        
+        # 4. 기본 주행 모드
+        return ModeType.PRELIMINARY_DRIVING
+    
+    def _determine_final_mode(self) -> str:
+        """본선 모드 결정 로직"""
 
         # ===========================================
-        # 4. 배달 미션 처리
+        # 본선 모드: FINAL_DRIVING, FINAL_PAUSE, FINAL_PARKING, FINAL_배달_상차, FINAL_배달_하차
         # ===========================================
+        
+        # 1. 우회전 정지선 처리 (최우선 - 신호등보다 상위)
+        if self._should_pause_for_right_stopline():
+            if self.current_mode == ModeType.FINAL_DRIVING:
+                # 우회전 정지선 조건 만족 - PAUSE 모드 진입 (타이머는 아직 시작 안함)
+                self.get_logger().info('우회전 정지선 감지 - PAUSE 모드 진입 (차량 정지 대기 중)')
+                return ModeType.FINAL_PAUSE
+        
+        # 우회전 정지선 PAUSE 모드에서 실제 정지 확인 후 타이머 시작
+        if (self.current_mode == ModeType.FINAL_PAUSE and 
+            self._should_pause_for_right_stopline() and
+            self.stopline_pause_start_time is None):
+            
+            # 차량이 실제로 정지했는지 확인
+            velocity_threshold = float(self.get_parameter('vehicle_stop_velocity_threshold').value)
+            
+            if self.current_velocity <= velocity_threshold:
+                # 실제 정지 확인 - 타이머 시작
+                self.stopline_pause_start_time = self.get_clock().now().nanoseconds * 1e-9
+                self.get_logger().info(f'차량 정지 확인 (속도: {self.current_velocity:.2f} m/s) - 3초 타이머 시작')
+        
+        # 우회전 정지선 정지 시간 완료 확인
+        if (self.current_mode == ModeType.FINAL_PAUSE and 
+            self.stopline_pause_start_time is not None):
+            
+            current_time = self.get_clock().now().nanoseconds * 1e-9
+            pause_duration = float(self.get_parameter('stopline_pause_duration').value)
+            
+            if current_time - self.stopline_pause_start_time >= pause_duration:
+                # 3.5초 대기 완료 - 자동 출발
+                self.stopline_pause_start_time = None
+                self.get_logger().info('우회전 정지선 대기 완료 - DRIVING 모드 복귀')
+                return ModeType.FINAL_DRIVING
+        
+        # 2. 일반 신호등 처리 (우회전 정지선 구역이 아닐 때만)
+        if not self._is_in_right_pause_zone():
+            # Red 신호등 → PAUSE 모드 (즉시 전환)
+            if self.traffic_sign == "Red" and self.current_mode == ModeType.FINAL_DRIVING:
+                # 신호등 전환 타이머 리셋
+                self.traffic_signal_change_start_time = None
+                self.pending_traffic_signal = None
+                return ModeType.FINAL_PAUSE
+                
+            # Green/Left/Straightleft 신호등 → DRIVING 모드 (0.3초 확인 후)
+            if (self.traffic_sign in ("Green", "Left", "Straightleft") and 
+                self.current_mode == ModeType.FINAL_PAUSE):
+                
+                # 신호등이 변경되었는지 확인
+                if self.pending_traffic_signal != self.traffic_sign:
+                    # 새로운 신호등 감지 - 타이머 시작
+                    self.pending_traffic_signal = self.traffic_sign
+                    self.traffic_signal_change_start_time = self.get_clock().now().nanoseconds * 1e-9
+                    self.get_logger().info(f'신호등 변경 감지 ({self.traffic_sign}) - 0.3초 확인 대기')
+                
+                # 0.3초 지속 확인
+                elif self.traffic_signal_change_start_time is not None:
+                    current_time = self.get_clock().now().nanoseconds * 1e-9
+                    confirm_duration = float(self.get_parameter('traffic_signal_confirm_duration').value)
+                    
+                    if current_time - self.traffic_signal_change_start_time >= confirm_duration:
+                        # 0.3초 확인 완료 - DRIVING 모드 전환
+                        self.traffic_signal_change_start_time = None
+                        self.pending_traffic_signal = None
+                        self.get_logger().info(f'신호등 확인 완료 ({self.traffic_sign}) - DRIVING 모드 전환')
+                        return ModeType.FINAL_DRIVING
+
+        # 2. 주차 미션 처리
+        if (self.current_lanelet_id is not None and 
+            self.current_lanelet_id in self.parking_zone_ids and 
+            not self.parking_mission_started and
+            self.current_mode == ModeType.FINAL_DRIVING):
+            
+            self.parking_mission_started = True
+            return ModeType.FINAL_PARKING
+
+        # 3. 배달 미션 처리
         # 상차 모드 시작 조건 (target_sign 1,2,3)
         if (self.target_sign is not None and 
             1 <= self.target_sign <= 3 and
             not self.delivery_mission_started and
-            self.current_mode == ModeType.DRIVING):
+            self.current_mode == ModeType.FINAL_DRIVING):
             
             self.delivery_mission_started = True
             self.target_sign = None  # 플래그 리셋
-            return ModeType.DELIVERY_PICKUP
+            return ModeType.FINAL_DELIVERY_PICKUP
 
         # 하차 모드 전환 조건 (target_sign 4,5,6 + 하차구역)
-        if (self.current_mode == ModeType.DELIVERY_PICKUP and
-            self.current_map_id is not None and
-            self.current_map_id in self.dropoff_zone_ids and
+        if (self.current_mode == ModeType.FINAL_DELIVERY_PICKUP and
+            self.current_lanelet_id is not None and
+            self.current_lanelet_id in self.delivery_zone_ids and
             self.target_sign is not None and
             4 <= self.target_sign <= 6):
             
             self.target_sign = None  # 플래그 리셋
-            return ModeType.DELIVERY_DROPOFF
+            return ModeType.FINAL_DELIVERY_DROPOFF
             
         # 배달 종료 조건 (하차모드에서 배달 종료 플래그 수신 시)
-        if self.delivery_complete_flag and self.current_mode == ModeType.DELIVERY_DROPOFF:
+        if self.delivery_complete_flag and self.current_mode == ModeType.FINAL_DELIVERY_DROPOFF:
             self.delivery_complete_flag = False  # 플래그 리셋
             self.delivery_mission_started = False
-            return ModeType.DRIVING
+            return ModeType.FINAL_DRIVING
 
-        # ===========================================
-        # 5. 현재 모드 유지
-        # ===========================================
+        # 4. 현재 모드 유지
         return self.current_mode
 
     def _is_in_parking_zone(self) -> bool:
         """현재 주차 구역에 있는지 확인"""
-        return (self.current_map_id is not None and 
-                self.current_map_id in self.parking_zone_ids)
+        return (self.current_lanelet_id is not None and 
+                self.current_lanelet_id in self.parking_zone_ids)
 
-    def _is_in_dropoff_zone(self) -> bool:
-        """현재 하차 구역에 있는지 확인"""
-        return (self.current_map_id is not None and 
-                self.current_map_id in self.dropoff_zone_ids)
-    
-    def _lanelet_to_map_id(self, lanelet_id: int) -> int:
-        """Lanelet ID를 Map ID로 변환
+    def _is_in_delivery_zone(self) -> bool:
+        """현재 배달 구역에 있는지 확인"""
+        return (self.current_lanelet_id is not None and 
+                self.current_lanelet_id in self.delivery_zone_ids)
+                
+    def _is_in_uturn_zone(self) -> bool:
+        """현재 유턴 구역에 있는지 확인"""
+        return (self.current_lanelet_id is not None and 
+                self.current_lanelet_id in self.uturn_zone_ids)
+                
+    def _is_in_gps_off_zone(self) -> bool:
+        """현재 GPS 차단 구역에 있는지 확인"""
+        return (self.current_lanelet_id is not None and 
+                self.current_lanelet_id in self.gps_off_zone_ids)
+                
+    def _is_in_right_pause_zone(self) -> bool:
+        """현재 우회전 정지선 구역에 있는지 확인"""
+        return (self.current_lanelet_id is not None and 
+                self.current_lanelet_id in self.right_pause_zone_ids)
+                
+    def _should_pause_for_right_stopline(self) -> bool:
+        """우회전 정지선으로 인해 정지해야 하는지 확인"""
+        # 우회전 정지선 구역에 있고
+        if not self._is_in_right_pause_zone():
+            return False
+            
+        # 정지선 타입이 "right"이고
+        if self.stopline_type != "right":
+            return False
+            
+        # 거리 조건 확인
+        enable_distance = bool(self.get_parameter('enable_distance_condition').value)
         
-        Args:
-            lanelet_id: 현재 차량이 위치한 Lanelet ID
-            
-        Returns:
-            int: 해당하는 Map ID (구역 번호)
-            
-        Note:
-            mirae_v2 맵의 실제 Lanelet ID들: 7, 12, 23, 28, 39, 44, 55, 60
-            OSM에서 확인한 실제 ID를 기반으로 한 매핑입니다.
-        """
-        # mirae_v2 맵의 실제 Lanelet ID들 (OSM에서 확인됨)
-        # lanelet (7, 3members), lanelet (12, 3members), ... 등
-        
-        # 실제 Lanelet ID를 그대로 Map ID로 사용
-        if lanelet_id in [7, 12, 23, 28, 39, 44, 55, 60]:
-            return lanelet_id  # Lanelet ID = Map ID
-            
-        # 구역별 분류 (선택사항)
-        # 주차 구역으로 사용할 Lanelet ID들
-        # if lanelet_id in [39, 44]:  # 후반부 구간을 주차로
-        #     return lanelet_id
-        #     
-        # 하차 구역으로 사용할 Lanelet ID들  
-        # if lanelet_id in [55, 60]:  # 마지막 구간을 하차로
-        #     return lanelet_id
-            
-        # 기타 구역 (예상치 못한 Lanelet ID)
+        if enable_distance:
+            # 거리 조건 ON: 정지선까지의 거리가 임계값 이내일 때만 정지
+            distance_threshold = float(self.get_parameter('stopline_pause_distance').value)
+            return self.stopline_distance <= distance_threshold
         else:
-            self.get_logger().warn(f'Unknown lanelet_id: {lanelet_id}, returning default map_id: 0')
-            return 0  # 기본값
+            # 거리 조건 OFF: 구역과 정지선 타입만 확인하고 거리 무관하게 정지
+            return True
+    
 
     def get_current_mode_info(self) -> dict:
         """현재 모드 상태 정보를 딕셔너리로 반환 (디버깅용)"""
         return {
             'current_mode': self.current_mode,
+            'competition_type': self.competition_type,
+            'map_type': self.map_type,
             'traffic_sign': self.traffic_sign,
-            'map_id': self.current_map_id,
+            'lanelet_id': self.current_lanelet_id,
             'target_sign': self.target_sign,
             'parking_completed': self.parking_complete_flag,
+            'stopline_distance': self.stopline_distance,
+            'stopline_type': self.stopline_type,
+            'stopline_pause_active': self.stopline_pause_start_time is not None,
+            'current_velocity': self.current_velocity,
+            'velocity_threshold': float(self.get_parameter('vehicle_stop_velocity_threshold').value),
+            'traffic_signal_timer_active': self.traffic_signal_change_start_time is not None,
+            'pending_traffic_signal': self.pending_traffic_signal,
+            'traffic_signal_confirm_duration': float(self.get_parameter('traffic_signal_confirm_duration').value),
+            'enable_distance_condition': bool(self.get_parameter('enable_distance_condition').value),
             'in_parking_zone': self._is_in_parking_zone(),
-            'in_dropoff_zone': self._is_in_dropoff_zone(),
+            'in_delivery_zone': self._is_in_delivery_zone(),
+            'in_uturn_zone': self._is_in_uturn_zone(),
+            'in_gps_off_zone': self._is_in_gps_off_zone(),
+            'in_right_pause_zone': self._is_in_right_pause_zone(),
+            'should_pause_for_stopline': self._should_pause_for_right_stopline(),
         }
 
 
