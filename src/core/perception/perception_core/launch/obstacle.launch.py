@@ -4,12 +4,19 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     return LaunchDescription([
-        #Node(
-        #    package='perception',
-        #    executable='camera_obstacle',
-        #    name='camera_obstacle',
-        #    output='screen'
-        #),
+        Node(
+           package='perception',
+           executable='camera_obstacle',
+           name='camera_obstacle',
+           output='screen'
+        ),
+
+        Node( # 사람 인식
+            package='perception',
+            executable='person_detect',
+            name='person_detect',
+            output='screen'
+        ),
 
         Node( # 드럼통 인식
             package='perception',

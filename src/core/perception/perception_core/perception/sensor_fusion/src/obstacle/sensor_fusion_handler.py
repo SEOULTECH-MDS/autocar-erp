@@ -124,9 +124,9 @@ def label_clusters(clusters_3d, labels, blue_marker, yellow_marker, green_marker
         point.x, point.y, point.z = clusters_3d[i, 0], clusters_3d[i, 1], clusters_3d[i, 2]
         
         if labels[i] == 0:
-            blue_marker.points.append(point) # 파란색 라바콘
+            blue_marker.points.append(point) # 사람
         elif labels[i] == 1:
-            yellow_marker.points.append(point) # 노란색 라바콘
+            yellow_marker.points.append(point) # 드럼통
         elif labels[i] == 2:
             green_marker.points.append(point) # 자동차
         else:

@@ -53,7 +53,8 @@ setup(
             # 장애물
             'camera_obstacle = perception.yolov11.camera_obstacle:main',
             "car_detect = perception.yolov11.car_detect:main", # 차
-            "drum_detect = perception.yolov11.drum_detect:main", # 드럼통
+            "drum_detect = perception.yolov11.drum_detect:main", # 
+            "person_detect = perception.yolov11.person_detect:main", # 사람
             "sensor_fusion_obstacle = perception.sensor_fusion.src.obstacle.sensor_fusion:main",
 
             # 표지판

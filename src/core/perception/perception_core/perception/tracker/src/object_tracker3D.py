@@ -21,7 +21,6 @@ class Object3DTracker(Node):
         # ROS
         super().__init__('rubber_cones_tracker')             
         self.cones_sub = message_filters.Subscriber(self, MarkerArray, '/sensor_fusion/rubber_cones')
-        # self.cones_unmatched_sub = message_filters.Subscriber(self, MarkerArray, '/sensor_fusion/unmatched_rubber_cones')
         
         sub_list = [self.cones_sub]
         self.sync = message_filters.ApproximateTimeSynchronizer(sub_list, queue_size=3, slop=0.5, allow_headerless=True)
