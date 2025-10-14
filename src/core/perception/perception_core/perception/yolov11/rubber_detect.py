@@ -44,7 +44,7 @@ class YOLO(Node):
         super().__init__('parking_rubber')
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
-        # self.subscription = self.create_subscription(Image, '/camera_rubber/image_raw', self.image_callback, 10)
+        # self.subscription = self.create_subscription(Image, '/camera_side/image_raw', self.image_callback, 10)
         self.subscription = self.create_subscription(Image, '/usb_cam_1/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 

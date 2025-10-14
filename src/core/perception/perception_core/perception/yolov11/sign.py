@@ -65,7 +65,7 @@ class YOLOv11(Node):
         
         self.create_subscription(String, "/driving_mode", self.callback_mode, 10)
         self.create_subscription(Image, "/usb_cam_1/image_raw", self.callback_img, 10)
-        # self.create_subscription(Image, "/camera_sign/image_raw", self.callback_img, 10)
+        # self.create_subscription(Image, "/camera_front/image_raw", self.callback_img, 10)
         # self.create_subscription(Image, "/carla/ego_vehicle/rgb_right/image", self.callback_img, 10)
 
         self.img_width = IMG_SIZE

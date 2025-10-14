@@ -6,8 +6,8 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='perception',
-            executable='camera_traffic',
-            name='camera_traffic',
+            executable='camera_front',
+            name='camera_front',
             output='screen'
         ),
 

@@ -56,7 +56,7 @@ class YOLOv11(Node):
         # ROS2 Subscriber / Publisher 생성
         self.img_sub = self.create_subscription(
             Image,
-            '/camera_traffic/image_raw',
+            '/camera_front/image_raw',
             self.callback_img,
             10)
         

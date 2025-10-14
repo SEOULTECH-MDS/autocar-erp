@@ -34,7 +34,7 @@ class YoloDrumNode(Node):
         super().__init__('obstacle_drum')
 
         # ROS I/O
-        #self.img_sub = self.create_subscription(Image, '/camera_car/image_raw', self.callback_img, 10)
+        # self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
         self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
         self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/drum', 10)
         self.img_pub = self.create_publisher(Image, '/image_result/drum', 10)

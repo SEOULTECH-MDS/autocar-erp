@@ -5,18 +5,23 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
-class CameraSign(Node):
+# 주차 라바콘
+class CameraSide(Node):
     def __init__(self):
-        super().__init__('camera_sign')
-        
-        self.publisher_ = self.create_publisher(Image, '/camera_sign/image_raw', 10)
+        super().__init__('camera_side')
+
+        self.publisher_ = self.create_publisher(Image, '/camera_side/image_raw', 10)
         self.bridge = CvBridge()
 
         self.cap = cv2.VideoCapture(2)
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
         if not self.cap.isOpened():
             self.get_logger().error("카메라를 열 수 없습니다!")
-        self.timer = self.create_timer(0.1, self.timer_callback)  # 10Hz로 프레임 퍼블리시
-        self.get_logger().info("camera_sign 노드가 시작되었습니다.")
+        self.timer = self.create_timer(1.0/30.0, self.timer_callback)  # 30Hz로 프레임 퍼블리시
+        self.get_logger().info("camera_side 노드가 시작되었습니다.")
 
     def timer_callback(self):
         ret, frame = self.cap.read()
@@ -30,11 +35,11 @@ class CameraSign(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = CameraSign()
+    node = CameraSide()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("camera_sign 노드가 종료됩니다.")
+        node.get_logger().info("camera_side 노드가 종료됩니다.")
     finally:
         node.cap.release()
         node.destroy_node()
