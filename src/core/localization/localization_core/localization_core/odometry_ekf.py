@@ -5,7 +5,7 @@ from rclpy.node import Node
 import pyproj
 import numpy as np
 from sensor_msgs.msg import NavSatFix, Imu
-from geometry_msgs.msg import PoseWithCovarianceStamped, QuaternionStamped, PoseArray,TwistWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, QuaternionStamped, PoseArray, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64
 from autocar_utils.euler_from_quaternion import euler_from_quaternion
@@ -115,6 +115,8 @@ class OdometryNode(Node):
 
         # 퍼블리셔 초기화
         self.odom_pub = self.create_publisher(Odometry, '/autocar/location', 10)
+        # EKF 포즈도 PoseWithCovariance로 추가 발행(포즈 선택/퓨전용)
+        self.ekf_pose_pub = self.create_publisher(PoseWithCovarianceStamped, '/localization/ekf/pose_with_covariance', 10)
         
         # self.location_viz_pub = self.create_publisher(PolygonStamped, '/autocar/viz_location', 10)
 
@@ -181,6 +183,13 @@ class OdometryNode(Node):
         self.gps_pose.twist.covariance = np.pad(self.ekf.P[3:, 3:], (0, 4)).flatten()
 
         self.odom_pub.publish(self.gps_pose)
+
+        # PoseWithCovariance도 병행 발행
+        ekf_pose_msg = PoseWithCovarianceStamped()
+        ekf_pose_msg.header = self.gps_pose.header
+        ekf_pose_msg.header.frame_id = 'map'
+        ekf_pose_msg.pose = self.gps_pose.pose
+        self.ekf_pose_pub.publish(ekf_pose_msg)
 
         self.get_logger().info(
             f"\nx: {self.gps_pose.pose.pose.position.x},\n"

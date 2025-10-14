@@ -1,0 +1,2 @@
+# Skip building yabloc_pose_initializer (optional component; external deps not present)
+
