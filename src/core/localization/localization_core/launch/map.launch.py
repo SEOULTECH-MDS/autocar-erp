@@ -16,6 +16,7 @@ def generate_launch_description():
     map_name_arg = DeclareLaunchArgument(
         'map_name',
         default_value='kcity_v6',
+        #default_value='kcity_qualifying',
         # default_value='mirae_map',
         # default_value='mirae_v2',
         # default_value='aerum_map',
