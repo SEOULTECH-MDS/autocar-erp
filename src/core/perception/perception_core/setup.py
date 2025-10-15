@@ -30,20 +30,22 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            # 정지선
-            'stopline_camera = perception.stopline_camera:main',
-            'stopline_detection = perception.stopline_detection:main',
+            # # 정지선
+            # 'stopline_camera = perception.stopline_camera:main',
+            # 'stopline_detection = perception.stopline_detection:main',
 
-            # 차선
-            'camera_pub = perception.lanenet.camera_pub:main',
-            'lanenet = perception.lanenet.lanenet:main',
+            # # 차선
+            # 'camera_pub = perception.lanenet.camera_pub:main',
+            # 'lanenet = perception.lanenet.lanenet:main',
             
+            # 카메라
+            'camera_front = perception.yolov11.camera_front:main', # 신호등, 장애물, 배달
+            'camera_side = perception.yolov11.camera_side:main', # 주차 라바콘
+
             # 신호등
-            'camera_traffic = perception.yolov11.camera_traffic:main',
             'trafficlight = perception.yolov11.trafficlight:main',
 
             # 라바콘 (주차)
-            'camera_rubber = perception.yolov11.camera_rubber:main',
             'rubber_detect = perception.yolov11.rubber_detect:main',
             "sensor_fusion_rubber = perception.sensor_fusion.src.rubber.sensor_fusion:main",
             "bbox_tracker = perception.tracker.src.bbox_tracker:main",
@@ -51,17 +53,15 @@ setup(
             "rubber_visualizer = perception.rubber_visualizer.src.rubber_visualizer:main",
 
             # 장애물
-            'camera_obstacle = perception.yolov11.camera_obstacle:main',
             "car_detect = perception.yolov11.car_detect:main", # 차
-            "drum_detect = perception.yolov11.drum_detect:main", # 
+            "drum_detect = perception.yolov11.drum_detect:main", # 드럼
             "person_detect = perception.yolov11.person_detect:main", # 사람
             "sensor_fusion_obstacle = perception.sensor_fusion.src.obstacle.sensor_fusion:main",
 
             # 표지판
-            'camera_sign = perception.yolov11.camera_sign:main',
             'sign = perception.yolov11.sign:main',
             "sensor_fusion_sign = perception.sensor_fusion.src.sign.sensor_fusion:main",
-            #"sensor_fusion = perception.sensor_fusion.src.sensor_fusion_v3kcity:main",
+            # "sensor_fusion = perception.sensor_fusion.src.sensor_fusion_v3kcity:main",
 
             # 포인트클라우드 필터
             'region_filter_node = perception.pointcloud.region_filter_node:main',

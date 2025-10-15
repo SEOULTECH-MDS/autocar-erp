@@ -28,9 +28,9 @@ class StopLineDetect(Node):
                       [0., 0., 0., 1.]])
         self.RT = R @ R_veh2cam @ T_veh2cam
         
-        # Subscriber: /image_lane 토픽에서 이미지 수신
+        # Subscriber
         self.img_raw_sub = self.create_subscription(
-            Image, '/image_lane', self.callback_img_raw, 10)
+            Image, '/camera_front/image_raw', self.callback_img_raw, 10)
         
         # Publisher: 처리된 정지선 이미지와 오차 값 퍼블리시
         self.img_stop_line_pub = self.create_publisher(Image, '/stopline_img', 3)

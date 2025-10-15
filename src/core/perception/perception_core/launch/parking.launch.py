@@ -14,8 +14,8 @@ def generate_launch_description():
         use_sim_time_arg,
         Node(
            package='perception',
-           executable='camera_rubber',
-           name='camera_rubber',
+           executable='camera_side',
+           name='camera_side',
            output='screen'
         ),
 

@@ -34,7 +34,7 @@ class YoloPersonNode(Node):
         super().__init__('obstacle_person')
 
         # ROS I/O
-        self.img_sub = self.create_subscription(Image, '/camera_obstacle/image_raw', self.callback_img, 10)
+        self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
         # self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
         self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/person', 10)
         self.img_pub = self.create_publisher(Image, '/image_result/person', 10)
@@ -71,7 +71,7 @@ class YoloPersonNode(Node):
         # GPU 워밍업
         if self.device != 'cpu':
             dummy = np.zeros((IMG_SIZE, IMG_SIZE, 3), dtype=np.uint8)
-            _ = self.model(dummy, imgsz=IMG_SIZE, conf=CONF_THRES, iou=IOU_THRES, augment=AUGMENT, classes=[CAR_CLASS_ID])
+            _ = self.model(dummy, imgsz=IMG_SIZE, conf=CONF_THRES, iou=IOU_THRES, augment=AUGMENT, classes=[PERSON_CLASS_ID])
 
         # self.get_logger().info("YOLO Car Detector node has been started.")
 
