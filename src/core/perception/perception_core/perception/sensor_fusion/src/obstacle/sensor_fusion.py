@@ -87,46 +87,46 @@ class SensorFusion(Node):
         # 3D BBOX to Pixel Frame
         clusters_2d, valid_indicies = projection_3d_to_2d(clusters, self.intrinsic, self.extrinsic)
         
-        # 디버깅
-        self.get_logger().info(f"[SF] valid_right: {np.count_nonzero(valid_indicies)}/{len(valid_indicies)}")
-        try:
-            P = np.c_[clusters.T[:,:3], np.ones((clusters.shape[1], 1))]
-            Xc = (self.extrinsic @ P.T).T
-            Zc = Xc[:, 2]
-            self.get_logger().info(f"[SF] Zc>0: {np.count_nonzero(Zc>0)}/{len(Zc)} "
-                                   f"(minZ={Zc.min():.3f}, maxZ={Zc.max():.3f})")
-        except Exception as e:
-            self.get_logger().warn(f"[SF] cam-space debug skipped: {e}")
-        if clusters_2d.size > 0:
-            xs, ys = clusters_2d[:,0], clusters_2d[:,1]
-            self.get_logger().info(f"[SF] clusters_2d x:[{np.nanmin(xs):.1f},{np.nanmax(xs):.1f}] "
-                                   f"y:[{np.nanmin(ys):.1f},{np.nanmax(ys):.1f}]")
+        # # 디버깅
+        # self.get_logger().info(f"[SF] valid_right: {np.count_nonzero(valid_indicies)}/{len(valid_indicies)}")
+        # try:
+        #     P = np.c_[clusters.T[:,:3], np.ones((clusters.shape[1], 1))]
+        #     Xc = (self.extrinsic @ P.T).T
+        #     Zc = Xc[:, 2]
+        #     self.get_logger().info(f"[SF] Zc>0: {np.count_nonzero(Zc>0)}/{len(Zc)} "
+        #                            f"(minZ={Zc.min():.3f}, maxZ={Zc.max():.3f})")
+        # except Exception as e:
+        #     self.get_logger().warn(f"[SF] cam-space debug skipped: {e}")
+        # if clusters_2d.size > 0:
+        #     xs, ys = clusters_2d[:,0], clusters_2d[:,1]
+        #     self.get_logger().info(f"[SF] clusters_2d x:[{np.nanmin(xs):.1f},{np.nanmax(xs):.1f}] "
+        #                            f"y:[{np.nanmin(ys):.1f},{np.nanmax(ys):.1f}]")
              
         # Sensor Fusion (Hungarian Algorithm)
         #matched = hungarian_match(clusters_2d, rubber_bboxes, rubber_labels, distance_threshold=30)
         matched = hungarian_match(clusters_2d, all_bboxes, all_labels, distance_threshold=30)
 
-        # 디버깅
-        bbs = np.asarray(all_bboxes, dtype=float)
-        if bbs.ndim == 2 and bbs.shape[1] == 4:
-            bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]
-        pts = np.asarray(clusters_2d, dtype=float)
-        if bbs.ndim == 2 and bbs.shape[1] == 4:
-            bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]  # (M,2)
-        if pts.size > 0 and bbs.size > 0:
-            cost = distance_matrix(pts, bbs)              # 중심점 L2 거리
-            rows, cols = linear_sum_assignment(cost)      # 동일한 규칙으로 할당만 재현
-            lines = []
-            for i, j in zip(rows, cols):
-                lines.append(
-                    f"({i}->{j}) d={cost[i,j]:.1f} "
-                    f"pt=({pts[i,0]:.1f},{pts[i,1]:.1f}) "
-                    f"ctr=({bbs[j,0]:.1f},{bbs[j,1]:.1f})"
-                )
-            self.get_logger().info("[SF] assignments: " + " | ".join(lines))
-        self.get_logger().info(f"[SF] #right_bboxes={len(all_bboxes)}, labels={set(all_labels)}")
-        self.get_logger().info(f"[SF] matched_right len={len(matched)}")
-        self.get_logger().info(f"shape={all_bboxes.shape}")
+        # # 디버깅
+        # bbs = np.asarray(all_bboxes, dtype=float)
+        # if bbs.ndim == 2 and bbs.shape[1] == 4:
+        #     bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]
+        # pts = np.asarray(clusters_2d, dtype=float)
+        # if bbs.ndim == 2 and bbs.shape[1] == 4:
+        #     bbs = np.c_[(bbs[:,0]+bbs[:,2])/2.0, (bbs[:,1]+bbs[:,3])/2.0]  # (M,2)
+        # if pts.size > 0 and bbs.size > 0:
+        #     cost = distance_matrix(pts, bbs)              # 중심점 L2 거리
+        #     rows, cols = linear_sum_assignment(cost)      # 동일한 규칙으로 할당만 재현
+        #     lines = []
+        #     for i, j in zip(rows, cols):
+        #         lines.append(
+        #             f"({i}->{j}) d={cost[i,j]:.1f} "
+        #             f"pt=({pts[i,0]:.1f},{pts[i,1]:.1f}) "
+        #             f"ctr=({bbs[j,0]:.1f},{bbs[j,1]:.1f})"
+        #         )
+        #     self.get_logger().info("[SF] assignments: " + " | ".join(lines))
+        # self.get_logger().info(f"[SF] #right_bboxes={len(all_bboxes)}, labels={set(all_labels)}")
+        # self.get_logger().info(f"[SF] matched_right len={len(matched)}")
+        # self.get_logger().info(f"shape={all_bboxes.shape}")
 
 
         labels = get_label(matched, valid_indicies)
@@ -139,16 +139,36 @@ class SensorFusion(Node):
         # fusion_unmatched_markers = MarkerArray()
         blue_marker   = self.make_marker((0.0, 0.0, 1.0), "blue", 1)
         yellow_marker = self.make_marker((1.0, 1.0, 0.0), "yellow", 2)
-        green_marker  = self.make_marker((0.0, 1.0, 0.0), "green", 3)
-        white_marker  = self.make_marker((1.0, 1.0, 1.0), "white", 4)
+        white_marker  = self.make_marker((1.0, 1.0, 1.0), "white", 3)
 
-        label_clusters(clusters.T[:,:3], labels, blue_marker, yellow_marker, green_marker, white_marker)
+        label_clusters(clusters.T[:,:3], labels, blue_marker, yellow_marker, white_marker)
+
+        # 차량 감지 시 2m 앞에 노란색 마커 추가
+        if len(labels) > 0:
+            cluster_points = clusters.T[:,:3]  # 3D 클러스터 포인트들
+            for i, label in enumerate(labels):
+                if label == 2:  # 차량 라벨
+                    # 현재 차량 위치에서 x축 방향으로 2m 앞 계산
+                    car_position = cluster_points[i]
+                    virtual_position = car_position.copy()
+                    virtual_position[0] += 2.0  # x축 방향으로 2m 앞
+
+                    # 기존 노란색 마커에 가상 포인트 추가
+                    from geometry_msgs.msg import Point
+                    virtual_point = Point()
+                    virtual_point.x = float(virtual_position[0])
+                    virtual_point.y = float(virtual_position[1])
+                    virtual_point.z = float(virtual_position[2])
+                    yellow_marker.points.append(virtual_point)
+                    
+                    self.get_logger().info(f"[SF] 차량 감지: ({car_position[0]:.2f}, {car_position[1]:.2f}, {car_position[2]:.2f}) "
+                                         f"-> 가상 위치: ({virtual_position[0]:.2f}, {virtual_position[1]:.2f}, {virtual_position[2]:.2f})")
 
         # 디버깅
         # self.get_logger().info(f"[SF] blue:{len(blue_marker.points)} "
-        #                f"yellow:{len(yellow_marker.points)} green:{len(green_marker.points)} white:{len(white_marker.points)}")
+        #                f"yellow:{len(yellow_marker.points)} white:{len(white_marker.points)}")
 
-        fusion_markers.markers.extend([blue_marker, yellow_marker, green_marker, white_marker])
+        fusion_markers.markers.extend([blue_marker, yellow_marker, white_marker])
         self.fusion_pub.publish(fusion_markers)
 
         # ROS Publish (Projected clusters to 2D frame) 

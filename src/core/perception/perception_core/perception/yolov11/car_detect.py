@@ -35,8 +35,8 @@ class YoloCarNode(Node):
         super().__init__('obstacle_car')
 
         # ROS I/O
-        # self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
-        self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
+        self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
+        # self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
         self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/car', 10)
         self.img_pub = self.create_publisher(Image, '/image_result/car', 10)
 
@@ -80,20 +80,6 @@ class YoloCarNode(Node):
         """GUI 디스플레이 지원 여부를 안전하게 확인"""
         # DISPLAY 환경변수가 없으면 GUI 불가
         if not os.environ.get('DISPLAY'):
-            return False
-        
-        # 실제 cv2.imshow가 작동하는지 테스트
-        try:
-            # 더미 이미지로 테스트
-            dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            test_window = "opencv_test_window"
-            cv2.imshow(test_window, dummy_img)
-            cv2.waitKey(1)
-            cv2.destroyWindow(test_window)
-            return True
-        except cv2.error:
-            return False
-        except Exception:
             return False
 
     def callback_img(self, img_msg: Image):
@@ -188,7 +174,7 @@ class YoloCarNode(Node):
             self.get_logger().warn(f"Failed to publish annotated image: {e}")
         
         t_elapsed = time.perf_counter() - t0
-        # self.get_logger().info(f"Inference time: {t_elapsed:.4f}s  (cars: {len(pose_array.poses)})")
+        self.get_logger().info(f"Inference time: {t_elapsed:.4f}s  (cars: {len(pose_array.poses)})")
 
 
 def main(args=None):
