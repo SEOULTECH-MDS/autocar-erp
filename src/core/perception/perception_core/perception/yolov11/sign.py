@@ -27,7 +27,7 @@ from perception.yolov11.utils.plots import plot_one_box
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from std_msgs.msg import Int32MultiArray, String, Int32
+from std_msgs.msg import Int32MultiArray, String, Int32, Bool
 from geometry_msgs.msg import Pose, PoseArray
 
 # 설정 값
@@ -64,8 +64,18 @@ class YOLOv11(Node):
         self.target_sign_pub = self.create_publisher(Int32, "/target_sign", 10)
         
         self.create_subscription(String, "/driving_mode", self.callback_mode, 10)
-        self.create_subscription(Image, "/usb_cam_1/image_raw", self.callback_img, 10)
-        # self.create_subscription(Image, "/camera_front/image_raw", self.callback_img, 10)
+        # self.create_subscription(Image, "/usb_cam_1/image_raw", self.callback_img, 10)
+        self.create_subscription(Image, "/camera_front/image_raw", self.callback_img, 10)
+        
+        # Lane Mission Controller에서 오는 enable 상태
+        self.is_enabled = False
+        
+        # Enable 신호 구독
+        self.enable_sub = self.create_subscription(
+            Bool,
+            '/mission/sign/enable',
+            self.callback_enable,
+            10)
         # self.create_subscription(Image, "/carla/ego_vehicle/rgb_right/image", self.callback_img, 10)
 
         self.img_width = IMG_SIZE
@@ -108,10 +118,26 @@ class YOLOv11(Node):
     def callback_mode(self, msg):
         self.mode = msg.data
 
+    def callback_enable(self, msg):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
+        
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'표지판 탐지 {status}')
+
     def callback_img(self, img, event=None):
         self.img_width = img.width
         bridge = CvBridge()
         cap = bridge.imgmsg_to_cv2(img, desired_encoding="bgr8")
+        
+        # Enable 상태 확인 - 비활성화 상태에서는 빈 결과 발행
+        if not self.is_enabled:
+            # 원본 이미지 발행
+            self.detected_pub.publish(bridge.cv2_to_imgmsg(cap, encoding="bgr8"))
+            return
+            
         poses = PoseArray()
         poses.header.stamp = self.get_clock().now().to_msg()  # 현재 시간
         poses.header.frame_id = 'yolo'
