@@ -35,16 +35,14 @@
 
  <!-- Wheel joint macros -->
   <xacro:macro name="wheel_front_joint" params="prefix suffix x y z ">
-   <joint name="${prefix}_${suffix}_wheel_joint" type="continuous">
-      <axis xyz="0 1 0" />
+   <joint name="${prefix}_${suffix}_wheel_joint" type="fixed">
       <parent link="${prefix}_${suffix}_disk_wheel"/>
       <child link="${prefix}_${suffix}_wheel"/>
       <origin xyz="${x} ${y} ${z}" />
    </joint>
   </xacro:macro>
   <xacro:macro name="wheel_back_joint" params="prefix suffix x y z ">
-   <joint name="${prefix}_${suffix}_wheel_joint" type="continuous">
-      <axis xyz="0 1 0" />
+   <joint name="${prefix}_${suffix}_wheel_joint" type="fixed">
       <parent link="${prefix}_${suffix}_disk_wheel"/>
       <child link="${prefix}_${suffix}_wheel"/>
       <origin xyz="${x} ${y} ${z}" />
@@ -98,12 +96,10 @@
 
 <!-- Disk joint macros -->
  <xacro:macro name="front_disk_wheel_joint" params=" prefix suffix x y z">
-  <joint name="${prefix}_${suffix}_disk_wheel_joint" type="revolute">
-      <axis xyz="0 0 1" />
+  <joint name="${prefix}_${suffix}_disk_wheel_joint" type="fixed">
       <parent link="structure"/>
       <child link="${prefix}_${suffix}_disk_wheel"/>
       <origin xyz="${x} ${y} ${z}" />
-      <limit effort="1000.0" lower="-0.4" upper="0.4" velocity="0.5"/>
   </joint>
  </xacro:macro>
 

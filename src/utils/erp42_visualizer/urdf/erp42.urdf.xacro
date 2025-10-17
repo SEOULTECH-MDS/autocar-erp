@@ -55,8 +55,8 @@
   <joint name="structure_joint" type="fixed">
       <parent link="base_link"/>
       <child link="structure"/>
-      <!-- Move structure forward by 0.49m to place base_link at the rear axle center -->
-      <origin xyz="0.49 0 0" rpy="0 0 0"/>
+      <!-- Move structure forward by 0.49m and raise by wheel radius to sit above ground -->
+      <origin xyz="0.49 0 ${wheel_radius}" rpy="0 0 0"/>
   </joint>
 
   <!-- Macro-generated joints (Wheel actuation and steering) -->
@@ -129,6 +129,34 @@
     <child link="velodyne"/>
     <!-- Positioned on the center of the roof -->
     <origin xyz="1.3 0.0 0.42" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 4. CAMERA SENSOR (adds TF for 'camera' to match CameraInfo frame_id) -->
+  <link name="camera">
+    <visual>
+      <geometry>
+        <box size="0.04 0.04 0.04"/>
+      </geometry>
+      <material name="grey">
+        <color rgba="0.5 0.5 0.5 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera"/>
+    <!-- Approximate front-mounted camera pose (adjust as needed) -->
+    <origin xyz="0.70 0.00 1.20" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Optional optical frame for visualization conventions -->
+  <link name="camera_optical_frame"/>
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera"/>
+    <child link="camera_optical_frame"/>
+    <!-- REP-103: optical frame has Z forward, X right, Y down -->
+    <origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/>
   </joint>
 
 </robot>

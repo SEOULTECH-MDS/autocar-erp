@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple, Optional, Iterable
 import geopandas as gpd
 from shapely.geometry import LineString, MultiLineString, Polygon, MultiPolygon
 from shapely.ops import linemerge
-from shapely.ops import unary_union
+from shapely.ops import unary_union, snap
 from shapely.geometry import GeometryCollection
 from lxml import etree
 
@@ -23,6 +23,7 @@ from lxml import etree
 DEFAULT_LANE_WIDTH_M = 3.5
 LEFT_RIGHT_BUFFER_M = 1.0
 CENTER_CLIP_BUFFER_M = 1.5
+SNAP_TOLERANCE_M = 0.5  # for snapping fragmented boundary segments before merging
 
 
 def load_layer(path_dir: str, basename: str) -> Optional[gpd.GeoDataFrame]:
@@ -220,6 +221,21 @@ def main():
                 return c
         return None
 
+    def norm_lane_id(value) -> str:
+        try:
+            # Handle pandas NA/NaN
+            import math
+            f = float(value)
+            if math.isnan(f) or math.isinf(f):
+                return ''
+            # If it's effectively an integer, format as int string
+            if abs(f - round(f)) < 1e-6:
+                return str(int(round(f)))
+            return str(f)
+        except Exception:
+            s = str(value)
+            return s.strip()
+
     # Collect side lines by lane id across all layers
     def collect_side(gdf: Optional[gpd.GeoDataFrame], side: str, subtype: str) -> Dict[str, List[LineString]]:
         res: Dict[str, List[LineString]] = {}
@@ -230,10 +246,14 @@ def main():
         right_c = col(gdf, 'right_lane')
         if is_path_c is None or left_c is None or right_c is None:
             return res
-        df = gdf[gdf[is_path_c].astype(float) == 1.0]
+        # accept 1/"1"/True/"yes" as path
+        col_vals = gdf[is_path_c].astype(str).str.lower()
+        df = gdf[(col_vals == '1') | (col_vals == 'true') | (col_vals == 'yes') | (gdf[is_path_c].astype(float, errors='ignore') == 1.0)]
         key_c = left_c if side == 'left' else right_c
         for _, row in df.iterrows():
-            lane_id = str(row.get(key_c))
+            lane_id = norm_lane_id(row.get(key_c))
+            if lane_id == '':
+                continue
             geom = row.geometry
             if isinstance(geom, LineString) and not geom.is_empty:
                 res.setdefault(lane_id, []).append(geom)
@@ -249,6 +269,8 @@ def main():
     right_dashed = collect_side(dashed_gdf, 'right', 'dashed')
     left_virtual = collect_side(virtual_gdf, 'left', 'virtual')
     right_virtual = collect_side(virtual_gdf, 'right', 'virtual')
+
+    # If lane id exists in dashed/virtual but not in solid base, include it in candidate ids as well
 
     all_left_ids = set(left_solid.keys()) | set(left_dashed.keys()) | set(left_virtual.keys())
     all_right_ids = set(right_solid.keys()) | set(right_dashed.keys()) | set(right_virtual.keys())
@@ -278,7 +300,7 @@ def main():
         coords = list(ls.coords)
         return (float(coords[0][0]), float(coords[0][1])), (float(coords[-1][0]), float(coords[-1][1]))
 
-    def _order_lines_to_single(parts: List[LineString], snap_tol: float = 1.0) -> Optional[LineString]:
+    def _order_lines_to_single(parts: List[LineString], snap_tol: float = 2.0) -> Optional[LineString]:
         parts = [ln for ln in parts if isinstance(ln, LineString) and not ln.is_empty]
         if not parts:
             return None
@@ -325,12 +347,19 @@ def main():
         lines = [ln for ln in (lines or []) if isinstance(ln, LineString) and not ln.is_empty]
         if not lines:
             return None
-        merged = linemerge(lines)
+        try:
+            # Robust merge: snap tiny gaps/overlaps, then union+linemerge
+            base = MultiLineString(lines)
+            snapped = snap(base, base, SNAP_TOLERANCE_M)
+            unioned = unary_union(snapped)
+            merged = linemerge(unioned)
+        except Exception:
+            merged = linemerge(lines)
         if isinstance(merged, LineString):
             return merged
         if isinstance(merged, MultiLineString):
-            # Try greedy ordering with small snap tolerance (meters)
-            ordered = _order_lines_to_single(list(merged.geoms), snap_tol=0.5)
+            # Fallback greedy ordering if still fragmented
+            ordered = _order_lines_to_single(list(merged.geoms), snap_tol=2.0)
             if ordered is not None:
                 return ordered
             return max(merged.geoms, key=lambda ln: ln.length) if merged.geoms else None
@@ -372,7 +401,7 @@ def main():
         # Resample both sides to comparable lengths by normalizing to [0,1] along length
         # Then compute midpoints. If either side is shorter, clamp at end.
         pts = []
-        max_sep = max(args.lane_width * 3.0, 6.0)
+        max_sep = max(args.lane_width * 5.0, 12.0)
         run = []
         best_run = []
         for i in range(samples+1):
@@ -492,10 +521,22 @@ def main():
                 for ln in geom.geoms:
                     builder.add_linestring_way(ln, {'type': line_type})
 
-    # Named output per request
-    emit_lines_with_type(lr_gdf, 'left_right_line')  # 일반 선들
-    emit_lines_with_type(dashed_gdf, 'dashed_line')  # 점선들
-    emit_lines_with_type(virtual_gdf, 'virtual_line')  # 가상선들
+    # Thin line outputs for visualization: use type=line_thin with subtype to match visualizer
+    def emit_thin_with_subtype(gdf: Optional[gpd.GeoDataFrame], subtype: str):
+        if gdf is None or gdf.empty:
+            return
+        ll_df = gdf.to_crs(epsg=4326)
+        for geom in ll_df.geometry:
+            if isinstance(geom, LineString):
+                builder.add_linestring_way(geom, {'type': 'line_thin', 'subtype': subtype})
+            elif isinstance(geom, MultiLineString):
+                for ln in geom.geoms:
+                    builder.add_linestring_way(ln, {'type': 'line_thin', 'subtype': subtype})
+
+    # 일반/점선/가상선을 시각화용으로 모두 출력
+    emit_thin_with_subtype(lr_gdf, 'solid')      # 일반선
+    emit_thin_with_subtype(dashed_gdf, 'dashed') # 점선
+    emit_thin_with_subtype(virtual_gdf, 'virtual')  # 가상선
     emit_lines_with_type(roadborder_gdf, 'roadborder')  # 도로 가장자리 보조선
     emit_lines_with_type(markings_gdf, 'Markings')  # 보조선/영역 테두리
     emit_lines_with_type(crosswalk_lines_gdf, 'crosswalk')  # 횡단보도 라인
