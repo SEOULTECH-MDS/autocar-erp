@@ -7,7 +7,7 @@ import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose, PoseArray
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 import os
 from ament_index_python.packages import get_package_share_directory
 import time
@@ -44,8 +44,8 @@ class YOLO(Node):
         super().__init__('parking_rubber')
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
-        # self.subscription = self.create_subscription(Image, '/camera_side/image_raw', self.image_callback, 10)
-        self.subscription = self.create_subscription(Image, '/usb_cam_1/image_raw', self.image_callback, 10)
+        self.subscription = self.create_subscription(Image, '/camera_side/image_raw', self.image_callback, 10)
+        # self.subscription = self.create_subscription(Image, '/usb_cam_1/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성
@@ -54,6 +54,16 @@ class YOLO(Node):
         
         # CvBridge 초기화 (ROS 이미지와 OpenCV 이미지 간 변환)
         self.bridge = CvBridge()
+        
+        # Lane Mission Controller에서 오는 enable 상태
+        self.is_enabled = False
+        
+        # Enable 신호 구독 (주차 라바콘 미션)
+        self.enable_sub = self.create_subscription(
+            Bool,
+            '/mission/rubber/enable',
+            self.callback_enable,
+            10)
 
         # YOLO 모델 초기화: 장치 선택, 모델 로딩, 이미지 사이즈 등 설정
         self.device = select_device(DEVICE)
@@ -89,6 +99,15 @@ class YOLO(Node):
 
         # self.get_logger().info("YOLO Detector node has been started.")
 
+    def callback_enable(self, msg):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
+        
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'라바콘 탐지 {status}')
+
     def image_callback(self, image_msg):
         with torch.no_grad():
             start_time = time.perf_counter()
@@ -98,6 +117,19 @@ class YOLO(Node):
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding="bgr8")
             except Exception as e:
                 # self.get_logger().error(f"CV Bridge error: {e}")
+                return
+
+            # Enable 상태 확인 - 비활성화 상태에서는 빈 결과 발행
+            if not self.is_enabled:
+                # 빈 PoseArray 발행
+                empty_pose_array = PoseArray()
+                empty_pose_array.header.frame_id = 'yolo'
+                empty_pose_array.header.stamp = self.get_clock().now().to_msg()
+                self.pose_array_pub.publish(empty_pose_array)
+                
+                # 원본 이미지 발행
+                result_img_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
+                self.img_res_pub.publish(result_img_msg)
                 return
             
             # 객체 검출 수행

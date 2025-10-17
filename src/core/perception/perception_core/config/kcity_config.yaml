@@ -1,0 +1,43 @@
+# kcity 맵 기반 Lane ID와 미션 매핑 설정
+# 각 미션별로 활성화될 lane ID 범위를 정의합니다.
+
+mission_mapping:
+  # 신호등 탐지 미션 (교차로 구간)
+  trafficlight:
+    start: 10    # 시작 lane ID (수정 필요)
+    end: 15      # 종료 lane ID (수정 필요)
+    description: "교차로 신호등 인식 구간"
+    
+  # 표지판 탐지 미션 (배달 구역)  
+  sign:
+    start: 20    # 시작 lane ID (수정 필요)
+    end: 25      # 종료 lane ID (수정 필요)
+    description: "배달 표지판 인식 구간"
+    
+  # 장애물 탐지 미션 (장애물 회피 구간)
+  obstacle:
+    start: 30    # 시작 lane ID (수정 필요)
+    end: 40      # 종료 lane ID (수정 필요)
+    description: "동적/정적 장애물 인식 구간"
+    
+  # 라바콘 탐지 미션 (주차 구간)
+  rubber:
+    start: 50    # 시작 lane ID (수정 필요)
+    end: 60      # 종료 lane ID (수정 필요)
+    description: "주차용 라바콘 인식 구간"
+
+# 추가 설정
+settings:
+  # enable 신호 발행 주기 (Hz)
+  publish_rate: 10.0
+  
+  # 디버그 모드 (상세 로그 출력)
+  debug_mode: false
+  
+  # 미션 전환시 지연 시간 (초)
+  transition_delay: 0.5
+
+# 주의사항:
+# 1. lane ID 범위는 겹치지 않도록 설정하세요
+# 2. kcity 맵의 실제 lane numbering에 맞춰 수정하세요
+# 3. localization 노드에서 /localization/current_lane_id 토픽을 발행해야 합니다

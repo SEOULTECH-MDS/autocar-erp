@@ -18,7 +18,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose, PoseArray
 import message_filters
 from sensor_msgs.msg import Image
-from std_msgs.msg import Int32MultiArray, String, Int32
+from std_msgs.msg import Int32MultiArray, String, Int32, Bool
 
  
 # 배달미션 파라미터 CARLA
@@ -91,6 +91,16 @@ class SensorFusion(Node):
     
         # ROS
         super().__init__('sensor_fusion')
+        
+        # Lane Mission Controller에서 오는 enable 상태
+        self.is_enabled = False
+        
+        # Enable 신호 구독
+        self.enable_sub = self.create_subscription(
+            Bool,
+            '/mission/sign/enable',
+            self.callback_enable,
+            10)
 
         self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
         self.bbox_sub = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/deliver")
@@ -107,6 +117,15 @@ class SensorFusion(Node):
         self.get_logger().info('\033[1;33mStarting camera + LiDAR sensor-fusion (ROS 2)…\033[0m')
         return
     
+    def callback_enable(self, msg):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
+        
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'표지판 센서퓨전 {status}')
+    
     def callback_img(self, img_msg):
         bridge = CvBridge()
         img = bridge.imgmsg_to_cv2(img_msg, desired_encoding="bgr8")
@@ -122,6 +141,10 @@ class SensorFusion(Node):
         self.target_sign = sign_msg.data
         
     def callback_fusion(self, cluster_msg, bbox_msg):
+        # Enable 상태 확인 - 비활성화 상태에서는 처리 건너뛰기
+        if not self.is_enabled:
+            return
+            
         first_time = time.perf_counter()
 
         # Clustering points to np array

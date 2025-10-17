@@ -21,6 +21,9 @@ setup(
         # ==============================
         (os.path.join('share', package_name, 'yolov11', 'weights'), glob('perception/yolov11/weights/*.pt')),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        
+        # Lane Mission Controller 설정 파일
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -66,7 +69,8 @@ setup(
             # 포인트클라우드 필터
             'region_filter_node = perception.pointcloud.region_filter_node:main',
 
-            
+            # Lane Mission Controller (미션별 활성화 제어)
+            'lane_mission_controller = perception.lane_mission_controller:main',
         ],
     },
 )

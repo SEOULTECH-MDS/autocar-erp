@@ -52,6 +52,9 @@ class YOLOv11(Node):
         self.yolo_mode = True
         self.queue_list = [[0 for _ in range(QUEUE_SIZE)] for _ in range(len(CLASS_MAP))]
         self.bridge = CvBridge()
+        
+        # Lane Mission Controller에서 오는 enable 상태
+        self.is_enabled = False
 
         # ROS2 Subscriber / Publisher 생성
         self.img_sub = self.create_subscription(
@@ -64,6 +67,13 @@ class YOLOv11(Node):
             Bool,
             '/mode/traffic',
             self.callback_traffic_mode,
+            10)
+        
+        # Lane Mission Controller에서 오는 enable 신호 구독
+        self.enable_sub = self.create_subscription(
+            Bool,
+            '/mission/trafficlight/enable',
+            self.callback_enable,
             10)
         
         self.img_res_pub = self.create_publisher(
@@ -99,12 +109,27 @@ class YOLOv11(Node):
             dummy_img = np.zeros((IMG_SIZE, IMG_SIZE, 3), dtype=np.uint8)
             _ = self.model(dummy_img, imgsz=IMG_SIZE, conf=CONF_THRES, iou=IOU_THRES, augment=AUGMENT)
 
+    def callback_enable(self, msg):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
+        
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'신호등 탐지 {status}')
+
     def callback_img(self, img_raw_msg):
         try:
             # ROS2 이미지 메시지를 OpenCV 이미지로 변환
             cap = self.bridge.imgmsg_to_cv2(img_raw_msg, desired_encoding='bgr8')
         except Exception as e:
             self.get_logger().error(f"Failed to convert image: {e}")
+            return
+
+        # Enable 상태 확인 - 비활성화 상태에서는 원본 이미지만 발행
+        if not self.is_enabled:
+            img_res_msg = self.bridge.cv2_to_imgmsg(cap, encoding="bgr8")
+            self.img_res_pub.publish(img_res_msg)
             return
 
         if self.yolo_mode:

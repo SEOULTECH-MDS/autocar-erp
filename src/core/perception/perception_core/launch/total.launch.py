@@ -13,7 +13,19 @@ def generate_launch_description():
     return LaunchDescription([
         use_sim_time_arg,
 
-        # 신호등 탐지
+        # Lane Mission Controller (미션별 활성화 제어)
+        Node(
+            package='perception',
+            executable='lane_mission_controller',
+            name='lane_mission_controller',
+            output='screen',
+            parameters=[
+                {'use_sim_time': LaunchConfiguration('use_sim_time')},
+                {'config_file': 'mission_config.yaml'}
+            ]
+        ),
+
+        # 신호등 탐지 (본선)
         Node(
             package='perception',
             executable='trafficlight',
@@ -21,7 +33,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # 배달 표지판 탐지
+        # 배달 표지판 탐지 (본선)
         Node(
             package='perception',
             executable='sign',
@@ -35,7 +47,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # 장애물 탐지
+        # 장애물 탐지 (예선, 본선)
         Node( # 사람 인식
             package='perception',
             executable='person_detect',
@@ -61,7 +73,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # 주차 라바콘 탐지
+        # 주차 라바콘 탐지 (예선, 본선)
         Node(
             package='perception',
             executable='rubber_detect',
