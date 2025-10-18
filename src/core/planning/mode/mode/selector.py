@@ -53,17 +53,58 @@ class ModeType:
 
 class ModeSelector(Node):
     """
+    자율주행 차량의 모드를 관리하는 셀렉터 노드 v2.0
+    
+    ===========================================
+    주요 기능:
+    ===========================================
+    1. 예선/본선 모드 분리: competition_type 파라미터로 구분
+       - 예선: DRIVING, PARKING, UTURN, GPS_OFF
+       - 본선: DRIVING, PAUSE, PARKING, DELIVERY(상차/하차)
+    
+    2. K-City/미래관 맵 지원: map_type 파라미터로 구분
+       - K-City: 예선/본선 주차 구역 분리
+       - 미래관: 통합 주차 구역
+    
+    3. 신호등 기반 정지 제어:
+       - Red 신호: 즉시 PAUSE 모드
+       - Green/Left/Straightleft: 0.3초 확인 후 DRIVING 모드
+    
+    4. 우회전 정지선 특수 처리 (본선):
+       - 지정 구역(9,10)에서 신호등 무시하고 정지
+       - 차량 완전 정지 후 3.2초 대기 후 자동 출발
+    
+    5. 배달 미션 (본선):
+       - 상차(1-3) → 주행 → 하차(4-6) 시퀀스
+       - 각 단계 완료 후 DRIVING 모드 복귀
+    
+    ===========================================
     입력 토픽:
+    ===========================================
     - /traffic_sign: 교통 신호 상태 (String: "Green", "Red", "Left", "Straightleft")
     - /current_lanelet_id: 현재 Lanelet ID (Int64)
     - /target_sign: 표지판 인식 (Int32: 1,2,3=상차 | 4,5,6=하차)
     - /parking_complete_flag: 주차 미션 완료 (Bool)
-    - /delivery_complete_flag: 배달 미션 완료 (Bool)
+    - /pickup_complete_flag: 상차 미션 완료 (Bool)
+    - /delivery_complete_flag: 하차 미션 완료 (Bool)
     - /stopline_distance: 정지선까지의 거리 (Float64)
     - /stopline_type: 정지선 타입 (String: "right", "left", "straight", "nonstop", "no_stopline")
     - /autocar/location: 차량 위치 및 속도 정보 (Odometry)
+    
+    ===========================================
     출력 토픽:
+    ===========================================
     - /mode_state: 현재 모드 상태 (ModeState)
+      * DRIVE=0, PAUSE=1, DELIVERY=4, PARKING=5, UTURN=7, GPS_OFF=8
+    
+    ===========================================
+    주요 파라미터:
+    ===========================================
+    - competition_type: "preliminary" | "final" (기본: preliminary)
+    - map_type: "kcity" | "mirae" (기본: kcity)
+    - traffic_signal_confirm_duration: 신호등 확인 시간 (기본: 0.3초)
+    - stopline_pause_duration: 우회전 정지 시간 (기본: 3.2초)
+    - vehicle_stop_velocity_threshold: 정지 판단 속도 (기본: 0.1 m/s)
     """
 
     def __init__(self) -> None:
@@ -143,6 +184,8 @@ class ModeSelector(Node):
         # 미션 완료 플래그
         self.parking_completed_sub = self.create_subscription(
             Bool, '/parking_complete_flag', self._parking_completed_cb, 10)
+        self.pickup_completed_sub = self.create_subscription(
+            Bool, '/pickup_complete_flag', self._pickup_completed_cb, 10)
         self.delivery_completed_sub = self.create_subscription(
             Bool, '/delivery_complete_flag', self._delivery_completed_cb, 10)
 
@@ -157,7 +200,8 @@ class ModeSelector(Node):
         self.current_lanelet_id: Optional[int] = None       # 현재 차량이 위치한 Lanelet ID
         self.target_sign: Optional[int] = None              # 1,2,3=상차 | 4,5,6=하차
         self.parking_complete_flag: bool = False
-        self.delivery_complete_flag: bool = False
+        self.pickup_complete_flag: bool = False             # 상차 완료 플래그
+        self.delivery_complete_flag: bool = False           # 하차 완료 플래그
         
         # 정지선 관련 상태
         self.stopline_distance: float = float('inf')        # 정지선까지의 거리
@@ -291,11 +335,17 @@ class ModeSelector(Node):
             self.parking_complete_flag = True
             self.get_logger().info('주차 미션 완료!')
 
+    def _pickup_completed_cb(self, msg: Bool) -> None:
+        """상차 미션 완료 플래그 수신"""
+        if bool(msg.data):
+            self.pickup_complete_flag = True
+            self.get_logger().info('상차 미션 완료!')
+    
     def _delivery_completed_cb(self, msg: Bool) -> None:
-        """배달 미션 완료 플래그 수신"""
+        """하차 미션 완료 플래그 수신"""
         if bool(msg.data):
             self.delivery_complete_flag = True
-            self.get_logger().info('배달 미션 완료!')
+            self.get_logger().info('하차 미션 완료!')
 
     # ===========================================
     # 메인 로직
@@ -478,8 +528,15 @@ class ModeSelector(Node):
             self.target_sign = None  # 플래그 리셋
             return ModeType.FINAL_DELIVERY_PICKUP
 
+        # 상차 완료 조건 (PICKUP 모드에서 상차 완료 플래그 수신 시)
+        if self.pickup_complete_flag and self.current_mode == ModeType.FINAL_DELIVERY_PICKUP:
+            self.pickup_complete_flag = False  # 플래그 리셋
+            self.get_logger().info('상차 완료 - DRIVING 모드로 복귀 (하차 구역으로 이동)')
+            return ModeType.FINAL_DRIVING
+
         # 하차 모드 전환 조건 (target_sign 4,5,6 + 하차구역)
-        if (self.current_mode == ModeType.FINAL_DELIVERY_PICKUP and
+        if (self.current_mode == ModeType.FINAL_DRIVING and
+            self.delivery_mission_started and
             self.current_lanelet_id is not None and
             self.current_lanelet_id in self.delivery_zone_ids and
             self.target_sign is not None and
@@ -488,10 +545,11 @@ class ModeSelector(Node):
             self.target_sign = None  # 플래그 리셋
             return ModeType.FINAL_DELIVERY_DROPOFF
             
-        # 배달 종료 조건 (하차모드에서 배달 종료 플래그 수신 시)
+        # 하차 완료 조건 (DROPOFF 모드에서 하차 완료 플래그 수신 시)
         if self.delivery_complete_flag and self.current_mode == ModeType.FINAL_DELIVERY_DROPOFF:
             self.delivery_complete_flag = False  # 플래그 리셋
             self.delivery_mission_started = False
+            self.get_logger().info('하차 완료 - 배달 미션 종료, DRIVING 모드로 복귀')
             return ModeType.FINAL_DRIVING
 
         # 4. 현재 모드 유지
@@ -554,6 +612,8 @@ class ModeSelector(Node):
             'lanelet_id': self.current_lanelet_id,
             'target_sign': self.target_sign,
             'parking_completed': self.parking_complete_flag,
+            'pickup_completed': self.pickup_complete_flag,
+            'delivery_completed': self.delivery_complete_flag,
             'stopline_distance': self.stopline_distance,
             'stopline_type': self.stopline_type,
             'stopline_pause_active': self.stopline_pause_start_time is not None,
