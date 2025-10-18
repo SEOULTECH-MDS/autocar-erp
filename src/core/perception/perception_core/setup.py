@@ -57,7 +57,7 @@ setup(
 
             # 장애물
             "car_detect = perception.yolov11.car_detect:main", # 차
-            "drum_detect = perception.yolov11.drum_detect:main", # 드럼
+            "drum_detect = perception.yolov11.drum_detect:main", # 드럼통
             "person_detect = perception.yolov11.person_detect:main", # 사람
             "sensor_fusion_obstacle = perception.sensor_fusion.src.obstacle.sensor_fusion:main",
 
@@ -70,7 +70,7 @@ setup(
             'region_filter_node = perception.pointcloud.region_filter_node:main',
 
             # Lane Mission Controller (미션별 활성화 제어)
-            'lane_mission_controller = perception.lane_mission_controller:main',
+            'mission_controller = perception.mission_controller:main',
         ],
     },
 )

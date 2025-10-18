@@ -9,12 +9,18 @@ Lane-based Mission Controller for Perception System
 1. 현재 lane ID 구독
 2. lane ID에 따른 미션별 enable/disable 상태 결정
 3. 각 perception 모듈에 enable 신호 발행
+4. 다중 구간 및 단일 lane 미션 지원
 
-미션별 lane ID 매핑 (kcity 기준):
-- 신호등 미션: lane 10-15 (교차로 구간)
+미션별 lane ID 매핑 예시 (kcity 기준):
+- 신호등 미션: lane 10-15, 45-47 (다중 교차로 구간)
 - 표지판 미션: lane 20-25 (배달 구역) 
-- 장애물 미션: lane 30-40 (장애물 회피 구간)
+- 장애물 미션: lane 30-35, 38-40 (다중 장애물 회피 구간)
 - 라바콘 미션: lane 50-60 (주차 구간)
+
+지원하는 설정 형태:
+- 단일 구간: {'start': 10, 'end': 15}
+- 단일 lane: {'start': 25, 'end': 25}
+- 다중 구간: [{'start': 10, 'end': 15}, {'start': 20, 'end': 25}]
 """
 
 import rclpy
@@ -89,12 +95,22 @@ class LaneMissionController(Node):
             self.set_default_mission_mapping()
     
     def set_default_mission_mapping(self):
-        """기본 미션 매핑 설정 (수정 필요)"""
+        """기본 미션 매핑 설정 - 다중 구간 지원""" # (수정 필요)
         self.mission_mapping = {
-            'trafficlight': {'start': 10, 'end': 15},  # 신호등 미션
-            'sign': {'start': 20, 'end': 25},          # 배달 미션  
-            'obstacle': {'start': 30, 'end': 40},      # 장애물 미션
-            'rubber': {'start': 50, 'end': 60}         # 주차 미션
+            'trafficlight': [
+                {'start': 10, 'end': 15},  # 교차로 1
+                {'start': 45, 'end': 47}   # 교차로 2 (예시)
+            ],
+            'sign': [
+                {'start': 20, 'end': 25}   # 배달 구역
+            ],
+            'obstacle': [
+                {'start': 30, 'end': 35},  # 장애물 구간 1
+                {'start': 38, 'end': 40}   # 장애물 구간 2
+            ],
+            'rubber': [
+                {'start': 50, 'end': 60}   # 주차 구간
+            ]
         }
         self.get_logger().info('본선 미션 매핑 사용')
     
@@ -106,19 +122,35 @@ class LaneMissionController(Node):
         self.get_logger().debug(f'현재 Lane ID: {self.current_lane_id}')
     
     def update_mission_states(self):
-        """현재 lane ID에 따른 미션 상태 업데이트"""
-        for mission, lane_range in self.mission_mapping.items():
-            start_lane = lane_range['start']
-            end_lane = lane_range['end']
+        """현재 lane ID에 따른 미션 상태 업데이트 - 다중 구간 지원"""
+        for mission, lane_ranges in self.mission_mapping.items():
+            # 단일 구간 형태도 지원하기 위한 호환성 처리
+            if isinstance(lane_ranges, dict):
+                lane_ranges = [lane_ranges]
             
-            # 현재 lane이 해당 미션 범위에 있는지 확인
-            is_active = start_lane <= self.current_lane_id <= end_lane
+            # 여러 구간 중 하나라도 현재 위치가 포함되면 활성화
+            is_active = any(
+                lane_range['start'] <= self.current_lane_id <= lane_range['end']
+                for lane_range in lane_ranges
+            )
             
             # 상태가 변경된 경우에만 로그 출력
             if self.mission_states[mission] != is_active:
                 self.mission_states[mission] = is_active
                 status = "활성화" if is_active else "비활성화"
-                self.get_logger().info(f'{mission} 미션 {status} (Lane {self.current_lane_id})')
+                
+                # 활성화된 구간 정보도 함께 로그에 출력
+                if is_active:
+                    active_ranges = [
+                        f"[{r['start']}-{r['end']}]" 
+                        for r in lane_ranges 
+                        if r['start'] <= self.current_lane_id <= r['end']
+                    ]
+                    self.get_logger().info(
+                        f'{mission} 미션 {status} (Lane {self.current_lane_id}, 구간: {", ".join(active_ranges)})'
+                    )
+                else:
+                    self.get_logger().info(f'{mission} 미션 {status} (Lane {self.current_lane_id})')
     
     def publish_mission_states(self):
         """미션별 enable 상태 발행"""

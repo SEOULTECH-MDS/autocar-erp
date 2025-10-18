@@ -16,8 +16,8 @@ def generate_launch_description():
         # Lane Mission Controller (미션별 활성화 제어)
         Node(
             package='perception',
-            executable='lane_mission_controller',
-            name='lane_mission_controller',
+            executable='mission_controller',
+            name='mission_controller',
             output='screen',
             parameters=[
                 {'use_sim_time': LaunchConfiguration('use_sim_time')},
