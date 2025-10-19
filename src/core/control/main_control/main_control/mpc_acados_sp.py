@@ -119,7 +119,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([0.1, 0.3, 2.0, 1.0, 2.0, 2.0, 0.4]), # DRIVE
+            0: np.array([0.1, 0.1, 3.0, 1.0, 2.0, 2.0, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -135,7 +135,7 @@ class Control(Node):
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC 
             3: 2.0,  # OBSTACLE_DYNAMIC
-            4: 3.0,  # DELIVERY
+            4: 3.5,  # DELIVERY
             5: 2.5,  # PARKING
             6: 3.0   # RETURN
         }
