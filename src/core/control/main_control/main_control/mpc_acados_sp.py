@@ -54,6 +54,7 @@ class Control(Node):
 
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10)
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
+        self.delivery_sub = self.create_subscription(Float64, '/delivery_distance', self.delivery_cb, 10)
         self.reverse_flag_sub = self.create_subscription(Bool, '/reverse_flag', self.reverse_flag_cb, 10)
 
         # 변수 초기화
@@ -85,6 +86,7 @@ class Control(Node):
         self.obs4_y = 1e4
 
         self.stopline_distance = 1e6
+        self.delivery_distance = 1e6
 
         # self.target_vel = 3.0  # 목표 속도 (m/s)
         # # TODO: 추후에 모드에 따라 변경 고려
@@ -117,7 +119,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([0.1, 0.3, 2.0, 0.8, 2.0, 0.5, 0.4]), # DRIVE
+            0: np.array([0.1, 0.3, 2.0, 1.0, 2.0, 2.0, 0.4]), # DRIVE
             1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
             2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
             3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
@@ -130,7 +132,7 @@ class Control(Node):
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
             0: 3.5,  # DRIVE
-            1: 0.0,  # PAUSE
+            1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC 
             3: 2.0,  # OBSTACLE_DYNAMIC
             4: 3.0,  # DELIVERY
@@ -188,7 +190,11 @@ class Control(Node):
 
     def mode_cb(self, msg):
         """
-        모드 상태 업데이트 콜백
+        # ModeState.msg
+        uint8 current_mode
+        string description
+
+        # Mode constants
         uint8 DRIVE=0
         uint8 PAUSE=1
         uint8 OBSTACLE_STATIC=2
@@ -196,6 +202,9 @@ class Control(Node):
         uint8 DELIVERY=4
         uint8 PARKING=5
         uint8 RETURN=6
+        uint8 UTURN=7
+        uint8 GPS_OFF=8
+
         """
         # self.mode = msg.current_mode
         # self.mode_description = msg.description    
@@ -425,6 +434,15 @@ class Control(Node):
         else:
             self.stopline_distance = 1e6
 
+    def delivery_cb(self, msg):
+        """ 
+        배달 지점 위치 업데이트 
+        """
+        if msg.data is not None:
+            self.delivery_distance = msg.data
+        else:
+            self.delivery_distance = 1e6
+
 
     def calc_ref_trajectory(self, _cubic_spline):
         """
@@ -578,7 +596,10 @@ class Control(Node):
         if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 0.8): # s의 20%(path가 4.0m보다 짧을 경우) or 0.8m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
-        if self.mode == 1 and self.stopline_distance < 2.5: # PAUSE 모드이고 정지선 까지 거리가 2.5m 이내이면 정지
+        if self.mode == 1 and self.stopline_distance < 3.5: # PAUSE 모드이고 정지선 까지 거리가 3.5m 이내이면 정지
+            self.velocity = 0.0
+
+        if self.mode == 4 and self.delivery_distance < 4.0: # Delivery 모드이고 배달 지점 까지 거리가 4.0m 이내이면 정지
             self.velocity = 0.0
 
         # 차량에 제어 명령 전송
