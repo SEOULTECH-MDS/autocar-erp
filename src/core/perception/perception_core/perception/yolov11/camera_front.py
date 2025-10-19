@@ -5,7 +5,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge
 
-# 신호등, 장애물, 배달
+# 장애물, 배달
 class CameraFront(Node):
     def __init__(self):
         super().__init__('camera_front')

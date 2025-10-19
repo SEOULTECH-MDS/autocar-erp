@@ -42,8 +42,9 @@ setup(
             # 'lanenet = perception.lanenet.lanenet:main',
             
             # 카메라
-            'camera_front = perception.yolov11.camera_front:main', # 신호등, 장애물, 배달
+            'camera_front = perception.yolov11.camera_front:main', # 장애물, 배달
             'camera_side = perception.yolov11.camera_side:main', # 주차 라바콘
+            'camera_trafficlight = perception.yolov11.camera_trafficlight:main', # 신호등
 
             # 신호등
             'trafficlight = perception.yolov11.trafficlight:main',
