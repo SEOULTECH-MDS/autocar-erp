@@ -109,10 +109,10 @@ class Control(Node):
         self.map_origin_y = None
 
         # 모드 상태
-        # self.mode = 0 
-        # self.mode_description = "Drive"  
-        self.mode = 5
-        self.mode_description = "Parking"
+        self.mode = 0 
+        self.mode_description = "Drive"  
+        # self.mode = 5
+        # self.mode_description = "Parking"
     
         # self.is_reverse = True
         self.is_reverse = False

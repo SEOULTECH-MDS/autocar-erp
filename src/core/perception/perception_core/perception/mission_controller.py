@@ -54,7 +54,7 @@ class LaneMissionController(Node):
         # 구독자: localization에서 현재 lane ID 구독
         self.lane_id_subscriber = self.create_subscription(
             Int64,
-            '/current_lane_id',  # localization 노드에서 발행하는 토픽
+            '/current_lanelet_id',  # localization 노드에서 발행하는 토픽
             self.lane_id_callback,
             10
         )
