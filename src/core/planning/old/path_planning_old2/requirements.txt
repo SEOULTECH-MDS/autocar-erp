@@ -1,9 +1,0 @@
-rclpy
-std_msgs
-geometry_msgs
-nav_msgs
-visualization_msgs
-tf-transformations
-shapely
-numpy
-matplotlib 

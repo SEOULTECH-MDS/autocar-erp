@@ -1,8 +1,0 @@
-[console_scripts]
-cone_map_node = dummy.cone_map_node:main
-cones_node = dummy.cones_node:main
-initial_pose_node = dummy.initial_pose_node:main
-odometry_node = dummy.odometry_node:main
-parking_area_node = dummy.parking_area_node:main
-road_node = dummy.road_node:main
-rubber_cones_adapter_node = dummy.rubber_cones_adapter_node:main
