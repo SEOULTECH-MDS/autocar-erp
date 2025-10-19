@@ -237,46 +237,58 @@ class PlannerNode(Node):
         """
         self._maybe_publish_goal()
 
-    def _transform_odom_to_map(self, odom: Odometry) -> Optional[PoseStamped]:
-        """오도메트리를 map 프레임으로 변환
+    def _transform_utm_to_map(self, utm_pose: Odometry) -> Optional[PoseStamped]:
+        """UTM 좌표를 map 프레임으로 변환
         Args:
-            odom: 오도메트리 메시지 (UTM 좌표)
+            utm_pose: UTM 좌표계의 pose (world 프레임)
         Returns:
             map 프레임의 PoseStamped 또는 None (변환 실패 시)
         """
         try:
-            # 1. base_link의 현재 위치를 map 프레임에서 얻기
+            # 1. world → map static transform 조회 (map 원점의 UTM 좌표)
             try:
-                base_link_in_map = self._tf_buffer.lookup_transform(
+                world_to_map = self._tf_buffer.lookup_transform(
                     'map',
-                    'base_link',
+                    'world',
                     rclpy.time.Time(),
                     timeout=rclpy.duration.Duration(seconds=1.0)
                 )
+                self.get_logger().debug(f"World→Map static transform 조회 성공")
             except Exception as e:
-                self.get_logger().warn(f"base_link transform 조회 실패: {e}")
+                self.get_logger().error(f"World→Map transform 조회 실패: {e}")
                 return None
 
-            # 2. UTM 좌표에서 base_link의 map상 위치를 빼서 보정
-            pose_stamped = PoseStamped()
-            pose_stamped.header = odom.header
-            pose_stamped.pose.position.x = odom.pose.pose.position.x - base_link_in_map.transform.translation.x
-            pose_stamped.pose.position.y = odom.pose.pose.position.y - base_link_in_map.transform.translation.y
-            pose_stamped.pose.position.z = odom.pose.pose.position.z - base_link_in_map.transform.translation.z
-            pose_stamped.pose.orientation = odom.pose.pose.orientation
-
-            # 3. 보정된 좌표를 map 프레임으로 설정
-            pose_stamped.header.frame_id = 'map'
+            # 2. UTM 좌표에서 map 원점을 빼서 map 프레임 상대 좌표 계산
+            map_origin_x = world_to_map.transform.translation.x
+            map_origin_y = world_to_map.transform.translation.y
             
-            # 디버깅용 로그
-            self.get_logger().debug(f"UTM 위치: ({odom.pose.pose.position.x:.2f}, {odom.pose.pose.position.y:.2f})")
-            self.get_logger().debug(f"base_link in map: ({base_link_in_map.transform.translation.x:.2f}, {base_link_in_map.transform.translation.y:.2f})")
-            self.get_logger().debug(f"보정된 위치: ({pose_stamped.pose.position.x:.2f}, {pose_stamped.pose.position.y:.2f})")
+            vehicle_utm_x = utm_pose.pose.pose.position.x
+            vehicle_utm_y = utm_pose.pose.pose.position.y
+            
+            vehicle_map_x = vehicle_utm_x - map_origin_x
+            vehicle_map_y = vehicle_utm_y - map_origin_y
 
-            return pose_stamped
+            # 3. map 프레임의 PoseStamped 생성
+            map_pose = PoseStamped()
+            map_pose.header = utm_pose.header
+            map_pose.header.frame_id = 'map'
+            map_pose.pose.position.x = vehicle_map_x
+            map_pose.pose.position.y = vehicle_map_y
+            map_pose.pose.position.z = 0.0
+            map_pose.pose.orientation = utm_pose.pose.pose.orientation
+
+            # 디버깅용 로그
+            self.get_logger().debug(
+                f"\n[UTM→Map 변환]"
+                f"\n  UTM 좌표: ({vehicle_utm_x:.2f}, {vehicle_utm_y:.2f})"
+                f"\n  Map 원점(UTM): ({map_origin_x:.2f}, {map_origin_y:.2f})"
+                f"\n  Map 좌표: ({vehicle_map_x:.2f}, {vehicle_map_y:.2f})"
+            )
+
+            return map_pose
 
         except Exception as e:
-            self.get_logger().warn(f"위치 변환 실패: {e}")
+            self.get_logger().error(f"UTM→Map 변환 중 예상치 못한 오류 발생: {e}")
             return None
 
     def _min_distance_to_cones(self, x: float, y: float) -> float:
@@ -352,7 +364,7 @@ class PlannerNode(Node):
             return False
         
         # UTM 좌표를 map 프레임으로 변환
-        transformed_pose = self._transform_odom_to_map(self._odom)
+        transformed_pose = self._transform_utm_to_map(self._odom)
         if transformed_pose is None:
             self.get_logger().warn("스테이지 전환 체크: TF 변환 실패")
             return False
@@ -409,7 +421,7 @@ class PlannerNode(Node):
             return False
             
         # UTM 좌표를 map 프레임으로 변환
-        transformed_pose = self._transform_odom_to_map(self._odom)
+        transformed_pose = self._transform_utm_to_map(self._odom)
         if transformed_pose is None:
             return False
             
@@ -666,7 +678,7 @@ class PlannerNode(Node):
             return None
         
         # 오도메트리를 map 프레임으로 변환
-        transformed_pose = self._transform_odom_to_map(current_pose)
+        transformed_pose = self._transform_utm_to_map(current_pose)
         if transformed_pose is None:
             self.get_logger().warn("오도메트리 map 프레임 변환 실패")
             return None
