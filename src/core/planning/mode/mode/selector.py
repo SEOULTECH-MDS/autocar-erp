@@ -133,7 +133,7 @@ class ModeSelector(Node):
         self.declare_parameter('vehicle_stop_velocity_threshold', 0.1)          # 차량 정지 판단 속도 임계값 (m/s)
 
         # 신호등 전환 타이머 파라미터
-        self.declare_parameter('traffic_signal_confirm_duration', 0.3)          # 신호등 전환 확인 시간 (s)
+        self.declare_parameter('traffic_signal_confirm_duration', 0.1)          # 신호등 전환 확인 시간 (s)
         
         # K-City 맵 구역 설정 (예선/본선 분리)
         self.declare_parameter('kcity_preliminary_parking_zones', [1])          # 예선 주차 구역
