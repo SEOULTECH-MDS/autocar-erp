@@ -188,6 +188,10 @@ class ModeSelector(Node):
             Bool, '/pickup_complete_flag', self._pickup_completed_cb, 10)
         self.delivery_completed_sub = self.create_subscription(
             Bool, '/delivery_complete_flag', self._delivery_completed_cb, 10)
+        
+        # 주차 포즈 계산 완료 플래그
+        self.parking_pose_ready_sub = self.create_subscription(
+            Bool, '/parking/pose_ready', self._parking_pose_ready_cb, 10)
 
         # ===========================================
         # 내부 상태 변수
@@ -202,6 +206,7 @@ class ModeSelector(Node):
         self.parking_complete_flag: bool = False
         self.pickup_complete_flag: bool = False             # 상차 완료 플래그
         self.delivery_complete_flag: bool = False           # 하차 완료 플래그
+        self.parking_pose_ready: bool = False               # 주차 포즈 계산 완료 플래그
         
         # 정지선 관련 상태
         self.stopline_distance: float = float('inf')        # 정지선까지의 거리
@@ -346,6 +351,12 @@ class ModeSelector(Node):
         if bool(msg.data):
             self.delivery_complete_flag = True
             self.get_logger().info('하차 미션 완료!')
+            
+    def _parking_pose_ready_cb(self, msg: Bool) -> None:
+        """주차 포즈 계산 완료 플래그 수신"""
+        if bool(msg.data):
+            self.parking_pose_ready = True
+            self.get_logger().info('주차 포즈 계산 완료!')
 
     # ===========================================
     # 메인 로직
@@ -508,13 +519,14 @@ class ModeSelector(Node):
                         self.get_logger().info(f'신호등 확인 완료 ({self.traffic_sign}) - DRIVING 모드 전환')
                         return ModeType.FINAL_DRIVING
 
-        # 2. 주차 미션 처리
-        if (self.current_lanelet_id is not None and 
-            self.current_lanelet_id in self.parking_zone_ids and 
+        # 2. 주차 미션 처리 (주차 포즈 계산 완료 시 시작)
+        if (self.parking_pose_ready and 
             not self.parking_mission_started and
             self.current_mode == ModeType.FINAL_DRIVING):
             
             self.parking_mission_started = True
+            self.parking_pose_ready = False  # 플래그 리셋
+            self.get_logger().info('주차 포즈 계산 완료 - PARKING 모드로 전환')
             return ModeType.FINAL_PARKING
 
         # 3. 배달 미션 처리
