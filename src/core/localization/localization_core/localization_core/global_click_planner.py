@@ -17,6 +17,7 @@ from visualization_msgs.msg import MarkerArray, Marker
 from autoware_map_msgs.msg import LaneletMapBin
 
 from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
+from autocar_utils.utils import CubicSpline2D
 # REMOVED: from autocar_utils.utils import generate_target_course
 
 import lanelet2
@@ -64,12 +65,21 @@ class LaneletClickPlanner(QMainWindow):
         self.node.declare_parameter('allowed_lanelet_subtypes', ['road'])
         # Maximum distance to snap selection to an allowed lanelet (meters)
         self.node.declare_parameter('max_select_distance', 3.0)
+        # Smoothing params for /autocar/goals endpoint
+        self.node.declare_parameter('smooth_goal_end', True)
+        self.node.declare_parameter('smooth_goal_length_m', 1.0)
+        self.node.declare_parameter('smooth_goal_pre_length_m', 0.5)
+        self.node.declare_parameter('smooth_goal_samples', 0)  # 0 = keep original count
         self.map_frame = self.node.get_parameter('map_frame').get_parameter_value().string_value
         self.map_origin_lat = self.node.get_parameter('map_origin.lat').get_parameter_value().double_value
         self.map_origin_lon = self.node.get_parameter('map_origin.lon').get_parameter_value().double_value
         self.projector = UtmProjector(Origin(self.map_origin_lat, self.map_origin_lon))
         self.allowed_lanelet_subtypes = list(self.node.get_parameter('allowed_lanelet_subtypes').get_parameter_value().string_array_value)
         self.max_select_distance = self.node.get_parameter('max_select_distance').get_parameter_value().double_value
+        self.smooth_goal_end = self.node.get_parameter('smooth_goal_end').get_parameter_value().bool_value
+        self.smooth_goal_length_m = self.node.get_parameter('smooth_goal_length_m').get_parameter_value().double_value
+        self.smooth_goal_pre_length_m = self.node.get_parameter('smooth_goal_pre_length_m').get_parameter_value().double_value
+        self.smooth_goal_samples = self.node.get_parameter('smooth_goal_samples').get_parameter_value().integer_value
 
         # Remove map subscriber
         # self.map_sub = self.node.create_subscription(...)
@@ -412,6 +422,78 @@ class LaneletClickPlanner(QMainWindow):
         if marker_array.markers:
             self.selected_lanelets_pub.publish(marker_array)
     
+    def _smooth_goal_tail(self, points):
+        """
+        Smooth the last `smooth_goal_length_m` of the assembled goal points using a local
+        cubic spline fit. Optionally include `smooth_goal_pre_length_m` before the tail
+        to ensure continuity. Keeps the number of points by default, unless
+        `smooth_goal_samples` > 0 is provided.
+        """
+        try:
+            if not points or len(points) < 4:
+                return points
+
+            # Build arrays and cumulative distances
+            xs = [p.x for p in points]
+            ys = [p.y for p in points]
+            s_acc = [0.0]
+            for i in range(1, len(points)):
+                dx = xs[i] - xs[i-1]
+                dy = ys[i] - ys[i-1]
+                s_acc.append(s_acc[-1] + float(np.hypot(dx, dy)))
+
+            total_len = s_acc[-1]
+            if total_len <= max(0.1, float(self.smooth_goal_length_m)):
+                return points
+
+            tail_len = max(0.0, float(self.smooth_goal_length_m))
+            pre_len = max(0.0, float(self.smooth_goal_pre_length_m))
+            win_start_dist = max(0.0, total_len - tail_len - pre_len)
+
+            # Find start index for smoothing window
+            start_idx = 0
+            for i, sv in enumerate(s_acc):
+                if sv >= win_start_dist:
+                    start_idx = i
+                    break
+
+            if len(points) - start_idx < 4:
+                return points
+
+            xs_w = xs[start_idx:]
+            ys_w = ys[start_idx:]
+
+            # Fit local spline and resample
+            spline = CubicSpline2D(xs_w, ys_w)
+            window_len = spline.s[-1]
+            if window_len <= 1e-6:
+                return points
+
+            # Keep original number of points in the window unless overridden
+            num_samples = len(xs_w) if int(self.smooth_goal_samples) <= 0 else int(self.smooth_goal_samples)
+            ss = np.linspace(0.0, window_len, num_samples)
+
+            # Prepare simple z interpolation over the window
+            z_window = [points[i].z for i in range(start_idx, len(points))]
+            z0 = z_window[0]
+            z1 = z_window[-1]
+
+            smoothed_tail = []
+            for j, sj in enumerate(ss):
+                sx, sy = spline.calc_position(sj)
+                # Linear z across window (fallback if map has varying z)
+                z = z0 + (z1 - z0) * (j / max(1, (len(ss) - 1)))
+                smoothed_tail.append(Point(x=float(sx), y=float(sy), z=float(z)))
+
+            # Reassemble points
+            return points[:start_idx] + smoothed_tail
+        except Exception as e:
+            try:
+                self.node.get_logger().warn(f"Tail smoothing failed: {e}. Publishing raw points.")
+            except Exception:
+                pass
+            return points
+
     def publish_waypoints(self):
         self.node.get_logger().info("'Publish Waypoints' button clicked.")
         if not self.selected_lanelet_ids:
@@ -438,7 +520,14 @@ class LaneletClickPlanner(QMainWindow):
             self.node.get_logger().warn("Not enough unique points to form a path.")
             return
 
-        # Create a PoseArray from the collected, unique centerline points
+        # Optional: smooth the tail of the path to reduce spline jumps on route switches
+        if self.smooth_goal_end:
+            before_cnt = len(all_points)
+            all_points = self._smooth_goal_tail(all_points)
+            after_cnt = len(all_points)
+            self.node.get_logger().info(f"Applied tail smoothing (points: {before_cnt} -> {after_cnt})")
+
+        # Create a PoseArray from the collected (optionally smoothed) centerline points
         for i in range(len(all_points)):
             pose = Pose()
             pose.position = all_points[i]
