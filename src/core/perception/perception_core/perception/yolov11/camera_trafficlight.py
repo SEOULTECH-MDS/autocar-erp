@@ -35,7 +35,7 @@ class CameraTrafficLight(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = CameraSide()
+    node = CameraTrafficLight()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
