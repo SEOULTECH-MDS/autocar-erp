@@ -107,10 +107,10 @@ class Control(Node):
         self.map_origin_y = None
 
         # 모드 상태
-        # self.mode = 0 
-        # self.mode_description = "Drive"  
-        self.mode = 5
-        self.mode_description = "Parking"
+        self.mode = 0 
+        self.mode_description = "Drive"  
+        # self.mode = 5
+        # self.mode_description = "Parking"
     
         # self.is_reverse = True
         self.is_reverse = False
@@ -130,7 +130,7 @@ class Control(Node):
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
             0: 3.5,  # DRIVE
-            1: 0.0,  # PAUSE
+            1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC 
             3: 2.0,  # OBSTACLE_DYNAMIC
             4: 3.0,  # DELIVERY
@@ -188,7 +188,11 @@ class Control(Node):
 
     def mode_cb(self, msg):
         """
-        모드 상태 업데이트 콜백
+        ModeState.msg
+        uint8 current_mode
+        string description
+
+        Mode constants
         uint8 DRIVE=0
         uint8 PAUSE=1
         uint8 OBSTACLE_STATIC=2
@@ -196,6 +200,8 @@ class Control(Node):
         uint8 DELIVERY=4
         uint8 PARKING=5
         uint8 RETURN=6
+        uint8 UTURN=7
+        uint8 GPS_OFF=8
         """
         # self.mode = msg.current_mode
         # self.mode_description = msg.description    
@@ -578,7 +584,7 @@ class Control(Node):
         if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 0.8): # s의 20%(path가 4.0m보다 짧을 경우) or 0.8m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
-        if self.mode == 1 and self.stopline_distance < 2.5: # PAUSE 모드이고 정지선 까지 거리가 2.5m 이내이면 정지
+        if self.mode == 1 and self.stopline_distance < 4.5: # PAUSE 모드이고 정지선 까지 거리가 2.5m 이내이면 정지
             self.velocity = 0.0
 
         # 차량에 제어 명령 전송
