@@ -73,6 +73,8 @@ class ModeSelector(Node):
     4. 우회전 정지선 특수 처리 (본선):
        - 지정 구역(9,10)에서 신호등 무시하고 정지
        - 차량 완전 정지 후 3.2초 대기 후 자동 출발
+       - 구역 이탈 시 타이머 자동 초기화 (중복 정지 방지)
+       - nonstop 정지선은 무시 (정지하지 않음)
     
     5. 배달 미션 (본선):
        - 상차(1-3) → 주행 → 하차(4-6) 시퀀스
@@ -212,6 +214,7 @@ class ModeSelector(Node):
         self.stopline_distance: float = float('inf')        # 정지선까지의 거리
         self.stopline_type: Optional[str] = None            # 정지선 타입
         self.stopline_pause_start_time: Optional[float] = None  # 정지선 정지 시작 시간
+        self.last_right_pause_zone_id: Optional[int] = None  # 마지막 우회전 정지 구역 ID (초기화 추적용)
         
         # 차량 속도 상태
         self.current_velocity: float = 0.0                  # 현재 차량 속도 (m/s)
@@ -455,6 +458,22 @@ class ModeSelector(Node):
         # ===========================================
         
         # 1. 우회전 정지선 처리 (최우선 - 신호등보다 상위)
+        # 우회전 정지 구역을 벗어났는지 확인하여 타이머 초기화
+        if self._is_in_right_pause_zone():
+            # 구역 ID 추적 (새로운 구역 진입 시 타이머 리셋)
+            if self.last_right_pause_zone_id != self.current_lanelet_id:
+                if self.stopline_pause_start_time is not None:
+                    self.get_logger().info(f'새로운 우회전 구역 진입 (ID: {self.current_lanelet_id}) - 타이머 리셋')
+                self.last_right_pause_zone_id = self.current_lanelet_id
+                self.stopline_pause_start_time = None  # 타이머 초기화
+        else:
+            # 우회전 정지 구역을 벗어남 - 타이머와 상태 초기화
+            if self.last_right_pause_zone_id is not None:
+                self.get_logger().info(f'우회전 정지 구역 이탈 (이전 ID: {self.last_right_pause_zone_id}) - 타이머 초기화')
+                self.stopline_pause_start_time = None
+                self.last_right_pause_zone_id = None
+        
+        # 우회전 정지선 조건 체크
         if self._should_pause_for_right_stopline():
             if self.current_mode == ModeType.FINAL_DRIVING:
                 # 우회전 정지선 조건 만족 - PAUSE 모드 진입 (타이머는 아직 시작 안함)
@@ -472,7 +491,7 @@ class ModeSelector(Node):
             if self.current_velocity <= velocity_threshold:
                 # 실제 정지 확인 - 타이머 시작
                 self.stopline_pause_start_time = self.get_clock().now().nanoseconds * 1e-9
-                self.get_logger().info(f'차량 정지 확인 (속도: {self.current_velocity:.2f} m/s) - 3초 타이머 시작')
+                self.get_logger().info(f'차량 정지 확인 (속도: {self.current_velocity:.2f} m/s) - 3.2초 타이머 시작')
         
         # 우회전 정지선 정지 시간 완료 확인
         if (self.current_mode == ModeType.FINAL_PAUSE and 
@@ -482,7 +501,7 @@ class ModeSelector(Node):
             pause_duration = float(self.get_parameter('stopline_pause_duration').value)
             
             if current_time - self.stopline_pause_start_time >= pause_duration:
-                # 3.5초 대기 완료 - 자동 출발
+                # 3.2초 대기 완료 - 자동 출발
                 self.stopline_pause_start_time = None
                 self.get_logger().info('우회전 정지선 대기 완료 - DRIVING 모드 복귀')
                 return ModeType.FINAL_DRIVING
@@ -597,6 +616,10 @@ class ModeSelector(Node):
         # 우회전 정지선 구역에 있고
         if not self._is_in_right_pause_zone():
             return False
+        
+        # nonstop 정지선이면 정지하지 않음
+        if self.stopline_type == "nonstop":
+            return False
             
         # 정지선 타입이 "right"이고
         if self.stopline_type != "right":
@@ -629,6 +652,7 @@ class ModeSelector(Node):
             'stopline_distance': self.stopline_distance,
             'stopline_type': self.stopline_type,
             'stopline_pause_active': self.stopline_pause_start_time is not None,
+            'last_right_pause_zone_id': self.last_right_pause_zone_id,
             'current_velocity': self.current_velocity,
             'velocity_threshold': float(self.get_parameter('vehicle_stop_velocity_threshold').value),
             'traffic_signal_timer_active': self.traffic_signal_change_start_time is not None,
