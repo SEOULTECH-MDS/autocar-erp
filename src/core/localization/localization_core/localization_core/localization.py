@@ -3,7 +3,7 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from rclpy.logging import LoggingSeverity
 
 from nav_msgs.msg import Odometry
@@ -136,7 +136,11 @@ class Localization(Node):
 
         # Publishers / Subscribers
         qos_default = QoSProfile(depth=10)
-        self.current_lanelet_pub = self.create_publisher(Int64, '/current_lanelet_id', qos_default)
+        qos_latched = QoSProfile(depth=1)
+        qos_latched.history = QoSHistoryPolicy.KEEP_LAST
+        qos_latched.reliability = QoSReliabilityPolicy.RELIABLE
+        qos_latched.durability = QoSDurabilityPolicy.TRANSIENT_LOCAL
+        self.current_lanelet_pub = self.create_publisher(Int64, '/current_lanelet_id', qos_latched)
         # Projection distance (signed along vehicle heading) as the default/only topic
         self.stopline_proj_distance_pub = self.create_publisher(Float64, '/stopline_distance', qos_default)
         self.stopline_type_pub = self.create_publisher(String, '/stopline_type', qos_default)
@@ -152,7 +156,14 @@ class Localization(Node):
         self._status_thread = threading.Thread(target=self._status_wall_loop, daemon=True)
         self._status_thread.start()
         # Periodic republish lanelet id (for latched/late subscribers downstream)
-        self.repub_timer = self.create_timer(1.0, self._republish_lanelet)
+        # Use both ROS-time timer and wall-clock thread for robustness (sim time off/on)
+        try:
+            self.repub_timer = self.create_timer(1.0, self._republish_lanelet)
+        except Exception:
+            self.repub_timer = None
+        self._lanelet_repub_stop_event = threading.Event()
+        self._lanelet_repub_thread = threading.Thread(target=self._republish_lanelet_wall_loop, daemon=True)
+        self._lanelet_repub_thread.start()
 
         # TF buffer/listener for world->map coordinate transform
         self.tf_buffer = Buffer()
@@ -405,6 +416,10 @@ class Localization(Node):
             # Give the thread a brief moment to exit
             if hasattr(self, '_status_thread') and self._status_thread.is_alive():
                 self._status_thread.join(timeout=0.2)
+            if hasattr(self, '_lanelet_repub_stop_event'):
+                self._lanelet_repub_stop_event.set()
+            if hasattr(self, '_lanelet_repub_thread') and self._lanelet_repub_thread.is_alive():
+                self._lanelet_repub_thread.join(timeout=0.2)
         except Exception:
             pass
 
@@ -413,6 +428,15 @@ class Localization(Node):
             msg = Int64()
             msg.data = int(self.last_lanelet_id)
             self.current_lanelet_pub.publish(msg)
+
+    def _republish_lanelet_wall_loop(self):
+        # Wall-clock based rebroadcast to ensure late subscribers and sim-time-off cases receive updates
+        while rclpy.ok() and not self._lanelet_repub_stop_event.is_set():
+            try:
+                self._republish_lanelet()
+            except Exception:
+                pass
+            time.sleep(1.0)
 
 
 def main(args=None):
