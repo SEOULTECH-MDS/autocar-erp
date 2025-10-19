@@ -192,6 +192,9 @@ def main():
     parser.add_argument('--input-dir', required=True, help='Directory containing layers (path, dashed_line, LR_virtual, left_right_lines)')
     parser.add_argument('--output-osm', required=True, help='Output OSM filepath')
     parser.add_argument('--lane-width', type=float, default=DEFAULT_LANE_WIDTH_M)
+    parser.add_argument('--centerline-gap', type=float, default=6.0, help='Max allowed gap (m) between consecutive centerline points; larger gaps are cut')
+    parser.add_argument('--export-centerline-shp', type=str, default='', help='Optional: output Shapefile path (directory or .shp) for generated centerlines (EPSG:4326)')
+    parser.add_argument('--reverse-centerlines', type=str, default='', help='Comma-separated lane ids whose centerlines should be reversed')
     args = parser.parse_args()
 
     path_gdf = load_layer(args.input_dir, 'path')
@@ -281,6 +284,13 @@ def main():
 
     # Prepare OSM builder; all export must be in EPSG:4326
     builder = OsmBuilder()
+    centerline_records_ll: List[Tuple[str, LineString]] = []  # (lane_id, centerline lon/lat)
+    reverse_ids = set()
+    try:
+        if args.reverse_centerlines:
+            reverse_ids = set([s.strip() for s in args.reverse_centerlines.split(',') if s.strip()])
+    except Exception:
+        reverse_ids = set()
 
     # Helper to project back to 4326
     to_ll = lambda gdf: gdf.to_crs(epsg=4326)
@@ -387,17 +397,95 @@ def main():
         # Use 'solid' as default visual subtype for lanelet boundary way; detailed dashed segments are still exported separately
         return (merged, 'solid') if merged is not None else (None, None)
 
+    # Ensure right boundary lies to the right-hand side of left boundary along travel direction.
+    # Also make both sides flow in the same forward direction (based on left as reference).
+    def normalize_sides_orientation(left_ls: LineString, right_ls: LineString) -> Tuple[LineString, LineString, bool]:
+        swapped = False
+        if not isinstance(left_ls, LineString) or not isinstance(right_ls, LineString):
+            return left_ls, right_ls, swapped
+
+        # 1) Make right flow in the same direction as left
+        ls0s, ls0e = _endpoints(left_ls)
+        rs0s, rs0e = _endpoints(right_ls)
+        if _dist_xy(ls0s, rs0e) < _dist_xy(ls0s, rs0s):
+            right_ls = _reverse_ls(right_ls)
+
+        # 2) Check if right is actually on the right-hand side of left
+        def _pt_norm(ls: LineString, t: float):
+            t = max(0.0, min(1.0, t))
+            try:
+                return ls.interpolate(t, normalized=True)
+            except Exception:
+                return ls.interpolate(ls.length * t)
+
+        pL0 = _pt_norm(left_ls, 0.05)
+        pL1 = _pt_norm(left_ls, 0.06)
+        pR0 = _pt_norm(right_ls, 0.05)
+        tan = (float(pL1.x - pL0.x), float(pL1.y - pL0.y))
+        off = (float(pR0.x - pL0.x), float(pR0.y - pL0.y))
+        cross = tan[0] * off[1] - tan[1] * off[0]
+
+        # If cross >= 0, the supposed "right" is not to the right; swap sides
+        if not math.isfinite(cross) or cross >= 0.0:
+            left_ls, right_ls = right_ls, left_ls
+            swapped = True
+            # After swap, ensure same flow direction again
+            ls0s, ls0e = _endpoints(left_ls)
+            rs0s, rs0e = _endpoints(right_ls)
+            if _dist_xy(ls0s, rs0e) < _dist_xy(ls0s, rs0s):
+                right_ls = _reverse_ls(right_ls)
+
+        return left_ls, right_ls, swapped
+
+    # If a path layer exists for this lane_id, align side directions to the path forward direction
+    def align_with_path_direction(left_ls: LineString, right_ls: LineString, lane_id: str) -> Tuple[LineString, LineString]:
+        try:
+            if path_gdf is None or path_gdf.empty:
+                return left_ls, right_ls
+            # robust col resolution
+            is_path_c = col(path_gdf, 'is_path')
+            left_c = col(path_gdf, 'left_lane')
+            right_c = col(path_gdf, 'right_lane')
+            if is_path_c is None or left_c is None or right_c is None:
+                return left_ls, right_ls
+            col_vals = path_gdf[is_path_c].astype(str).str.lower()
+            df = path_gdf[(col_vals == '1') | (col_vals == 'true') | (col_vals == 'yes') | (path_gdf[is_path_c].astype(float, errors='ignore') == 1.0)]
+            # select rows where left_lane == right_lane == lane_id
+            lane_id_str = str(lane_id)
+            rows = df[(df[left_c].astype(str) == lane_id_str) & (df[right_c].astype(str) == lane_id_str)]
+            if rows.empty:
+                return left_ls, right_ls
+            # unify path geometries
+            parts: List[LineString] = []
+            for _, r in rows.iterrows():
+                g = r.geometry
+                if isinstance(g, LineString) and not g.is_empty:
+                    parts.append(g)
+                elif isinstance(g, MultiLineString):
+                    for ln in g.geoms:
+                        if isinstance(ln, LineString) and not ln.is_empty:
+                            parts.append(ln)
+            path_uni = unify_lines(parts)
+            if not isinstance(path_uni, LineString) or path_uni.is_empty:
+                return left_ls, right_ls
+            pS, pE = _endpoints(path_uni)
+            lS, lE = _endpoints(left_ls)
+            # If left start is closer to path end, reverse both sides to match path forward
+            if _dist_xy(lS, pE) + 1e-6 < _dist_xy(lS, pS):
+                left_ls = _reverse_ls(left_ls)
+                right_ls = _reverse_ls(right_ls)
+        except Exception:
+            pass
+        return left_ls, right_ls
+
     # Build centerline from left/right by sampling midpoints
     def centerline_from_sides(left_ls: LineString, right_ls: LineString, samples: int = 200) -> Optional[LineString]:
         if not isinstance(left_ls, LineString) or not isinstance(right_ls, LineString):
             return None
         if left_ls.is_empty or right_ls.is_empty:
             return None
-        # Ensure both sides flow in the same direction
-        ls0s, ls0e = _endpoints(left_ls)
-        rs0s, rs0e = _endpoints(right_ls)
-        if _dist_xy(ls0s, rs0e) < _dist_xy(ls0s, rs0s):
-            right_ls = _reverse_ls(right_ls)
+        # Ensure both sides flow in the same direction, and right is to the right
+        left_ls, right_ls, _ = normalize_sides_orientation(left_ls, right_ls)
         # Resample both sides to comparable lengths by normalizing to [0,1] along length
         # Then compute midpoints. If either side is shorter, clamp at end.
         pts = []
@@ -427,6 +515,24 @@ def main():
         if len(run) > len(best_run):
             best_run = run
         pts = best_run
+
+        # sanitize big jumps between consecutive points; keep longest continuous segment
+        if pts:
+            longest: List[Tuple[float, float]] = []
+            curr: List[Tuple[float, float]] = []
+            for p in pts:
+                if not curr:
+                    curr.append(p)
+                    continue
+                if _dist_xy(curr[-1], p) <= max(2.0, args.centerline_gap):
+                    curr.append(p)
+                else:
+                    if len(curr) > len(longest):
+                        longest = curr
+                    curr = [p]
+            if len(curr) > len(longest):
+                longest = curr
+            pts = longest
         try:
             return LineString(pts) if len(pts) >= 2 else None
         except Exception:
@@ -475,6 +581,9 @@ def main():
                 pass
         if left_geom_m is None or right_geom_m is None:
             continue
+        # Normalize left/right orientation and align with optional path direction
+        left_geom_m, right_geom_m, swapped_lr = normalize_sides_orientation(left_geom_m, right_geom_m)
+        left_geom_m, right_geom_m = align_with_path_direction(left_geom_m, right_geom_m, lane_id)
         centerline: Optional[LineString] = centerline_from_sides(left_geom_m, right_geom_m, samples=300)
         if centerline is None:
             continue
@@ -496,12 +605,26 @@ def main():
         tmp_ll = tmp_gdf.to_crs(epsg=4326)
         center_ll, left_ll, right_ll = [ln for ln in tmp_ll.geometry]
 
-        # Emit OSM ways and relation
+        # Emit OSM ways and relation (left/right are guaranteed by normalization)
         left_way = builder.add_linestring_way(left_ll, {'type': 'line_thin', 'subtype': left_tag or 'solid'})
         right_way = builder.add_linestring_way(right_ll, {'type': 'line_thin', 'subtype': right_tag or 'solid'})
+        # Optional per-lane centerline reversal
+        try:
+            if str(lane_id) in reverse_ids and isinstance(center_ll, LineString):
+                center_ll = LineString(list(center_ll.coords)[::-1])
+        except Exception:
+            pass
+
         center_way = builder.add_linestring_way(center_ll, {})
         if left_way and right_way and center_way:
             builder.add_lanelet_relation(left_way, right_way, center_way, lane_id, prefer_relation_id=lane_id)
+
+        # collect centerline for optional SHP export
+        try:
+            if isinstance(center_ll, LineString) and not center_ll.is_empty:
+                centerline_records_ll.append((str(lane_id), center_ll))
+        except Exception:
+            pass
 
     # Emit non-path lines for visualization
     def emit_lines_with_type(gdf: Optional[gpd.GeoDataFrame], line_type: str):
@@ -674,6 +797,28 @@ def main():
 
     os.makedirs(os.path.dirname(args.output_osm), exist_ok=True)
     builder.save(args.output_osm)
+
+    # Optional: export centerlines to Shapefile (EPSG:4326)
+    try:
+        if args.export_centerline_shp:
+            shp_arg = args.export_centerline_shp
+            if shp_arg.lower().endswith('.shp'):
+                shp_path = shp_arg
+                shp_dir = os.path.dirname(shp_path) or '.'
+            else:
+                shp_dir = shp_arg
+                os.makedirs(shp_dir, exist_ok=True)
+                shp_path = os.path.join(shp_dir, 'centerlines.shp')
+            os.makedirs(os.path.dirname(shp_path), exist_ok=True)
+            gdf = gpd.GeoDataFrame(
+                { 'lane_id': [lid for lid, _ in centerline_records_ll] },
+                geometry=[geom for _, geom in centerline_records_ll],
+                crs='EPSG:4326'
+            )
+            gdf.to_file(shp_path)
+            print(f"Saved centerline SHP: {shp_path}")
+    except Exception as e:
+        print(f"Failed to export centerline SHP: {e}")
 
 
 if __name__ == '__main__':
