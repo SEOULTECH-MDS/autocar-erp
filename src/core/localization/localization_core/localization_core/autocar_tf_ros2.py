@@ -72,7 +72,8 @@ class AutocarTFPublisher(Node):
         vehicle_map_x = vehicle_utm_x - self.map_origin_x
         vehicle_map_y = vehicle_utm_y - self.map_origin_y
         
-        t.transform.translation = Vector3(x=vehicle_map_x, y=vehicle_map_y, z=0.28)
+        # base_link는 지면(z=0)에 두고, 차체/바퀴 위치는 URDF에서 정의된 조인트 오프셋으로 표현한다.
+        t.transform.translation = Vector3(x=vehicle_map_x, y=vehicle_map_y, z=0.0)
         t.transform.rotation = msg.pose.pose.orientation
         
         self.dynamic_br.sendTransform(t)

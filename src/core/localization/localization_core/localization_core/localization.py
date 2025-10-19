@@ -187,8 +187,11 @@ class Localization(Node):
             return
 
         # Transform pose to 'map' frame if possible to match lanelet coordinates
-        x = odom.pose.pose.position.x
-        y = odom.pose.pose.position.y
+        raw_x = odom.pose.pose.position.x
+        raw_y = odom.pose.pose.position.y
+        x = raw_x
+        y = raw_y
+        transformed_to_map = False
         try:
             target_frame = 'map'
             source_frame = odom.header.frame_id if odom.header.frame_id else 'world'
@@ -201,17 +204,43 @@ class Localization(Node):
                 ps_map = tf2_geometry_msgs.do_transform_pose_stamped(ps, tf)
                 x = ps_map.pose.position.x
                 y = ps_map.pose.position.y
+                transformed_to_map = True
         except Exception as e:
             # Fallback: use raw coordinates
-            self.get_logger().warn(f"TF transform to 'map' failed, using raw: {e}")
+            try:
+                self.get_logger().warn(f"TF transform to 'map' failed, using raw: {e}")
+            except Exception:
+                pass
 
-        # Align point coordinates with lanelet coordinate frame
+        # Decide if odom coordinates are absolute UTM scale (heuristic)
+        try:
+            odom_coords_are_absolute = (abs(raw_x) + abs(raw_y)) > 1e5
+        except Exception:
+            odom_coords_are_absolute = False
+
+        # Align point coordinates with lanelet coordinate frame while avoiding double origin application
         if getattr(self, 'lanelet_coords_are_absolute', False):
-            px = x + self.map_origin_utm_x
-            py = y + self.map_origin_utm_y
+            if transformed_to_map:
+                # Map-local -> absolute UTM
+                px = x + self.map_origin_utm_x
+                py = y + self.map_origin_utm_y
+            else:
+                # Raw already absolute UTM (from odom)
+                px = raw_x if odom_coords_are_absolute else (raw_x + self.map_origin_utm_x)
+                py = raw_y if odom_coords_are_absolute else (raw_y + self.map_origin_utm_y)
         else:
-            px = x
-            py = y
+            # Lanelet coordinates are map-local
+            if transformed_to_map:
+                px = x
+                py = y
+            else:
+                # Convert absolute UTM (odom raw) to map-local if needed
+                if odom_coords_are_absolute:
+                    px = raw_x - self.map_origin_utm_x
+                    py = raw_y - self.map_origin_utm_y
+                else:
+                    px = raw_x
+                    py = raw_y
 
         point_ll = lanelet2.core.BasicPoint2d(px, py)
 
