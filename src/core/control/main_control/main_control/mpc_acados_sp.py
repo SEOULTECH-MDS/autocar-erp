@@ -372,9 +372,9 @@ class Control(Node):
                     # 마커 색상 기반 장애물 종류 구분
                     # 파란색 = 드럼 / 노란색 = 자동차 / 흰색 = 미분류
                     if marker.color.b > 0.5:
-                        self.obs_type = 1
+                        self.obs_type = 1 # 드럼
                     elif marker.color.r > 0.5 and marker.color.g > 0.5:
-                        self.obs_type = 2
+                        self.obs_type = 2 # 자동차
                     else:
                         self.obs_type = 0 # 미분류
                     
@@ -662,7 +662,7 @@ class Control(Node):
 
         # 표시할 텍스트 설정
         text_msg.text = f"cmd_vel: {self.velocity:.2f}m/s \n cmd_steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
-            \n Acc: {self.acc:.2f}m/s² \
+            \n Acc: {self.acc:.2f}m/s² , v_err: {self.velocity - self.v:.2f}m/s\
             \n Fail Count: {self.fail_count}\
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \
@@ -671,6 +671,7 @@ class Control(Node):
             \n weights: {self.current_weights} \
             \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), \
             Obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f}), Obs4: ({self.obs4_x:.2f}, {self.obs4_y:.2f}) \
+            \n obs_type: {self.obs_type} \
             \n stopline: {self.stopline_distance:.2f}, delivery: {self.delivery_distance:.2f} " \
 
         self.overlay_pub.publish(text_msg)
