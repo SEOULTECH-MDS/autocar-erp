@@ -71,9 +71,9 @@ class ModeSelector(Node):
        - Green/Left/Straightleft: 0.3초 확인 후 DRIVING 모드
     
     4. 우회전 정지선 특수 처리 (본선):
-       - 지정 구역(9,10)에서 신호등 무시하고 정지
-       - 차량 완전 정지 후 3.2초 대기 후 자동 출발
-       - 구역 이탈 시 타이머 자동 초기화 (중복 정지 방지)
+       - 지정 구역(10)에서 virtual 정지선 감지 시 정지
+       - 신호등 무시하고 차량 완전 정지(0.01 m/s) 후 3.2초 대기
+       - 구역 이탈 시 타이머 자동 초기화
        - nonstop 정지선은 무시 (정지하지 않음)
     
     5. 배달 미션 (본선):
@@ -104,9 +104,9 @@ class ModeSelector(Node):
     ===========================================
     - competition_type: "qualifying" | "final" (기본: final)
     - map_type: "kcity" | "mirae" (기본: kcity)
-    - traffic_signal_confirm_duration: 신호등 확인 시간 (기본: 0.3초)
+    - traffic_signal_confirm_duration: 신호등 확인 시간 (기본: 0.1초)
     - stopline_pause_duration: 우회전 정지 시간 (기본: 3.2초)
-    - vehicle_stop_velocity_threshold: 정지 판단 속도 (기본: 0.1 m/s)
+    - vehicle_stop_velocity_threshold: 정지 판단 속도 (기본: 0.01 m/s)
     """
 
     def __init__(self) -> None:
@@ -132,7 +132,7 @@ class ModeSelector(Node):
         self.declare_parameter('stopline_pause_distance', 5.0)                  # 정지선 감지 거리 (m)
         self.declare_parameter('stopline_pause_duration', 3.2)                  # 정지선 정지 시간 (s)
         self.declare_parameter('enable_distance_condition', False)               # 거리 조건 사용 여부 on/off
-        self.declare_parameter('vehicle_stop_velocity_threshold', 0.1)          # 차량 정지 판단 속도 임계값 (m/s)
+        self.declare_parameter('vehicle_stop_velocity_threshold', 0.01)         # 차량 정지 판단 속도 임계값 (m/s)
 
         # 신호등 전환 타이머 파라미터
         self.declare_parameter('traffic_signal_confirm_duration', 0.1)          # 신호등 전환 확인 시간 (s)
@@ -145,7 +145,7 @@ class ModeSelector(Node):
         self.declare_parameter('kcity_delivery_pickup_zones', [1])              # 본선 상차 구역
         self.declare_parameter('kcity_delivery_dropoff_zones', [15])           # 본선 하차 구역
         self.declare_parameter('kcity_final_parking_zones', [21])               # 본선 주차 구역
-        self.declare_parameter('kcity_right_pause_zones', [9, 10])              # 본선 우회전 정지선 구역
+        self.declare_parameter('kcity_right_pause_zones', [10])                 # 본선 우회전 정지선 구역
 
         # 미래관 맵 구역 설정 (예선/본선 구분 없이 통일)
         self.declare_parameter('mirae_parking_zones', [7])                      # 주차 구역 
@@ -218,7 +218,6 @@ class ModeSelector(Node):
         self.stopline_distance: float = float('inf')        # 정지선까지의 거리
         self.stopline_type: Optional[str] = None            # 정지선 타입
         self.stopline_pause_start_time: Optional[float] = None  # 정지선 정지 시작 시간
-        self.last_right_pause_zone_id: Optional[int] = None  # 마지막 우회전 정지 구역 ID (초기화 추적용)
         
         # 차량 속도 상태
         self.current_velocity: float = 0.0                  # 현재 차량 속도 (m/s)
@@ -465,19 +464,11 @@ class ModeSelector(Node):
         
         # 1. 우회전 정지선 처리 (최우선 - 신호등보다 상위)
         # 우회전 정지 구역을 벗어났는지 확인하여 타이머 초기화
-        if self._is_in_right_pause_zone():
-            # 구역 ID 추적 (새로운 구역 진입 시 타이머 리셋)
-            if self.last_right_pause_zone_id != self.current_lanelet_id:
-                if self.stopline_pause_start_time is not None:
-                    self.get_logger().info(f'새로운 우회전 구역 진입 (ID: {self.current_lanelet_id}) - 타이머 리셋')
-                self.last_right_pause_zone_id = self.current_lanelet_id
-                self.stopline_pause_start_time = None  # 타이머 초기화
-        else:
-            # 우회전 정지 구역을 벗어남 - 타이머와 상태 초기화
-            if self.last_right_pause_zone_id is not None:
-                self.get_logger().info(f'우회전 정지 구역 이탈 (이전 ID: {self.last_right_pause_zone_id}) - 타이머 초기화')
+        if not self._is_in_right_pause_zone():
+            # 우회전 정지 구역을 벗어남 - 타이머 초기화
+            if self.stopline_pause_start_time is not None:
+                self.get_logger().info(f'우회전 정지 구역 이탈 - 타이머 초기화')
                 self.stopline_pause_start_time = None
-                self.last_right_pause_zone_id = None
         
         # 우회전 정지선 조건 체크
         if self._should_pause_for_right_stopline():
@@ -634,8 +625,8 @@ class ModeSelector(Node):
         if self.stopline_type == "nonstop":
             return False
             
-        # 정지선 타입이 "right"이고
-        if self.stopline_type != "right":
+        # 정지선 타입이 "virtual"이고
+        if self.stopline_type != "virtual":
             return False
             
         # 거리 조건 확인
@@ -665,7 +656,6 @@ class ModeSelector(Node):
             'stopline_distance': self.stopline_distance,
             'stopline_type': self.stopline_type,
             'stopline_pause_active': self.stopline_pause_start_time is not None,
-            'last_right_pause_zone_id': self.last_right_pause_zone_id,
             'current_velocity': self.current_velocity,
             'velocity_threshold': float(self.get_parameter('vehicle_stop_velocity_threshold').value),
             'traffic_signal_timer_active': self.traffic_signal_change_start_time is not None,
