@@ -134,8 +134,8 @@ class Control(Node):
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
-            4: 1.5,  # DELIVERY
-            5: 1.5,  # PARKING
+            4: 1.0,  # DELIVERY
+            5: 1.0,  # PARKING
             6: 3.0   # RETURN (사용X)
         }
         self.target_vel = self.mode_target_vel[self.mode]
@@ -487,13 +487,29 @@ class Control(Node):
                 # 다음 iteration을 위해 current_s 업데이트
                 current_s = s
 
+                # 곡률에 따라 target_vel 조정
+                curvature = abs(cubic_spline.calc_curvature(s))
+
+                if curvature < 0.01:  # 직선 구간 
+                    speed_factor = 1.0
+                elif curvature < 0.1:  # 완만한 커브 
+                    speed_factor = 0.8
+                elif curvature < 0.15:  # 중간 커브 
+                    speed_factor = 0.7
+                elif curvature < 0.2:  # 급커브
+                    speed_factor = 0.5
+                else:  # 매우 급한 커브 
+                    speed_factor = 0.2
+
+                curv_based_vel = target_vel * speed_factor
+
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 if self.is_reverse:
                     xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
                 else:
                     xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
-                xref[3, i] = target_vel  # 조정된 속도 사용
-                xref[4, i] = s 
+                xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
+                xref[4, i] = s
 
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
                 tan_vec[1, i] = math.sin(cubic_spline.calc_yaw(s))
