@@ -59,7 +59,6 @@ def yaw_to_quaternion(yaw: float):
 # - Stage-2: 주차 공간으로 후진 (3개 직선 구간 경로)
 # 
 # 주요 특징:
-# - 콘 기반 충돌 회피
 # - 실시간 경로 계획 및 발행
 
 
@@ -70,8 +69,8 @@ class PlannerNode(Node):
     
     구독 토픽:
         /parking/parking_pose     (PoseStamped)    - 주차 공간 위치 정보
-        /parking/cones_mapped_in_roi (ObstacleArray) - 안정화된 콘 정보
         /autocar/location         (Odometry)       - 차량 현재 위치 [필수]
+        /current_lanelet_id       (Int64)          - 현재 Lanelet ID
     
     발행 토픽:
         /waypoints                (Path)           - 현재 활성 스테이지의 경로
@@ -79,6 +78,7 @@ class PlannerNode(Node):
         /reverse_flag             (Bool)           - 후진 모드 플래그
         /parking_stop_flag        (Bool)           - 주차 완료 3초 정지 플래그
         /parking_complete_flag    (Bool)           - 주차 종료 플래그
+        /parking/pose_ready       (Bool)           - 주차 포즈 계산 완료 플래그
     """
 
     def __init__(self) -> None:
@@ -90,7 +90,6 @@ class PlannerNode(Node):
         # 차량 물리적 특성
         self.declare_parameter('vehicle_width', 1.16)           # 차량 폭 [m]
         self.declare_parameter('vehicle_length', 2.02)          # 차량 길이 [m]
-        self.declare_parameter('safety_margin', 0.0)            # 충돌 회피를 위한 안전 여유 [m]
         self.declare_parameter('path_resolution', 0.3)         # 경로 점들 사이의 간격 [m]
         
         # 주차 공간 기본 정보
@@ -99,7 +98,7 @@ class PlannerNode(Node):
         
         # ==================== Stage-1 (전진 이동) 파라미터 ====================
         self.declare_parameter('front_margin', 5.0)               # 주차 공간 전방 경계에서 추가 여유 [m]
-        self.declare_parameter('clear_lateral', 1.3)            # 주차 공간 옆쪽(도로쪽) 여유 [m]
+        self.declare_parameter('clear_lateral', 2.0)            # 주차 공간 옆쪽(도로쪽) 여유 [m]
         self.declare_parameter('yaw_offset_deg', 0.0)           # Stage-1에서 좌측으로 선회할 각도 [도]
         self.declare_parameter('show_stage1_path', True)        # Stage-1 경로 시각화 여부
         
@@ -107,7 +106,6 @@ class PlannerNode(Node):
         self.declare_parameter('stage2_use_map_y_offset', False)  # Stage-2 목표를 map 프레임 y 오프셋으로 설정
         self.declare_parameter('stage2_goal_offset_y', 0.0)     # map 프레임 y축 오프셋 [m]
         self.declare_parameter('stage2_back_offset', 0.0)       # 슬롯 진행축 기준 뒤로 이동 거리 [m] (대체 옵션)
-        self.declare_parameter('stage2_inside_margin', 0.2)     # 주차 공간 내부 안전 여유 [m]
 
         
         # ==================== Stage-2 경로 생성 우선순위별 파라미터 ====================
@@ -136,7 +134,6 @@ class PlannerNode(Node):
         # 주차 관련 상태
         self._parking_pose: Optional[PoseStamped] = None      # 주차 공간 위치
         self._odom: Optional[Odometry] = None                 # 차량 현재 위치 (오도메트리)
-        self._stable_cones: List[Obstacle] = []               # 안정화된 콘 정보 (충돌 회피용)
         self._current_lanelet_id: Optional[int] = None        # 현재 차량이 위치한 Lanelet ID
         self._parking_zone_ids: List[int] = [21]             # 주차 구역 ID (K-City 본선 기준)
         
@@ -179,7 +176,6 @@ class PlannerNode(Node):
         # ==================== 구독자 설정 ====================
         # 주차 관련 정보 구독
         self.create_subscription(PoseStamped, '/parking/parking_pose', self._on_parking_pose, 10)         # 주차 공간 위치
-        self.create_subscription(ObstacleArray, '/parking/cones_mapped_in_roi', self._on_stable_cones, 10)  # 안정화된 콘 정보
         
         # 차량 위치 및 제어 관련 구독
         self.create_subscription(Odometry, '/autocar/location', self._on_odom, 20)                        # 차량 현재 위치 (오도메트리)
@@ -200,11 +196,6 @@ class PlannerNode(Node):
         self.get_logger().info(f'주차 공간 위치 수신: ({msg.pose.position.x:.2f}, {msg.pose.position.y:.2f})')
         self._maybe_publish_goal()
 
-    def _on_stable_cones(self, msg: ObstacleArray) -> None:
-        """안정화된 콘 정보 수신 콜백 (충돌 회피용)"""
-        self._stable_cones = msg.obstacles
-        self.get_logger().info(f'안정화된 콘 {len(self._stable_cones)}개 수신')
-        self._maybe_publish_goal()
 
 
     def _on_odom(self, msg: Odometry) -> None:
@@ -291,22 +282,6 @@ class PlannerNode(Node):
             self.get_logger().error(f"UTM→Map 변환 중 예상치 못한 오류 발생: {e}")
             return None
 
-    def _min_distance_to_cones(self, x: float, y: float) -> float:
-        """콘까지의 최소 거리 계산 (충돌 회피용)
-        Args:
-            x, y: 검사할 위치 좌표
-        Returns:
-            가장 가까운 콘까지의 거리 [m] (콘이 없으면 무한대)
-        """
-        if not self._stable_cones:
-            return float('inf')
-        
-        min_dist = float('inf')
-        for cone in self._stable_cones:
-            dist = math.hypot(x - cone.center.x, y - cone.center.y) - cone.radius
-            min_dist = min(min_dist, dist)
-        
-        return min_dist
 
     def _compute_stage1_goal(self, parking_pose: PoseStamped) -> PoseStamped:
         """Stage-1 목표 위치 계산 (주차 공간 앞으로 전진 이동)
@@ -437,7 +412,7 @@ class PlannerNode(Node):
         if self._stage == 2 and self._last_stage2_goal is not None:
             pos_tol = float(self.get_parameter('stage_position_tolerance').value)
             if self._is_near_pose(transformed_pose, self._last_stage2_goal, pos_tol, yaw_tolerance):
-                self.get_logger().info("🎯 Stage-2에서 주차 위치 도달 - 주차 완료 조건 만족!")
+                self.get_logger().info("Stage-2에서 주차 위치 도달")
                 return True
                     
         return False
@@ -561,13 +536,10 @@ class PlannerNode(Node):
                 self._last_stage2_goal = stage2_goal
                 self.get_logger().info(f"✅ Stage-2 목표 계산 성공: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
                 
-                # Stage-2 경로 계산 (벽 따라 S-curve 우선, 기존 S-curve 폴백)
-                s_curve_enabled = bool(self.get_parameter('s_curve_enabled').value)
-                self.get_logger().info(f"📋 Stage-2 파라미터 - S자경로: {s_curve_enabled}")
-                
+                # Stage-2 경로 계산 (작년 로직 사용)
                 current_path = None
                 
-                # 0) 작년 로직 경로 최우선
+                # 작년 로직 경로 생성
                 if bool(self.get_parameter('oldlogic_use').value):
                     self.get_logger().info("🔄 Stage-2: using OLD-LOGIC arc+arc path between Stage1→Stage2")
                     # Stage-1 goal은 self._last_stage1_goal 에 이미 저장/발행됨
@@ -578,14 +550,11 @@ class PlannerNode(Node):
                         if current_path is not None:
                             self.get_logger().info(f"✅ Old-logic path OK: {len(current_path.poses)} pts")
                         else:
-                            self.get_logger().warn("⚠️ 작년 로직 경로 생성 실패, 하드코딩 경로로 폴백")
+                            self.get_logger().warn("⚠️ 로직 경로 생성 실패")
                     else:
-                        self.get_logger().warn("⚠️ Stage-1 목표가 없음, 하드코딩 경로로 폴백")
-                
-                if s_curve_enabled and current_path is None:
-                    self.get_logger().warn("⚠️ 기존 S자 경로 로직이 제거되어 폴백 없음")
+                        self.get_logger().warn("⚠️ Stage-1 목표가 없음")
                 else:
-                    self.get_logger().error("❌ S자 경로가 비활성화됨 - Stage-2 경로 생성 불가")
+                    self.get_logger().error("❌ oldlogic_use가 비활성화됨 - Stage-2 경로 생성 불가")
                 
                 if current_path is not None:
                     self.get_logger().info(f"📤 Stage-2 경로 발행 완료: {len(current_path.poses)}개 점")
@@ -722,27 +691,11 @@ class PlannerNode(Node):
             pose.pose.orientation = yaw_to_quaternion(math.atan2(dy, dx))
             path.poses.append(pose)
         
-        # 충돌 검사
-        vehicle_width = float(self.get_parameter('vehicle_width').value)
-        vehicle_length = float(self.get_parameter('vehicle_length').value) if self.has_parameter('vehicle_length') else 2.02
-        safety_margin = float(self.get_parameter('safety_margin').value)
-        eff_radius = 0.5 * math.hypot(vehicle_width, vehicle_length) + safety_margin
-        
-        collided = False
-        for p in path.poses:
-            d = self._min_distance_to_cones(p.pose.position.x, p.pose.position.y)
-            if d < eff_radius:
-                collided = True
-                break
-        
-        if collided:
-            self.get_logger().warn('Stage-1 경로가 콘과 충돌할 수 있음. front_margin/clear_lateral 증가 고려.')
-        
         self.get_logger().info(f"Stage-1 경로 생성 완료: {len(path.poses)}개 점")
         return path
 
     def _compute_stage2_goal(self, parking_pose: Optional[PoseStamped]) -> Optional[PoseStamped]:
-        self.get_logger().info("🎯 Stage-2 목표 계산 시작")
+        self.get_logger().info("Stage-2 목표 계산 시작")
         
         if parking_pose is None:
             self.get_logger().error("❌ parking_pose가 None입니다")
@@ -750,7 +703,7 @@ class PlannerNode(Node):
             
         yaw_slot = quaternion_to_yaw(parking_pose.pose.orientation)
         center = (parking_pose.pose.position.x, parking_pose.pose.position.y)
-        self.get_logger().info(f"📍 주차 공간 중심: ({center[0]:.2f}, {center[1]:.2f}), 방향: {yaw_slot:.2f}")
+        self.get_logger().info(f"주차 공간 중심: ({center[0]:.2f}, {center[1]:.2f}), 방향: {yaw_slot:.2f}")
         
         goal = PoseStamped()
         goal.header = parking_pose.header
@@ -761,33 +714,24 @@ class PlannerNode(Node):
             offset_y = float(self.get_parameter('stage2_goal_offset_y').value)
             goal.pose.position.x = center[0]
             goal.pose.position.y = center[1] + offset_y
-            self.get_logger().info(f"📍 Map Y 오프셋 모드: offset_y={offset_y:.2f}")
+            self.get_logger().info(f"Map Y 오프셋 모드: offset_y={offset_y:.2f}")
         else:
             back = float(self.get_parameter('stage2_back_offset').value)
             u_long = (math.cos(yaw_slot), math.sin(yaw_slot))
             goal.pose.position.x = center[0] - back * u_long[0]
             goal.pose.position.y = center[1] - back * u_long[1]
-            self.get_logger().info(f"📍 Back 오프셋 모드: back={back:.2f}")
+            self.get_logger().info(f"Back 오프셋 모드: back={back:.2f}")
             
         goal.pose.position.z = 0.0
-        self.get_logger().info(f"📍 계산된 목표 위치: ({goal.pose.position.x:.2f}, {goal.pose.position.y:.2f})")
+        self.get_logger().info(f"계산된 목표 위치: ({goal.pose.position.x:.2f}, {goal.pose.position.y:.2f})")
         
         # Stage-2 goal heading: match Stage-1 heading if available; otherwise fallback to slot yaw
         if self._last_stage1_goal is not None:
             goal.pose.orientation = self._last_stage1_goal.pose.orientation
-            self.get_logger().info("🧭 Stage-1 목표 방향 사용")
+            self.get_logger().info("Stage-1 목표 방향 사용")
         else:
             goal.pose.orientation = yaw_to_quaternion(yaw_slot)
-            self.get_logger().info("🧭 주차 공간 방향 사용")
-        
-        # 충돌 검사: Stage 2 골 위치에 충돌이 있으면 None 반환
-        vehicle_radius = float(self.get_parameter('vehicle_width').value) / 2.0 + float(self.get_parameter('safety_margin').value)
-        cone_distance = self._min_distance_to_cones(goal.pose.position.x, goal.pose.position.y)
-        self.get_logger().info(f"🚗 차량 반경: {vehicle_radius:.2f}m, 콘까지 거리: {cone_distance:.2f}m")
-        
-        if cone_distance < vehicle_radius:
-            self.get_logger().error(f"❌ Stage-2 목표 위치 충돌 감지: ({goal.pose.position.x:.2f}, {goal.pose.position.y:.2f})")
-            return None
+            self.get_logger().info("주차 공간 방향 사용")
         
         self.get_logger().info("✅ Stage-2 목표 계산 성공")
         return goal
@@ -807,7 +751,7 @@ class PlannerNode(Node):
             step_lin = float(self.get_parameter('oldlogic_pre_straight').value)
             center_offset = float(self.get_parameter('oldlogic_center_offset').value)
             
-            self.get_logger().info(f"🔧 단순 직선 경로 파라미터:")
+            self.get_logger().info(f" 단순 직선 경로 파라미터:")
             self.get_logger().info(f"   - 사전 후진 거리: {pre_reverse:.2f}m")
             self.get_logger().info(f"   - 직선 해상도: {step_lin:.2f}m")
             self.get_logger().info(f"   - 구역 중심 오프셋: {center_offset:.2f}m")
@@ -831,7 +775,7 @@ class PlannerNode(Node):
             # p4: 주차 포즈 위치 (방향 정보 제외, 위치만)
             p4 = (parking_pose.pose.position.x, parking_pose.pose.position.y)
             
-            self.get_logger().info(f"📍 3개 직선 구간 포인트 (map 프레임):")
+            self.get_logger().info(f"3개 직선 구간 포인트 (map 프레임):")
             self.get_logger().info(f"   - p1 (Stage-1골): ({p1[0]:.2f}, {p1[1]:.2f})")
             self.get_logger().info(f"   - p2 (반대방향): ({p2[0]:.2f}, {p2[1]:.2f})")
             self.get_logger().info(f"   - p3 (구역중심): ({p3[0]:.2f}, {p3[1]:.2f})")
@@ -850,13 +794,13 @@ class PlannerNode(Node):
             path_x_l, path_y_l = [], []
 
             # 구간 1: p1 → p2 (Stage-1 골에서 반대방향으로 1.5m)
-            self.get_logger().info("🔄 구간 1: Stage-1 골 → 반대방향 1.5m")
+            self.get_logger().info("구간 1: Stage-1 골 → 반대방향 1.5m")
             xs, ys = linseg(p1, p2, step_lin)
             path_x_l += xs.tolist()
             path_y_l += ys.tolist()
             
             # 구간 2: p2 → p3 (반대방향 지점에서 구역 중심으로)
-            self.get_logger().info("🔄 구간 2: 반대방향 지점 → 구역 중심")
+            self.get_logger().info("구간 2: 반대방향 지점 → 구역 중심")
             xs, ys = linseg(p2, p3, step_lin)
             # 중복점 제거
             if len(path_x_l)>0 and len(xs)>0 and (path_x_l[-1]==xs[0] and path_y_l[-1]==ys[0]):
@@ -865,7 +809,7 @@ class PlannerNode(Node):
             path_y_l += ys.tolist()
 
             # 구간 3: p3 → p4 (구역 중심에서 주차 위치로)
-            self.get_logger().info("🔄 구간 3: 구역 중심 → 주차 위치")
+            self.get_logger().info("구간 3: 구역 중심 → 주차 위치")
             xs, ys = linseg(p3, p4, step_lin)
             # 중복점 제거
             if len(path_x_l)>0 and len(xs)>0 and (path_x_l[-1]==xs[0] and path_y_l[-1]==ys[0]):
@@ -874,7 +818,7 @@ class PlannerNode(Node):
             path_y_l += ys.tolist()
 
             # 4) Path 메시지 생성 (방향 정보는 계산용으로만 사용)
-            self.get_logger().info("🔄 Path 메시지 생성 중...")
+            self.get_logger().info("Path 메시지 생성 중...")
             path = Path()
             path.header = stage2_goal.header
             
@@ -898,7 +842,7 @@ class PlannerNode(Node):
                 path.poses.append(ps)
 
             self.get_logger().info(f"✅ 단순 3개 직선 경로 생성 완료: {len(path.poses)}개 점")
-            self.get_logger().info("🔄 === 단순 직선 경로 생성 종료 ===")
+            self.get_logger().info("=== 단순 직선 경로 생성 종료 ===")
             return path if path.poses else None
 
         except Exception as e:

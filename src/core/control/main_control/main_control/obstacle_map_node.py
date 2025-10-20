@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import imp
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
@@ -9,6 +10,7 @@ import numpy as np
 
 from geometry_msgs.msg import PointStamped, Point
 from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import int64, Bool
 
 
 class ObstacleMap(Node):
@@ -40,10 +42,16 @@ class ObstacleMap(Node):
         self.cached_tf_time = None
         self.tf_cache_duration = 0.1  # 100ms 캐시
 
+        # mission id 판단 플래그
+        self.is_enabled = False
+
+
         # 구독자/퍼블리셔 설정
         self.obstacle_sub = self.create_subscription(
             MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10
         )
+        self.enable_sub = self.create_subscription(Bool, '/mission/obstacle/enable', self.enable_cb, 10)
+
         self.obstacle_map_pub = self.create_publisher(MarkerArray, '/obstacle_map', 10)
 
         # 주기적 퍼블리시 (더 높은 주파수)
@@ -54,15 +62,22 @@ class ObstacleMap(Node):
         self.transform_fail_count = 0
         self.last_stats_time = self.get_clock().now()
 
+    def enable_cb(self, msg: Bool):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
+        
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'장애물 map 변환 {status}')
+
     def obstacle_cb(self, msg: MarkerArray):
+        if not self.is_enabled:
+            return
+
         start_time = self.get_clock().now()
         now = start_time
         points_map = []
-
-        # 빠른 검증
-        # if not msg.markers:
-        #     self._remove_old(now)
-        #     return
 
         mk = msg.markers[0]
         
@@ -72,15 +87,15 @@ class ObstacleMap(Node):
             self.get_logger().warn("TF 변환 실패 - 데이터 건너뜀")
             return
 
-        # **핵심 최적화 2: 배치 변환**
+        # **핵심 최적화 2: 배치 변환 + 색상 정보 포함**
         if mk.points:
-            points_map = self._transform_points_batch(mk.points, transform)
+            points_map = self._transform_points_batch_with_color(mk.points, transform, mk.color)
 
         if not points_map:
             self._remove_old(now)
             return
 
-        # **핵심 최적화 3: 벡터화된 거리 계산**
+        # **핵심 최적화 3: 벡터화된 거리 계산 (색상 포함)**
         self._update_tracked_obstacles_fast(points_map, now)
         
         # 성능 통계 업데이트
@@ -197,19 +212,66 @@ class ObstacleMap(Node):
         self.transform_count += pts.shape[0]
         return pts_map.tolist()  # 제어에 전달하기 쉽게 list로 반환
 
+    def _transform_points_batch_with_color(self, points, transform, marker_color):
+        """배치로 포인트들을 한 번에 변환 (색상 정보 포함)"""
+        if not points:
+            return []
+
+        # TF에서 변환 행렬 추출
+        t = transform.transform.translation
+        r = transform.transform.rotation
+
+        # 쿼터니언 → 회전행렬
+        x, y, z, w = r.x, r.y, r.z, r.w
+        R = np.array([
+            [1 - 2*(y*y + z*z),     2*(x*y - z*w),     2*(x*z + y*w)],
+            [    2*(x*y + z*w), 1 - 2*(x*x + z*z),     2*(y*z - x*w)],
+            [    2*(x*z - y*w),     2*(y*z + x*w), 1 - 2*(x*x + y*y)]
+        ])
+        T = np.array([t.x, t.y, t.z])
+
+        # 입력 포인트를 (N,3) numpy 배열로 변환
+        pts = np.array([[p.x, p.y, p.z] for p in points], dtype=np.float32)  # (N,3)
+
+        # 벡터화된 변환 (map = R * lidar + T)
+        pts_map = (R @ pts.T).T + T  # (N,3)
+
+        # 색상 정보 포함하여 반환
+        result = []
+        for i, (x, y, z) in enumerate(pts_map.tolist()):
+            result.append({
+                'x': x, 'y': y, 'z': z,
+                'color_r': marker_color.r,
+                'color_g': marker_color.g, 
+                'color_b': marker_color.b,
+                'color_a': marker_color.a
+            })
+
+        self.transform_count += pts.shape[0]
+        return result
 
     def _update_tracked_obstacles_fast(self, points_map, now):
-        """벡터화된 장애물 업데이트"""
+        """벡터화된 장애물 업데이트 (색상 포함)"""
         if not self.tracked:
             # 첫 번째 경우: 바로 추가
-            for x, y, z in points_map:
-                self.tracked.append({'x': x, 'y': y, 'last_seen': now})
+            for point_data in points_map:
+                obstacle = {
+                    'x': point_data['x'], 
+                    'y': point_data['y'], 
+                    'last_seen': now,
+                    'color_r': point_data['color_r'],
+                    'color_g': point_data['color_g'],
+                    'color_b': point_data['color_b'],
+                    'color_a': point_data['color_a']
+                }
+                self.tracked.append(obstacle)
             return
         
         # 기존 장애물 위치를 NumPy 배열로 변환
         existing_points = np.array([[o['x'], o['y']] for o in self.tracked])
         
-        for x_map, y_map, _ in points_map:
+        for point_data in points_map:
+            x_map, y_map = point_data['x'], point_data['y']
             new_point = np.array([x_map, y_map])
             
             # 벡터화된 거리 계산
@@ -227,11 +289,24 @@ class ObstacleMap(Node):
                 self.tracked[idx]['y'] = (1.0 - a) * oy + a * y_map
                 self.tracked[idx]['last_seen'] = now
                 
+                # 색상 정보도 업데이트 (최신 색상 유지)
+                self.tracked[idx]['color_r'] = point_data['color_r']
+                self.tracked[idx]['color_g'] = point_data['color_g']
+                self.tracked[idx]['color_b'] = point_data['color_b']
+                self.tracked[idx]['color_a'] = point_data['color_a']
+                
                 # 기존 포인트 배열 업데이트
                 existing_points[idx] = [self.tracked[idx]['x'], self.tracked[idx]['y']]
             else:
                 # 새 장애물 추가
-                self.tracked.append({'x': x_map, 'y': y_map, 'last_seen': now})
+                obstacle = {
+                    'x': x_map, 'y': y_map, 'last_seen': now,
+                    'color_r': point_data['color_r'],
+                    'color_g': point_data['color_g'],
+                    'color_b': point_data['color_b'],
+                    'color_a': point_data['color_a']
+                }
+                self.tracked.append(obstacle)
                 existing_points = np.vstack([existing_points, [x_map, y_map]])
 
         # 오래된 장애물 제거
@@ -256,7 +331,7 @@ class ObstacleMap(Node):
             self.get_logger().debug(f'{removed_count}개 장애물 만료 제거')
 
     def publish_obstacles(self):
-        """최적화된 퍼블리시"""
+        """최적화된 퍼블리시 (색상 정보 포함)"""
         if not self.tracked:
             # 빈 MarkerArray 퍼블리시 (이전 마커들 정리)
             ma = MarkerArray()
@@ -272,7 +347,7 @@ class ObstacleMap(Node):
         ma = MarkerArray()
         current_time = self.get_clock().now().to_msg()
         
-        # 배치로 마커 생성
+        # 배치로 마커 생성 (원본 색상 유지)
         for i, o in enumerate(self.tracked):
             m = Marker()
             m.header.frame_id = 'map'
@@ -295,11 +370,11 @@ class ObstacleMap(Node):
             m.scale.y = 0.5
             m.scale.z = 1.0
             
-            # 색상 (노란색)
-            m.color.r = 1.0
-            m.color.g = 1.0
-            m.color.b = 0.0
-            m.color.a = 1.0
+            # 원본 색상 사용 (드럼=파란색, 자동차=노란색)
+            m.color.r = o['color_r']
+            m.color.g = o['color_g']
+            m.color.b = o['color_b']
+            m.color.a = o['color_a']
             
             ma.markers.append(m)
         
