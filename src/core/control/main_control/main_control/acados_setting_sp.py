@@ -22,8 +22,8 @@ def acados_solver():
 
     # 제약 조건 설정
     MAX_STEER = np.deg2rad(27.0)  # 최대 조향각 [rad]
-    MAX_SPEED = 6.0  # 최고 속도 [m/s]
-    MIN_SPEED = -6.0  # 최저 속도 [m/s] 
+    MAX_SPEED = 6.5  # 최고 속도 [m/s] 6.999m/s(25kph)이하여야 함
+    MIN_SPEED = -6.5  # 최저 속도 [m/s] -6.999m/s(25kph)이하여야 함
     MAX_ACCEL = 10.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
     MIN_ACCEL = -12.0  # 최대 감속도 [m/s^2]
 

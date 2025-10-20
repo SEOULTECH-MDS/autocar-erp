@@ -119,12 +119,12 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([0.05, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # DRIVE
-            1: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
+            0: np.array([1e-5, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # DRIVE
+            1: np.array([1e-5, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
-            4: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
-            5: np.array([0.05, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
+            4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
+            5: np.array([0.01, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
             6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN (사용X)
         }        
         self.current_weights = self.mode_weights[self.mode]
@@ -643,7 +643,7 @@ class Control(Node):
         text_msg.fg_color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0) # 글자색 (파란색)
 
         # 표시할 텍스트 설정
-        text_msg.text = f"Velocity: {self.velocity:.2f}m/s \n Steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
+        text_msg.text = f"cmd_vel: {self.velocity:.2f}m/s \n cmd_steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
             \n Acc: {self.acc:.2f}m/s² \
             \n Fail Count: {self.fail_count}\
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
@@ -652,8 +652,8 @@ class Control(Node):
             \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f}) \
             \n weights: {self.current_weights} \
             \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), \
-            Obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f}), Obs4: ({self.obs4_x:.2f}, {self.obs4_y:.2f}) "
-
+            Obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f}), Obs4: ({self.obs4_x:.2f}, {self.obs4_y:.2f}) \
+            \n stopline: {self.stopline_distance:.2f}, delivery: {self.delivery_distance:.2f} " \
 
         self.overlay_pub.publish(text_msg)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import imp
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
@@ -9,6 +10,7 @@ import numpy as np
 
 from geometry_msgs.msg import PointStamped, Point
 from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import int64, Bool
 
 
 class ObstacleMap(Node):
@@ -40,10 +42,16 @@ class ObstacleMap(Node):
         self.cached_tf_time = None
         self.tf_cache_duration = 0.1  # 100ms 캐시
 
+        # mission id 판단 플래그
+        self.is_enabled = False
+
+
         # 구독자/퍼블리셔 설정
         self.obstacle_sub = self.create_subscription(
             MarkerArray, '/sensor_fusion/obstacles', self.obstacle_cb, 10
         )
+        self.enable_sub = self.create_subscription(Bool, '/mission/obstacle/enable', self.enable_cb, 10)
+
         self.obstacle_map_pub = self.create_publisher(MarkerArray, '/obstacle_map', 10)
 
         # 주기적 퍼블리시 (더 높은 주파수)
@@ -54,7 +62,20 @@ class ObstacleMap(Node):
         self.transform_fail_count = 0
         self.last_stats_time = self.get_clock().now()
 
+    def enable_cb(self, msg: Bool):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
+        
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'장애물 map 변환 {status}')
+
     def obstacle_cb(self, msg: MarkerArray):
+
+        if not self.is_enabled:
+            return
+
         start_time = self.get_clock().now()
         now = start_time
         points_map = []
