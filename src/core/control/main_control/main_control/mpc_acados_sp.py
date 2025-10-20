@@ -88,9 +88,6 @@ class Control(Node):
         self.stopline_distance = 1e6
         self.delivery_distance = 1e6
 
-        # self.target_vel = 3.0  # 목표 속도 (m/s)
-        # # TODO: 추후에 모드에 따라 변경 고려
-
         self.steering_angle = 0.0
         self.velocity = 0.0
         self.acc = 0.0
@@ -116,6 +113,8 @@ class Control(Node):
     
         # self.is_reverse = True
         self.is_reverse = False
+
+        self.obs_type = 0 #미분류
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
@@ -369,6 +368,16 @@ class Control(Node):
                     obs_x = marker.pose.position.x
                     obs_y = marker.pose.position.y
                     obstacles.append((obs_x, obs_y))
+
+                    # 마커 색상 기반 장애물 종류 구분
+                    # 파란색 = 드럼 / 노란색 = 자동차 / 흰색 = 미분류
+                    if marker.color.b > 0.5:
+                        self.obs_type = 1
+                    elif marker.color.r > 0.5 and marker.color.g > 0.5:
+                        self.obs_type = 2
+                    else:
+                        self.obs_type = 0 # 미분류
+                    
                     self.get_logger().debug(f"장애물: ({obs_x:.2f}, {obs_y:.2f})")
             
             # 모든 장애물을 먼저 초기화**
@@ -551,6 +560,13 @@ class Control(Node):
 
         weights = self.current_weights
 
+        if self.obs_type == 1: # 드럼
+            r_safe = 1.2
+        elif self.obs_type == 2: # 차량
+            r_safe = 2.0
+        else:
+            r_safe = 0.0
+
         # MPC Solver에 파라미터 변수 전달
         for i in range(N):
             params = np.hstack([
@@ -558,12 +574,14 @@ class Control(Node):
                 u_opt[i, 0],
                 tan_vec[:, i],
                 weights,
-                obs
+                obs,
+                r_safe
             ])
             self.solver.set(i, "p", params)
             # self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
         # self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
-        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
+
+        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], weights, obs, r_safe]))
 
         # Solver 실행, status 확인
         status = self.solver.solve()

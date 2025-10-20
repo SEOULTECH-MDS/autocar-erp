@@ -31,8 +31,8 @@ def acados_solver():
     ND = 1 # 이전 조향각 입력 크기 (delta)
     NV = 2 # tangent vector size (tx, ty)
     NW = 7 # cost function weights 크기 (W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw)
-    NO = 8  # 장애물 정보 크기 (obs1_x, obs1_y, obs2_x, obs2_y, obs3_x, obs3_y, obs4_x, obs4_y)
-    
+    NO = 9  # 장애물 정보 크기 (obs1_x, obs1_y, obs2_x, obs2_y, obs3_x, obs3_y, obs4_x, obs4_y, r_safe)
+
     T = 2.0
     N = 20  # 예측 구간 [s]
 
@@ -72,7 +72,7 @@ def acados_solver():
     # We_yaw = 0.4  # heading error 가중치 (terminal cost)
 
     # parameter variables
-    NP = NX + ND + NV + NW + NO   # NX: 참조 변수 크기, ND: 이전 조향각 입력 크기 NV: 접선 벡터 크기, O: 장애물 정보 크기
+    NP = NX + ND + NV + NW + NO    # NX: 참조 변수 크기, ND: 이전 조향각 입력 크기 NV: 접선 벡터 크기, O: 장애물 정보 크기
     p = SX.sym('p', NP) 
     ocp.model.p = p
     ocp.parameter_values = np.zeros(NP)
@@ -109,6 +109,7 @@ def acados_solver():
     obs3_y = ocp.model.p[20]  # 장애물3 y 좌표
     obs4_x = ocp.model.p[21]  # 장애물4 x 좌표
     obs4_y = ocp.model.p[22]  # 장애물4 y 좌표
+    r_safe = ocp.model.p[23]  # 장애물 회피 반경
 
     vehicle_x = ocp.model.x[0]  # 차량 x 좌표
     vehicle_y = ocp.model.x[1]  # 차량 y 좌표
@@ -145,7 +146,6 @@ def acados_solver():
     ocp.constraints.ubx = np.array([1e10, 1e10, 1e10, MAX_SPEED, 1e10])  # 상태 변수 상한
     ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4]) # 상태 변수 인덱스
 
-    r_safe = 1.3
     distance1 = (vehicle_x - obs1_x)**2 + (vehicle_y - obs1_y)**2
     distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
     distance3 = (vehicle_x - obs3_x)**2 + (vehicle_y - obs3_y)**2
