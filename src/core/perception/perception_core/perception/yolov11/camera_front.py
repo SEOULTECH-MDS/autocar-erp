@@ -14,7 +14,7 @@ class CameraFront(Node):
         self.camera_info_pub_ = self.create_publisher(CameraInfo, '/camera_front/camera_info', 10)
         self.bridge = CvBridge()
 
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(2)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)

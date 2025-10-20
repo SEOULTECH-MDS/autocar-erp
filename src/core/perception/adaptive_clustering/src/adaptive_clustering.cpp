@@ -247,16 +247,24 @@ private:
         // 라바콘
         bool small_object = (size_z_ > 0.2 && size_x_ < 0.4 && size_y_ < 0.4 && size_z_ < 1.0);
         // 드럼통
-        bool medium_object = (size_x_ > 0.3 && size_x_ <= 0.6 && 
-                             size_y_ > 0.3 && size_y_ <= 0.6 && 
+        bool medium_object = (size_x_ > 0.3 && size_x_ <= 1.0 && 
+                             size_y_ > 0.3 && size_y_ <= 2.0 && 
                              size_z_ > 0.5 && size_z_ <= 1.5);
         // 차량 (x는 전체 차량 길이의 절반만 탐지하도록)
         bool large_object = (size_x_ > 2.0 && size_x_ <= 2.5 && 
                             size_y_ > 1.5 && size_y_ < 2.0 && 
                             size_z_ > 1.5 && size_z_ < 2.0);
+        // 표지판
+        bool signboard_object = (size_x_ > 0.0 && size_x_ <= 1.0 &&
+                                 size_y_ > 0.2 && size_y_ <= 1.0 &&
+                                 size_z_ > 0.2 && size_z_ <= 2.0);
+
+        // 일반
+        bool object = (size_z_ > 0.2 && size_x_ <1 && size_y_ <1 && size_z_ <1.5);
 
         // if (size_z_ > 0.2 && size_x_ <1 && size_y_ <1 && size_z_ <1.5) 
-        if (small_object || medium_object || large_object)
+        if (small_object || medium_object || large_object || signboard_object)
+        // if (object || large_object)
         {
           marker_array.markers.push_back(marker);
         }
@@ -280,7 +288,8 @@ private:
         marker.lifetime = rclcpp::Duration::from_seconds(0.1);
 
         // if ( size_z_ > 0.2 && size_x_ <1 && size_y_ <1 && size_z_ <1.5 )
-        if (small_object || medium_object || large_object)
+        if (small_object || medium_object || large_object || signboard_object)
+        // if (object || large_object)
         {
           marker_pose.markers.push_back(marker);
           Eigen::Vector4f centroid;
