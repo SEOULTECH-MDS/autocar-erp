@@ -48,14 +48,14 @@ class Control(Node):
         self.global_waypoints_sub = self.create_subscription(PoseArray, '/autocar/goals', self.global_waypoints_cb, 10)
         self.mode_sub = self.create_subscription(ModeState, '/mode_state', self.mode_cb, 10)
 
-        self.local_waypoints_sub = self.create_subscription(Path, '/waypoints', self.local_waypoints_cb, 10)
+        self.local_waypoints_sub = self.create_subscription(Path, '/waypoints', self.local_waypoints_cb, 10) # parking 모드용 local waypoints
 
         self.map_origin_sub = self.create_subscription(PointStamped, '/map/origin', self.map_origin_cb, qos_transient_local)
 
-        self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10)
-        self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10)
-        self.delivery_sub = self.create_subscription(Float64, '/delivery_distance', self.delivery_cb, 10)
-        self.reverse_flag_sub = self.create_subscription(Bool, '/reverse_flag', self.reverse_flag_cb, 10)
+        self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10) # map 좌표로 변환된 장애물 토픽
+        self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10) # 정지선 까지 거리
+        self.delivery_sub = self.create_subscription(Float64, '/delivery_distance', self.delivery_cb, 10) # 배달 지점 까지 거리
+        self.reverse_flag_sub = self.create_subscription(Bool, '/reverse_flag', self.reverse_flag_cb, 10) # 후진 플래그
 
         # 변수 초기화
         self.x = None
@@ -119,13 +119,13 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([0.1, 0.1, 3.0, 1.0, 2.0, 2.0, 0.4]), # DRIVE
-            1: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
-            2: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC
-            3: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC
-            4: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY
-            5: np.array([0.1, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
-            6: np.array([0.1, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN
+            0: np.array([0.05, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # DRIVE
+            1: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.2]), # PAUSE
+            2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
+            3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
+            4: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
+            5: np.array([0.05, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
+            6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN (사용X)
         }        
         self.current_weights = self.mode_weights[self.mode]
 
@@ -133,11 +133,11 @@ class Control(Node):
         self.mode_target_vel = {
             0: 3.5,  # DRIVE
             1: 3.5,  # PAUSE
-            2: 2.0,  # OBSTACLE_STATIC 
-            3: 2.0,  # OBSTACLE_DYNAMIC
-            4: 3.5,  # DELIVERY
-            5: 2.5,  # PARKING
-            6: 3.0   # RETURN
+            2: 2.0,  # OBSTACLE_STATIC (사용X)
+            3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
+            4: 1.5,  # DELIVERY
+            5: 1.5,  # PARKING
+            6: 3.0   # RETURN (사용X)
         }
         self.target_vel = self.mode_target_vel[self.mode]
 
@@ -336,12 +336,12 @@ class Control(Node):
         return
     
     def make_cubic_spline(self):
-        # Global waypoints로 스플라인 생성 (DRIVE/PAUSE 모드용)
+        # Global waypoints로 스플라인 생성 (DRIVE/PAUSE/DELIVERY 모드용)
         if len(self.xs_global) >= 2 and len(self.ys_global) >= 2:
             self.cubic_spline_global = CubicSpline2D(self.xs_global, self.ys_global)
             self.get_logger().info(f"Global cubic spline 생성 완료: {len(self.xs_global)}개 포인트")
         
-        # Local waypoints로 스플라인 생성 (MISSION 모드용)
+        # Local waypoints로 스플라인 생성 (PARKING 모드용)
         if len(self.xs_local) >= 2 and len(self.ys_local) >= 2:
             self.cubic_spline_local = CubicSpline2D(self.xs_local, self.ys_local)
             self.get_logger().info(f"Local cubic spline 생성 완료: {len(self.xs_local)}개 포인트")
@@ -462,18 +462,18 @@ class Control(Node):
                 
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
-                    # 끝점을 넘어갔으면 끝점으로 고정하고 속도 0 설정
+                    # 끝점을 넘어갔으면 끝점으로 고정
                     s = cubic_spline.s[-1] - 0.1
                     target_vel = 0.0
                 else:
-                    # 끝점까지 남은 거리 계산
-                    remaining_distance = cubic_spline.s[-1] - s
-
-                    if remaining_distance <= 3.0:  # 3m 이내에서 미리 속도 0 설정
-                        target_vel = 0.0
+                    # 장애물 감지 확인
+                    obstacle_detected = (self.obs1_x < 1e3 or self.obs2_x < 1e3 or 
+                                    self.obs3_x < 1e3 or self.obs4_x < 1e3)
+                    
+                    if obstacle_detected:
+                        target_vel = 2.0  # 장애물 감지 시 2.0 m/s로 제한
                     else:
-                        # 정상 범위 내라면 원래 목표 속도 사용
-                        target_vel = self.target_vel
+                        target_vel = self.target_vel  # 정상 범위 내라면 원래 목표 속도 사용
                 
                 # 다음 iteration을 위해 current_s 업데이트
                 current_s = s
@@ -483,7 +483,7 @@ class Control(Node):
                     xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
                 else:
                     xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
-                xref[3, i] = target_vel
+                xref[3, i] = target_vel  # 조정된 속도 사용
                 xref[4, i] = s 
 
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
@@ -498,12 +498,13 @@ class Control(Node):
         MPC 제어 루프
         """
 
+        # 차량 상태 초기화 확인
         if self.x is None or self.y is None or self.yaw is None or self.v is None:
             self.get_logger().warn("차량 상태가 초기화되지 않았습니다.")
             return
 
         # 현재 모드에 따라 사용할 스플라인 결정
-        if self.mode == 0 or self.mode == 1:  # DRIVE 모드 or PAUSE 모드
+        if self.mode == 0 or self.mode == 1 or self.mode == 4:  # DRIVE 모드 | PAUSE 모드 | DELIVERY 모드 (0, 1, 4)
             current_cubic_spline = self.cubic_spline_global
             if self.xs_global == [] or self.ys_global == []:
                 self.get_logger().warn("Global waypoints 데이터가 없습니다.")
@@ -511,7 +512,8 @@ class Control(Node):
             if current_cubic_spline is None:
                 self.get_logger().warn("Global cubic spline이 초기화되지 않았습니다.")
                 return
-        else:  # MISSION 모드 (2, 3, 4, 5, 6)
+            
+        else:  # PARKING 모드 포함 그 외의 모드 (2, 3, 5, 6)
             current_cubic_spline = self.cubic_spline_local
             if self.xs_local == [] or self.ys_local == []:
                 self.get_logger().warn("Local waypoints 데이터가 없습니다.")
@@ -523,6 +525,8 @@ class Control(Node):
         # 현재 s 값 계산, reference trajectory 계산
         self.calc_current_s(current_cubic_spline)
         xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
+
+        # 초기 상태 및 장애물 정보 설정
         x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
         obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y, self.obs3_x, self.obs3_y, self.obs4_x, self.obs4_y])
 

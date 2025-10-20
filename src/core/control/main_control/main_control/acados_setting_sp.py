@@ -21,7 +21,7 @@ def acados_solver():
     ocp.model = model_ac
 
     # 제약 조건 설정
-    MAX_STEER = np.deg2rad(30.0)  # 최대 조향각 [rad]
+    MAX_STEER = np.deg2rad(27.0)  # 최대 조향각 [rad]
     MAX_SPEED = 6.0  # 최고 속도 [m/s]
     MIN_SPEED = -6.0  # 최저 속도 [m/s] 
     MAX_ACCEL = 10.0  # 최대 가속도 [m/s^2] (마찰력 극복을 위해 증가)
@@ -99,13 +99,13 @@ def acados_solver():
     We_v = W_v   # terminal cost에서 속도 error 가중치
     We_lag = W_lag   # terminal cost에서 lag error 가중치
     We_con = W_con  # terminal cost에서 contour error 가중치
-    We_yaw = W_yaw # heading error 가중치 (terminal cost)
+    We_yaw = W_yaw * 1.5 # heading error 가중치 (terminal cost)
 
     obs1_x = ocp.model.p[15]  # 장애물1 x 좌표
     obs1_y = ocp.model.p[16]  # 장애물1 y 좌표
     obs2_x = ocp.model.p[17]  # 장애물2 x 좌표
     obs2_y = ocp.model.p[18]  # 장애물2 y 좌표
-    obs3_x = ocp.model.p[19]  # 장애물3 x 좌표
+    obs3_x = ocp.model.p[19]  # 장애물3 x 좌표  
     obs3_y = ocp.model.p[20]  # 장애물3 y 좌표
     obs4_x = ocp.model.p[21]  # 장애물4 x 좌표
     obs4_y = ocp.model.p[22]  # 장애물4 y 좌표
@@ -124,7 +124,8 @@ def acados_solver():
                  W_steer_rate * (steering_angle - prev_steering_angle) ** 2 + \
                  W_v * ((vehicle_v - v_ref) ** 2) + \
                  W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
-                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2
+                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
+                 W_yaw * ((vehicle_yaw - yaw_ref) ** 2)
     ocp.model.cost_expr_ext_cost = stage_cost
 
     # terminal cost function
