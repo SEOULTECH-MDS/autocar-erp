@@ -11,10 +11,10 @@ def export_spline_bicycle_model() -> AcadosModel:
 
 
     # constants
-    WB = 1.566
+    # WB = 1.566
+    WB = 1.0  # 휠베이스 [m]
     MASS = 1000.0  # 차량 질량 [kg]
     ROLLING_RESISTANCE = 0.015  # 굴림 저항 계수
-    # AIR_DRAG = 0.3  # 공기 저항 계수s
 
     # states
     x = SX.sym("x")
@@ -40,16 +40,12 @@ def export_spline_bicycle_model() -> AcadosModel:
 
     xdot = vertcat(x_dot, y_dot, yaw_dot, v_dot, s_dot)
 
-    # bicycle model equations with spline parameter and resistance forces
     # 저항력 계산
     rolling_resistance = ROLLING_RESISTANCE * MASS * 9.81  # 굴림 저항력
-    # air_resistance = AIR_DRAG * v**2  # 공기 저항력 (속도 제곱에 비례)
-    # total_resistance = rolling_resistance + air_resistance
-    total_resistance = rolling_resistance # 공기 저항력 고려하지 않은 저항력 
     
     # 실제 가속도 = 입력 가속도 - 저항력/질량
-    effective_a = a - total_resistance / MASS
-    
+    effective_a = a - rolling_resistance / MASS
+
     f_expl = vertcat(
         v * cos(yaw),         # x_dot
         v * sin(yaw),         # y_dot
