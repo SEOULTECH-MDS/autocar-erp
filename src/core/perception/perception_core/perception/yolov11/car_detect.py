@@ -142,12 +142,6 @@ class YoloCarNode(Node):
 
         # 박스가 없으면 화면만 업데이트하고 종료
         if len(result.boxes) == 0:
-            if self.display_ok:
-                try:
-                    cv2.imshow("YOLOv11 Car Detection", frame)
-                    cv2.waitKey(1)
-                except cv2.error:
-                    self.display_ok = False  # GUI 지원 불가능하면 비활성화
             # 빈 PoseArray도 퍼블리시(구독자 동기화용)
             self.pose_pub.publish(pose_array)
             # self.get_logger().info("No car detected.")

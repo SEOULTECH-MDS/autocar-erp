@@ -159,10 +159,6 @@ class YOLO(Node):
                 label = f'{name} {conf:.2f}'
                 plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls_id % len(self.colors)], line_thickness=2)
             
-            # 결과 이미지를 실시간으로 디스플레이
-            # cv2.imshow("YOLO Rubber Detection", cv_image)
-            # cv2.waitKey(1)
-            
             # 결과 이미지를 ROS 이미지 메시지로 변환 후 퍼블리시
             image_message = self.bridge.cv2_to_imgmsg(cv_image, encoding="bgr8")
             image_message.header.stamp = self.get_clock().now().to_msg()

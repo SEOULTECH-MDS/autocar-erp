@@ -35,22 +35,22 @@ class YoloDrumNode(Node):
         super().__init__('obstacle_drum')
 
         # ROS I/O
-        self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
-        # self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
+        # self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
+        self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
         self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/drum', 10)
         self.img_pub = self.create_publisher(Image, '/image_result/drum', 10)
 
         self.bridge = CvBridge()
         
-        # Lane Mission Controller에서 오는 enable 상태
-        self.is_enabled = False
+        # # Lane Mission Controller에서 오는 enable 상태
+        # self.is_enabled = False
         
-        # Enable 신호 구독
-        self.enable_sub = self.create_subscription(
-            Bool,
-            '/mission/obstacle/enable',
-            self.callback_enable,
-            10)
+        # # Enable 신호 구독
+        # self.enable_sub = self.create_subscription(
+        #     Bool,
+        #     '/mission/obstacle/enable',
+        #     self.callback_enable,
+        #     10)
 
         # DISPLAY 유무 확인(헤드리스면 imshow 생략)
         self.display_ok = self._check_display_support()
@@ -84,33 +84,19 @@ class YoloDrumNode(Node):
 
         # self.get_logger().info("YOLO Car Detector node has been started.")
 
-    def callback_enable(self, msg):
-        """Lane Mission Controller에서 오는 enable 신호 콜백"""
-        was_enabled = self.is_enabled
-        self.is_enabled = msg.data
+    # def callback_enable(self, msg):
+    #     """Lane Mission Controller에서 오는 enable 신호 콜백"""
+    #     was_enabled = self.is_enabled
+    #     self.is_enabled = msg.data
         
-        if was_enabled != self.is_enabled:
-            status = "활성화" if self.is_enabled else "비활성화"
-            self.get_logger().info(f'드럼통 탐지 {status}')
+    #     if was_enabled != self.is_enabled:
+    #         status = "활성화" if self.is_enabled else "비활성화"
+    #         self.get_logger().info(f'드럼통 탐지 {status}')
 
     def _check_display_support(self):
         """GUI 디스플레이 지원 여부를 안전하게 확인"""
         # DISPLAY 환경변수가 없으면 GUI 불가
         if not os.environ.get('DISPLAY'):
-            return False
-        
-        # 실제 cv2.imshow가 작동하는지 테스트
-        try:
-            # 더미 이미지로 테스트
-            dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            test_window = "opencv_test_window"
-            cv2.imshow(test_window, dummy_img)
-            cv2.waitKey(1)
-            cv2.destroyWindow(test_window)
-            return True
-        except cv2.error:
-            return False
-        except Exception:
             return False
 
     def callback_img(self, img_msg: Image):
@@ -123,18 +109,18 @@ class YoloDrumNode(Node):
             # self.get_logger().error(f"CV Bridge error: {e}")
             return
 
-        # Enable 상태 확인 - 비활성화 상태에서는 빈 결과 발행
-        if not self.is_enabled:
-            # 빈 PoseArray 발행
-            empty_pose_array = PoseArray()
-            empty_pose_array.header.frame_id = FRAME_ID
-            empty_pose_array.header.stamp = self.get_clock().now().to_msg()
-            self.pose_pub.publish(empty_pose_array)
+        # # Enable 상태 확인 - 비활성화 상태에서는 빈 결과 발행
+        # if not self.is_enabled:
+        #     # 빈 PoseArray 발행
+        #     empty_pose_array = PoseArray()
+        #     empty_pose_array.header.frame_id = FRAME_ID
+        #     empty_pose_array.header.stamp = self.get_clock().now().to_msg()
+        #     self.pose_pub.publish(empty_pose_array)
             
-            # 원본 이미지 발행
-            result_img_msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-            self.img_pub.publish(result_img_msg)
-            return
+        #     # 원본 이미지 발행
+        #     result_img_msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+        #     self.img_pub.publish(result_img_msg)
+        #     return
 
         # 추론 (Ultralytics가 리사이즈/전처리/NMS 내부 처리)
         results = self.model(
@@ -153,13 +139,7 @@ class YoloDrumNode(Node):
 
         # 박스가 없으면 화면만 업데이트하고 종료
         if len(result.boxes) == 0:
-            if self.display_ok:
-                try:
-                    cv2.imshow("YOLOv11 Drum Detection", frame)
-                    cv2.waitKey(1)
-                except cv2.error:
-                    self.display_ok = False  # GUI 지원 불가능하면 비활성화
-            # 빈 PoseArray도 퍼블리시(구독자 동기화용)
+            # 빈 PoseArray도 퍼블리시
             self.pose_pub.publish(pose_array)
             # self.get_logger().info("No drum detected.")
             return

@@ -101,20 +101,6 @@ class YoloPersonNode(Node):
         # DISPLAY 환경변수가 없으면 GUI 불가
         if not os.environ.get('DISPLAY'):
             return False
-        
-        # 실제 cv2.imshow가 작동하는지 테스트
-        try:
-            # 더미 이미지로 테스트
-            dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            test_window = "opencv_test_window"
-            cv2.imshow(test_window, dummy_img)
-            cv2.waitKey(1)
-            cv2.destroyWindow(test_window)
-            return True
-        except cv2.error:
-            return False
-        except Exception:
-            return False
 
     def callback_img(self, img_msg: Image):
         t0 = time.perf_counter()
@@ -161,12 +147,6 @@ class YoloPersonNode(Node):
 
         # 박스가 없으면 화면만 업데이트하고 종료
         if len(result.boxes) == 0:
-            if self.display_ok:
-                try:
-                    cv2.imshow("YOLOv11 Car Detection", frame)
-                    cv2.waitKey(1)
-                except cv2.error:
-                    self.display_ok = False  # GUI 지원 불가능하면 비활성화
             # 빈 PoseArray도 퍼블리시(구독자 동기화용)
             self.pose_pub.publish(pose_array)
             

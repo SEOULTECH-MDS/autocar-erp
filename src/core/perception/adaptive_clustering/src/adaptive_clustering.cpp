@@ -264,7 +264,7 @@ private:
 
         // if (size_z_ > 0.2 && size_x_ <1 && size_y_ <1 && size_z_ <1.5) 
         if (small_object || medium_object || large_object || signboard_object)
-        // if (object || large_object)
+        // if (small_object || medium_object)
         {
           marker_array.markers.push_back(marker);
         }
@@ -289,7 +289,7 @@ private:
 
         // if ( size_z_ > 0.2 && size_x_ <1 && size_y_ <1 && size_z_ <1.5 )
         if (small_object || medium_object || large_object || signboard_object)
-        // if (object || large_object)
+        // if (small_object || medium_object)
         {
           marker_pose.markers.push_back(marker);
           Eigen::Vector4f centroid;
