@@ -41,14 +41,14 @@ mission_mapping:
 
 # 추가 설정
 settings:
-  # enable 신호 발행 주기 (Hz)
-  publish_rate: 10.0
+  # enable 신호 발행 주기 (Hz) - 장애물 탐지 딜레이 개선을 위해 30Hz로 증가
+  publish_rate: 30.0
   
   # 디버그 모드 (상세 로그 출력)
   debug_mode: false
   
-  # 미션 전환시 지연 시간 (초)
-  transition_delay: 0.5
+  # 미션 전환시 지연 시간 (초) - 더 빠른 반응을 위해 감소
+  transition_delay: 0.1
 
 # 주의사항 및 설정 가이드:
 # 1. 다중 구간 설정: 각 미션에 여러 구간을 리스트로 정의 가능

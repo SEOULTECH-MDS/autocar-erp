@@ -37,8 +37,9 @@ class YoloPersonNode(Node):
         # ROS I/O
         self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
         # self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
-        self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/person', 10)
+        # self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/person', 10)
         self.img_pub = self.create_publisher(Image, '/image_result/person', 10)
+        self.person_detected_pub = self.create_publisher(Bool, '/person/detected', 10)
 
         self.bridge = CvBridge()
         
@@ -133,6 +134,11 @@ class YoloPersonNode(Node):
             empty_pose_array.header.stamp = self.get_clock().now().to_msg()
             self.pose_pub.publish(empty_pose_array)
             
+            # 사람 미감지 상태 발행
+            person_detected_msg = Bool()
+            person_detected_msg.data = False
+            self.person_detected_pub.publish(person_detected_msg)
+            
             # 원본 이미지 발행
             result_img_msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
             self.img_pub.publish(result_img_msg)
@@ -163,6 +169,11 @@ class YoloPersonNode(Node):
                     self.display_ok = False  # GUI 지원 불가능하면 비활성화
             # 빈 PoseArray도 퍼블리시(구독자 동기화용)
             self.pose_pub.publish(pose_array)
+            
+            # 사람 미감지 상태 발행
+            person_detected_msg = Bool()
+            person_detected_msg.data = False
+            self.person_detected_pub.publish(person_detected_msg)
             return
 
         # 박스 그리기 & PoseArray 구성 & 로그 출력
@@ -201,6 +212,11 @@ class YoloPersonNode(Node):
 
         # 퍼블리시
         self.pose_pub.publish(pose_array)
+
+        # 사람 감지 상태 발행 (바운딩 박스가 있으면 True)
+        person_detected_msg = Bool()
+        person_detected_msg.data = len(pose_array.poses) > 0
+        self.person_detected_pub.publish(person_detected_msg)
 
         # 실시간 화면 표시
         if self.display_ok:
