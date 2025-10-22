@@ -128,7 +128,7 @@
     <parent link="base_link"/>
     <child link="velodyne"/>
     <!-- Positioned on the center of the roof -->
-    <origin xyz="1.3 0.0 0.42" rpy="0 0 0"/>
+    <origin xyz="1.3 0.0 0.7" rpy="0 0 0"/>
   </joint>
 
   <!-- 4. CAMERA SENSOR (adds TF for 'camera' to match CameraInfo frame_id) -->
