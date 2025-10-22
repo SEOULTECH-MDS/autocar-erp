@@ -24,15 +24,15 @@ class SensorFusion(Node):
     def __init__(self):
         super().__init__('sensor_fusion')
         
-        # # Lane Mission Controller에서 오는 enable 상태
-        # self.is_enabled = False
+        # Lane Mission Controller에서 오는 enable 상태
+        self.is_enabled = False
         
-        # # Enable 신호 구독
-        # self.enable_sub = self.create_subscription(
-        #     Bool,
-        #     '/mission/obstacle/enable',
-        #     self.callback_enable,
-        #     10)
+        # Enable 신호 구독
+        self.enable_sub = self.create_subscription(
+            Bool,
+            '/mission/obstacle/enable',
+            self.callback_enable,
+            10)
         
         self.bridge = CvBridge()
 
@@ -71,19 +71,19 @@ class SensorFusion(Node):
 
         self.get_logger().info('🚀  Camera & 3D LiDAR fusion node started.')
 
-    # def callback_enable(self, msg):
-    #     """Lane Mission Controller에서 오는 enable 신호 콜백"""
-    #     was_enabled = self.is_enabled
-    #     self.is_enabled = msg.data
+    def callback_enable(self, msg):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
         
-    #     if was_enabled != self.is_enabled:
-    #         status = "활성화" if self.is_enabled else "비활성화"
-    #         self.get_logger().info(f'장애물 센서퓨전 {status}')
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'장애물 센서퓨전 {status}')
 
     def callback_fusion(self, cluster_msg, bbox_msg_drum, bbox_msg_car):
-        # # Enable 상태 확인 - 비활성화 상태에서는 처리 건너뛰기
-        # if not self.is_enabled:
-        #     return
+        # Enable 상태 확인 - 비활성화 상태에서는 처리 건너뛰기
+        if not self.is_enabled:
+            return
             
         first_time = time.perf_counter()
 

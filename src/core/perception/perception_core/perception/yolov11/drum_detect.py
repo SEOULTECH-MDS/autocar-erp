@@ -42,15 +42,15 @@ class YoloDrumNode(Node):
 
         self.bridge = CvBridge()
         
-        # # Lane Mission Controller에서 오는 enable 상태
-        # self.is_enabled = False
+        # Lane Mission Controller에서 오는 enable 상태
+        self.is_enabled = False
         
-        # # Enable 신호 구독
-        # self.enable_sub = self.create_subscription(
-        #     Bool,
-        #     '/mission/obstacle/enable',
-        #     self.callback_enable,
-        #     10)
+        # Enable 신호 구독
+        self.enable_sub = self.create_subscription(
+            Bool,
+            '/mission/obstacle/enable',
+            self.callback_enable,
+            10)
 
         # 디바이스/half 설정
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -79,14 +79,14 @@ class YoloDrumNode(Node):
 
         # self.get_logger().info("YOLO Car Detector node has been started.")
 
-    # def callback_enable(self, msg):
-    #     """Lane Mission Controller에서 오는 enable 신호 콜백"""
-    #     was_enabled = self.is_enabled
-    #     self.is_enabled = msg.data
+    def callback_enable(self, msg):
+        """Lane Mission Controller에서 오는 enable 신호 콜백"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
         
-    #     if was_enabled != self.is_enabled:
-    #         status = "활성화" if self.is_enabled else "비활성화"
-    #         self.get_logger().info(f'드럼통 탐지 {status}')
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'드럼통 탐지 {status}')
 
     def callback_img(self, img_msg: Image):
         t0 = time.perf_counter()
@@ -98,18 +98,18 @@ class YoloDrumNode(Node):
             # self.get_logger().error(f"CV Bridge error: {e}")
             return
 
-        # # Enable 상태 확인 - 비활성화 상태에서는 빈 결과 발행
-        # if not self.is_enabled:
-        #     # 빈 PoseArray 발행
-        #     empty_pose_array = PoseArray()
-        #     empty_pose_array.header.frame_id = FRAME_ID
-        #     empty_pose_array.header.stamp = self.get_clock().now().to_msg()
-        #     self.pose_pub.publish(empty_pose_array)
+        # Enable 상태 확인 - 비활성화 상태에서는 빈 결과 발행
+        if not self.is_enabled:
+            # 빈 PoseArray 발행
+            empty_pose_array = PoseArray()
+            empty_pose_array.header.frame_id = FRAME_ID
+            empty_pose_array.header.stamp = self.get_clock().now().to_msg()
+            self.pose_pub.publish(empty_pose_array)
             
-        #     # 원본 이미지 발행
-        #     result_img_msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-        #     self.img_pub.publish(result_img_msg)
-        #     return
+            # 원본 이미지 발행
+            result_img_msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+            self.img_pub.publish(result_img_msg)
+            return
 
         # 추론 (Ultralytics가 리사이즈/전처리/NMS 내부 처리)
         results = self.model(
