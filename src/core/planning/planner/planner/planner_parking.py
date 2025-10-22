@@ -54,18 +54,20 @@ def yaw_to_quaternion(yaw: float):
 
 
 # ==================== 주차 계획 시스템 ====================
-# 이 파일은 자율주행 자동차의 2단계 주차 시스템을 구현합니다.
+# 이 파일은 자율주행 자동차의 3단계 주차 시스템을 구현합니다.
 # - Stage-1: 주차 공간 앞으로 전진 이동
 # - Stage-2: 주차 공간으로 후진 (3개 직선 구간 경로)
+# - Stage-3: 주차 후 탈출 (Stage-2의 역순 경로)
 # 
 # 주요 특징:
 # - 실시간 경로 계획 및 발행
+# - 자동 탈출 기능
 
 
 class PlannerNode(Node):
-    """2단계 주차 계획 시스템 (Stage-1, Stage-2)
+    """3단계 주차 계획 시스템 (Stage-1, Stage-2, Stage-3)
 
-    이 노드는 자율주행 자동차가 주차 공간을 찾아 안전하게 주차하는 경로를 계획합니다.
+    이 노드는 자율주행 자동차가 주차 공간을 찾아 안전하게 주차하고 탈출하는 경로를 계획합니다.
     
     구독 토픽:
         /parking/parking_pose     (PoseStamped)    - 주차 공간 위치 정보
@@ -119,13 +121,25 @@ class PlannerNode(Node):
         # ==================== 스테이지 제어 파라미터 ====================
         self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
         self.declare_parameter('test_mode_immediate_s_curve', False)  # 테스트 모드: 주차 포즈 수신 시 즉시 S자 경로 생성
-        self.declare_parameter('stage_position_tolerance', 1.0)  # 스테이지 완료 위치 허용 오차 [m]
+        self.declare_parameter('stage_position_tolerance', 2.0)  # 스테이지 완료 위치 허용 오차 [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 100.0)    # 스테이지 완료 방향 허용 오차 [도]
         self.declare_parameter('publish_unified_waypoints', False)  # 현재 스테이지만 /waypoints 퍼블리시 여부
         
         # ==================== 주차 완료 파라미터 ====================
-        self.declare_parameter('parking_stop_duration', 3.0)    # 주차 완료 시 정지 시간 [초]
         self.declare_parameter('parking_complete_yaw_tolerance_deg', 5.0)  # 주차 완료 방향 임계치 [도]
+        
+        # ==================== Stage-3 (탈출) 파라미터 ====================
+        self.declare_parameter('auto_exit_after_parking', True)  # 주차 후 자동 탈출 여부
+        self.declare_parameter('exit_delay', 3.0)                # 주차 완료 후 탈출 시작까지 대기 시간 [초]
+        
+        # ==================== 테스트 모드 파라미터 ====================
+        self.declare_parameter('test_mode_enabled', False)       # 테스트 모드 활성화
+        self.declare_parameter('test_vehicle_x', 0.0)            # 테스트용 차량 X 위치 (map 프레임) [m]
+        self.declare_parameter('test_vehicle_y', 0.0)            # 테스트용 차량 Y 위치 (map 프레임) [m]
+        self.declare_parameter('test_vehicle_yaw_deg', 0.0)      # 테스트용 차량 방향 [도]
+        self.declare_parameter('test_parking_x', 0.0)            # 테스트용 주차 X 위치 (map 프레임) [m]
+        self.declare_parameter('test_parking_y', 10.0)           # 테스트용 주차 Y 위치 (map 프레임) [m]
+        self.declare_parameter('test_parking_yaw_deg', 0.0)      # 테스트용 주차 방향 [도]
         
         # ==================== 좌표계 설정 ====================
         self.declare_parameter('frame_id', 'map')  # 기본 좌표계
@@ -140,14 +154,20 @@ class PlannerNode(Node):
         # 각 스테이지별 목표 위치 저장
         self._last_stage1_goal: Optional[PoseStamped] = None  # Stage-1 목표 위치
         self._last_stage2_goal: Optional[PoseStamped] = None  # Stage-2 목표 위치
+        self._last_stage3_goal: Optional[PoseStamped] = None  # Stage-3 목표 위치 (탈출)
+        self._last_stage2_path: Optional[Path] = None         # Stage-2 경로 저장 (역순 탈출용)
         
         # 스테이지 제어
-        self._stage: int = 1                                   # 현재 스테이지 (1, 2)
+        self._stage: int = 1                                   # 현재 스테이지 (1, 2, 3)
+        self._exit_triggered: bool = False                     # 탈출 시작 트리거
         
         # 주차 완료 관련 상태
         self._parking_complete_state: str = 'normal'           # 주차 완료 상태: 'normal', 'stopping', 'completed'
         self._parking_stop_timer: Optional[float] = None       # 주차 정지 타이머 시작 시간
         self._parking_complete_triggered: bool = False         # 주차 완료 트리거 여부
+        
+        # 테스트 모드 상태
+        self._test_mode_published: bool = False                # 테스트 모드 경로 발행 완료 플래그
         
         # ==================== 좌표 변환 설정 ====================
         self._tf_buffer = tf2_ros.Buffer()                      # TF 변환 버퍼
@@ -160,6 +180,11 @@ class PlannerNode(Node):
         self._reverse_flag_pub = self.create_publisher(Bool, '/reverse_flag', 10)  # 후진 모드 플래그
         self._parking_stop_flag_pub = self.create_publisher(Bool, '/parking_stop_flag', 10)  # 주차 완료 3초 정지 플래그
         self._parking_complete_flag_pub = self.create_publisher(Bool, '/parking_complete_flag', 10)  # 주차 종료 플래그
+        
+        # 디버그/테스트용 토픽: 각 스테이지별 경로 시각화
+        self._stage1_path_pub = self.create_publisher(Path, '/parking/stage1_path', 10)
+        self._stage2_path_pub = self.create_publisher(Path, '/parking/stage2_path', 10)
+        self._stage3_path_pub = self.create_publisher(Path, '/parking/stage3_path', 10)
         
         # 초기 플래그 설정
         self._publish_reverse_flag(False)  # Stage-1은 전진
@@ -220,6 +245,190 @@ class PlannerNode(Node):
         msg.data = True
         self._parking_pose_ready_pub.publish(msg)
         self.get_logger().info('주차 포즈 계산 완료 플래그 발행')
+
+    # ==================== 테스트 모드 함수 ====================
+    def _create_test_vehicle_pose(self) -> Odometry:
+        """테스트용 차량 위치 생성 (map 프레임)"""
+        odom = Odometry()
+        odom.header.frame_id = 'map'
+        odom.pose.pose.position.x = float(self.get_parameter('test_vehicle_x').value)
+        odom.pose.pose.position.y = float(self.get_parameter('test_vehicle_y').value)
+        odom.pose.pose.position.z = 0.0
+        yaw_deg = float(self.get_parameter('test_vehicle_yaw_deg').value)
+        odom.pose.pose.orientation = yaw_to_quaternion(math.radians(yaw_deg))
+        return odom
+
+    def _create_test_parking_pose(self) -> PoseStamped:
+        """테스트용 주차 포즈 생성 (map 프레임)"""
+        pose = PoseStamped()
+        pose.header.frame_id = 'map'
+        pose.pose.position.x = float(self.get_parameter('test_parking_x').value)
+        pose.pose.position.y = float(self.get_parameter('test_parking_y').value)
+        pose.pose.position.z = 0.0
+        yaw_deg = float(self.get_parameter('test_parking_yaw_deg').value)
+        pose.pose.orientation = yaw_to_quaternion(math.radians(yaw_deg))
+        return pose
+
+    def _compute_stage1_path_test(self, current_pose: Odometry, goal: PoseStamped) -> Optional[Path]:
+        """테스트 모드용 Stage-1 경로 생성 (TF 변환 스킵)
+        Args:
+            current_pose: 현재 차량 위치 (이미 map 프레임)
+            goal: Stage-1 목표 위치
+        Returns:
+            생성된 경로 또는 None (실패 시)
+        """
+        if current_pose is None:
+            return None
+        
+        # 경로 메시지 생성
+        path = Path()
+        path.header.frame_id = 'map'
+        path.header.stamp = self.get_clock().now().to_msg()
+        
+        # 현재 위치와 목표 위치 (모두 map 프레임)
+        x0 = current_pose.pose.pose.position.x
+        y0 = current_pose.pose.pose.position.y
+        x1 = goal.pose.position.x
+        y1 = goal.pose.position.y
+        
+        # 직선 경로 생성
+        dx = x1 - x0
+        dy = y1 - y0
+        distance = math.hypot(dx, dy)
+        
+        if distance < 1e-6:
+            self.get_logger().warn("[TEST] Stage-1 경로 거리가 너무 작음")
+            return None
+        
+        # 경로 해상도에 따른 점 생성
+        ds = float(self.get_parameter('path_resolution').value)
+        n_points = max(1, int(distance / ds))
+        
+        for i in range(n_points + 1):
+            t = i / n_points
+            px = x0 + t * dx
+            py = y0 + t * dy
+            
+            pose = PoseStamped()
+            pose.header = path.header
+            pose.pose.position.x = px
+            pose.pose.position.y = py
+            pose.pose.position.z = 0.0
+            pose.pose.orientation = yaw_to_quaternion(math.atan2(dy, dx))
+            path.poses.append(pose)
+        
+        self.get_logger().info(f"[TEST] Stage-1 경로 생성 완료: {len(path.poses)}개 점")
+        return path
+
+    def _run_test_mode(self) -> None:
+        """테스트 모드: 파라미터 기반 경로 생성 (한 번만 실행)"""
+        
+        # 한 번만 실행
+        if self._test_mode_published:
+            return
+        
+        self.get_logger().info("=" * 60)
+        self.get_logger().info("테스트 모드 시작")
+        self.get_logger().info("=" * 60)
+        
+        # 1. 테스트 데이터 생성
+        test_vehicle = self._create_test_vehicle_pose()
+        test_parking = self._create_test_parking_pose()
+        
+        self.get_logger().info(f"[TEST] 차량 위치: ({test_vehicle.pose.pose.position.x:.2f}, {test_vehicle.pose.pose.position.y:.2f})")
+        self.get_logger().info(f"[TEST] 주차 위치: ({test_parking.pose.position.x:.2f}, {test_parking.pose.position.y:.2f})")
+        
+        # 2. Stage-1 목표 및 경로 계산
+        self.get_logger().info("-" * 60)
+        self.get_logger().info("[TEST] Stage-1 계산 중...")
+        try:
+            stage1_goal = self._compute_stage1_goal(test_parking)
+            self._last_stage1_goal = stage1_goal
+            self.get_logger().info(f"[TEST] Stage-1 목표: ({stage1_goal.pose.position.x:.2f}, {stage1_goal.pose.position.y:.2f})")
+            
+            stage1_path = self._compute_stage1_path_test(test_vehicle, stage1_goal)
+            if stage1_path:
+                self.get_logger().info(f"[TEST] Stage-1 경로: {len(stage1_path.poses)}개 점 ✅")
+            else:
+                self.get_logger().error("[TEST] Stage-1 경로 생성 실패 ❌")
+        except Exception as e:
+            self.get_logger().error(f"[TEST] Stage-1 계산 오류: {e}")
+            stage1_goal = None
+            stage1_path = None
+        
+        # 3. Stage-2 목표 및 경로 계산
+        self.get_logger().info("-" * 60)
+        self.get_logger().info("[TEST] Stage-2 계산 중...")
+        try:
+            stage2_goal = self._compute_stage2_goal(test_parking)
+            if stage2_goal:
+                self._last_stage2_goal = stage2_goal
+                self.get_logger().info(f"[TEST] Stage-2 목표: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
+                
+                if stage1_goal:
+                    stage2_path = self._compute_stage2_path_oldlogic(stage1_goal, stage2_goal, test_parking)
+                    if stage2_path:
+                        self._last_stage2_path = stage2_path
+                        self.get_logger().info(f"[TEST] Stage-2 경로: {len(stage2_path.poses)}개 점 ✅")
+                    else:
+                        self.get_logger().error("[TEST] Stage-2 경로 생성 실패 ❌")
+                else:
+                    self.get_logger().error("[TEST] Stage-1 목표 없음 - Stage-2 건너뜀")
+                    stage2_path = None
+            else:
+                self.get_logger().error("[TEST] Stage-2 목표 계산 실패 ❌")
+                stage2_path = None
+        except Exception as e:
+            self.get_logger().error(f"[TEST] Stage-2 계산 오류: {e}")
+            stage2_path = None
+        
+        # 4. Stage-3 탈출 경로 계산
+        self.get_logger().info("-" * 60)
+        self.get_logger().info("[TEST] Stage-3 계산 중...")
+        try:
+            stage3_path = self._compute_stage3_exit_path()
+            if stage3_path:
+                self.get_logger().info(f"[TEST] Stage-3 경로: {len(stage3_path.poses)}개 점 ✅")
+            else:
+                self.get_logger().error("[TEST] Stage-3 경로 생성 실패 ❌")
+        except Exception as e:
+            self.get_logger().error(f"[TEST] Stage-3 계산 오류: {e}")
+            stage3_path = None
+        
+        # 5. 경로 발행 (3개 스테이지 모두 시각화)
+        self.get_logger().info("=" * 60)
+        self.get_logger().info("[TEST] 경로 발행 (3개 스테이지 모두)")
+        
+        # Stage-1 경로 발행
+        if stage1_path:
+            self._stage1_path_pub.publish(stage1_path)
+            self.get_logger().info(f"[TEST] /parking/stage1_path 발행: {len(stage1_path.poses)}개 점 (녹색)")
+            
+            # 메인 waypoints도 발행 (제어용)
+            clean_path = self._remove_orientation_from_path(stage1_path)
+            self._waypoints_pub.publish(clean_path)
+            self._publish_points(self._waypoints_points_pub, clean_path)
+        
+        # Stage-2 경로 발행
+        if stage2_path:
+            self._stage2_path_pub.publish(stage2_path)
+            self.get_logger().info(f"[TEST] /parking/stage2_path 발행: {len(stage2_path.poses)}개 점 (파란색)")
+        
+        # Stage-3 경로 발행
+        if stage3_path:
+            self._stage3_path_pub.publish(stage3_path)
+            self.get_logger().info(f"[TEST] /parking/stage3_path 발행: {len(stage3_path.poses)}개 점 (빨간색)")
+        
+        self.get_logger().info("=" * 60)
+        self.get_logger().info("[TEST] 테스트 모드 완료")
+        self.get_logger().info("[TEST] RViz2에서 3개 경로 모두 확인 가능:")
+        self.get_logger().info("[TEST]   - /parking/stage1_path (전진 접근)")
+        self.get_logger().info("[TEST]   - /parking/stage2_path (후진 주차)")
+        self.get_logger().info("[TEST]   - /parking/stage3_path (전진 탈출)")
+        self.get_logger().info("=" * 60)
+        
+        # 한 번만 실행
+        self._test_mode_published = True
 
     # ==================== 핵심 로직 ====================
     def _on_timer(self) -> None:
@@ -362,14 +571,30 @@ class PlannerNode(Node):
                 # Stage-1 도착 시 후진 모드 활성화
                 self._publish_reverse_flag(True)
         
-        # Stage-2 완료 시 주차 완료 (Stage-3 없음)
+        # Stage-2 완료 시 Stage-3로 전환 (탈출 시작)
         elif self._stage == 2 and self._last_stage2_goal is not None:
             distance = math.hypot(
                 current_pos.x - self._last_stage2_goal.pose.position.x,
                 current_pos.y - self._last_stage2_goal.pose.position.y
             )
             if distance < tolerance:
-                self.get_logger().info(f"Stage-2 완료 - 주차 완료 (거리={distance:.2f}m < {tolerance}m)")
+                # 주차 도착 - 3초 정지 후 탈출 시작
+                self.get_logger().info(f"Stage-2 완료 - 주차 도착 (거리={distance:.2f}m < {tolerance}m)")
+                # Stage-3 전환은 _check_parking_completion에서 처리
+        
+        # Stage-3 완료 시 즉시 주차 미션 완료
+        elif self._stage == 3 and self._last_stage3_goal is not None:
+            distance = math.hypot(
+                current_pos.x - self._last_stage3_goal.pose.position.x,
+                current_pos.y - self._last_stage3_goal.pose.position.y
+            )
+            if distance < tolerance:
+                self.get_logger().info(f"Stage-3 완료 - 탈출 완료 (거리={distance:.2f}m < {tolerance}m)")
+                # 즉시 주차 완료 플래그 발행
+                complete_msg = Bool()
+                complete_msg.data = True
+                self._parking_complete_flag_pub.publish(complete_msg)
+                self.get_logger().info("✅ 주차 미션 완료 - 탈출 완료")
         
         return self._stage != old_stage
 
@@ -431,39 +656,56 @@ class PlannerNode(Node):
         stop_msg.data = True
         self._parking_stop_flag_pub.publish(stop_msg)
         
-        stop_duration = float(self.get_parameter('parking_stop_duration').value)
-        self.get_logger().info(f"🛑 주차 완료 감지 - {stop_duration}초 정지 시작")
+        exit_delay = float(self.get_parameter('exit_delay').value)
+        self.get_logger().info(f"🛑 주차 도착 감지 - {exit_delay}초 정지 후 탈출 시작")
 
     def _check_parking_stop_timer(self) -> None:
-        """주차 정지 타이머 확인 및 완료 처리"""
+        """주차 정지 타이머 확인 및 Stage-3 전환 또는 완료 처리"""
         if self._parking_complete_state != 'stopping' or self._parking_stop_timer is None:
             return
             
         current_time = self.get_clock().now().nanoseconds / 1e9
         elapsed_time = current_time - self._parking_stop_timer
-        stop_duration = float(self.get_parameter('parking_stop_duration').value)
+        
+        # Stage-2에서만 exit_delay 사용 (Stage-3는 즉시 완료)
+        stop_duration = float(self.get_parameter('exit_delay').value)
         
         if elapsed_time >= stop_duration:
-            # 3초 경과 - 주차 종료 플래그 발행
-            self._parking_complete_state = 'completed'
-            
-            # 주차 종료 플래그 발행
-            complete_msg = Bool()
-            complete_msg.data = True
-            self._parking_complete_flag_pub.publish(complete_msg)
-            
-            # 정지 플래그 해제
-            stop_msg = Bool()
-            stop_msg.data = False
-            self._parking_stop_flag_pub.publish(stop_msg)
-            
-            self.get_logger().info("✅ 주차 미션 완료 - 주차 종료 플래그 발행")
+            # Stage-2 정지 완료 - Stage-3 (탈출)로 전환
+            auto_exit = bool(self.get_parameter('auto_exit_after_parking').value)
+            if auto_exit:
+                self._stage = 3
+                self._exit_triggered = True
+                self._parking_complete_state = 'normal'
+                self._parking_stop_timer = None
+                
+                # 전진 모드로 전환
+                self._publish_reverse_flag(False)
+                
+                # 정지 플래그 해제
+                stop_msg = Bool()
+                stop_msg.data = False
+                self._parking_stop_flag_pub.publish(stop_msg)
+                
+                self.get_logger().info("🚀 Stage-2 정지 완료 - Stage-3 탈출 시작")
+            else:
+                # 자동 탈출 비활성화 - 주차 완료
+                self._parking_complete_state = 'completed'
+                complete_msg = Bool()
+                complete_msg.data = True
+                self._parking_complete_flag_pub.publish(complete_msg)
+                self.get_logger().info("✅ 주차 미션 완료 (자동 탈출 비활성화)")
 
     def _maybe_publish_goal(self) -> None:
         """현재 스테이지의 경로를 계산하고 통합 waypoint로 발행
         - 주차 관련 정보가 모두 준비되면 경로 생성
         - 현재 스테이지에 맞는 경로만 계산하여 발행
         """
+        # 테스트 모드 분기
+        if bool(self.get_parameter('test_mode_enabled').value):
+            self._run_test_mode()
+            return
+        
         # 주차 구역에 있는지 확인
         if not self._is_in_parking_zone():
             return
@@ -557,12 +799,29 @@ class PlannerNode(Node):
                     self.get_logger().error("❌ oldlogic_use가 비활성화됨 - Stage-2 경로 생성 불가")
                 
                 if current_path is not None:
+                    # Stage-2 경로를 저장 (Stage-3 탈출용)
+                    self._last_stage2_path = current_path
                     self.get_logger().info(f"📤 Stage-2 경로 발행 완료: {len(current_path.poses)}개 점")
                 else:
                     self.get_logger().error("❌ Stage-2 모든 경로 생성 실패")
             else:
                 self.get_logger().error("❌ Stage-2 목표 계산 실패")
             self.get_logger().info("=== Stage-2 디버그 종료 ===")
+        
+        elif self._stage == 3:
+            # Stage-3 경로 (탈출)
+            self.get_logger().info("=== Stage-3 탈출 경로 시작 ===")
+            try:
+                current_path = self._compute_stage3_exit_path()
+                if current_path is not None:
+                    self.get_logger().info(f"✅ Stage-3 탈출 경로 생성: {len(current_path.poses)}개 점")
+                else:
+                    self.get_logger().error("❌ Stage-3 탈출 경로 생성 실패")
+            except Exception as e:
+                self.get_logger().error(f"❌ Stage-3 경로 계산 실패: {e}")
+                import traceback
+                self.get_logger().error(f"상세 오류: {traceback.format_exc()}")
+            self.get_logger().info("=== Stage-3 탈출 경로 종료 ===")
         
         # 현재 스테이지 경로를 메인 waypoints 토픽으로 발행 (방향 정보 제거)
         if current_path is not None:
@@ -735,6 +994,42 @@ class PlannerNode(Node):
         
         self.get_logger().info("✅ Stage-2 목표 계산 성공")
         return goal
+
+    def _compute_stage3_exit_path(self) -> Optional[Path]:
+        """Stage-3 탈출 경로 생성 (Stage-2 경로의 역순)
+        Returns:
+            탈출 경로 또는 None (실패 시)
+        """
+        if self._last_stage2_path is None:
+            self.get_logger().error("❌ Stage-2 경로가 저장되지 않음")
+            return None
+        
+        if self._last_stage1_goal is None:
+            self.get_logger().error("❌ Stage-1 목표가 없음")
+            return None
+        
+        # Stage-3 목표 설정 (Stage-1 골 위치)
+        self._last_stage3_goal = self._last_stage1_goal
+        
+        # Stage-2 경로를 역순으로 복사
+        exit_path = Path()
+        exit_path.header = self._last_stage2_path.header
+        
+        # 역순으로 점 추가하고 방향을 180도 회전 (후진 → 전진)
+        for pose in reversed(self._last_stage2_path.poses):
+            exit_pose = PoseStamped()
+            exit_pose.header = pose.header
+            exit_pose.pose.position = pose.pose.position
+            
+            # 방향을 180도 회전
+            current_yaw = quaternion_to_yaw(pose.pose.orientation)
+            new_yaw = wrap_to_pi(current_yaw + math.pi)
+            exit_pose.pose.orientation = yaw_to_quaternion(new_yaw)
+            
+            exit_path.poses.append(exit_pose)
+        
+        self.get_logger().info(f"✅ Stage-3 탈출 경로 생성: {len(exit_path.poses)}개 점 (Stage-2 역순)")
+        return exit_path
 
     def _compute_stage2_path_oldlogic(self,
                                       stage1_goal: PoseStamped,

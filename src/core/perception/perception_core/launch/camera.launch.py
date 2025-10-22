@@ -18,7 +18,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        Node( # 뒷쪽 카메라: 신호등
+        Node( # 전방 사선 카메라: 신호등
             package='perception',
             executable='camera_trafficlight',
             name='camera_trafficlight',

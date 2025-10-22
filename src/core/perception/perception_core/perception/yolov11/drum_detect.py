@@ -35,8 +35,8 @@ class YoloDrumNode(Node):
         super().__init__('obstacle_drum')
 
         # ROS I/O
-        self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
-        # self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
+        # self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
+        self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
         self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/drum', 10)
         self.img_pub = self.create_publisher(Image, '/image_result/drum', 10)
 
@@ -51,11 +51,6 @@ class YoloDrumNode(Node):
             '/mission/obstacle/enable',
             self.callback_enable,
             10)
-
-        # DISPLAY 유무 확인(헤드리스면 imshow 생략)
-        self.display_ok = self._check_display_support()
-        if not self.display_ok:
-            self.get_logger().warn("GUI 지원이 없어 화면 표시(cv2.imshow)를 생략합니다.")
 
         # 디바이스/half 설정
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -92,26 +87,6 @@ class YoloDrumNode(Node):
         if was_enabled != self.is_enabled:
             status = "활성화" if self.is_enabled else "비활성화"
             self.get_logger().info(f'드럼통 탐지 {status}')
-
-    def _check_display_support(self):
-        """GUI 디스플레이 지원 여부를 안전하게 확인"""
-        # DISPLAY 환경변수가 없으면 GUI 불가
-        if not os.environ.get('DISPLAY'):
-            return False
-        
-        # 실제 cv2.imshow가 작동하는지 테스트
-        try:
-            # 더미 이미지로 테스트
-            dummy_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            test_window = "opencv_test_window"
-            cv2.imshow(test_window, dummy_img)
-            cv2.waitKey(1)
-            cv2.destroyWindow(test_window)
-            return True
-        except cv2.error:
-            return False
-        except Exception:
-            return False
 
     def callback_img(self, img_msg: Image):
         t0 = time.perf_counter()
@@ -153,13 +128,7 @@ class YoloDrumNode(Node):
 
         # 박스가 없으면 화면만 업데이트하고 종료
         if len(result.boxes) == 0:
-            if self.display_ok:
-                try:
-                    cv2.imshow("YOLOv11 Drum Detection", frame)
-                    cv2.waitKey(1)
-                except cv2.error:
-                    self.display_ok = False  # GUI 지원 불가능하면 비활성화
-            # 빈 PoseArray도 퍼블리시(구독자 동기화용)
+            # 빈 PoseArray도 퍼블리시
             self.pose_pub.publish(pose_array)
             # self.get_logger().info("No drum detected.")
             return
@@ -202,14 +171,6 @@ class YoloDrumNode(Node):
 
         # 퍼블리시
         self.pose_pub.publish(pose_array)
-
-        # 실시간 화면 표시
-        if self.display_ok:
-            try:
-                cv2.imshow("YOLOv11 Drum Detection", frame)
-                cv2.waitKey(1)
-            except cv2.error:
-                self.display_ok = False  # GUI 지원 불가능하면 비활성화
         
         # 결과 이미지 퍼블리시
         try:
@@ -230,12 +191,6 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         node.get_logger().info("Keyboard Interrupt (SIGINT)")
-    finally:
-        if node.display_ok:
-            try:
-                cv2.destroyAllWindows()
-            except cv2.error:
-                pass  # GUI 지원이 없으면 무시
         node.destroy_node()
         rclpy.shutdown()
 

@@ -16,8 +16,8 @@ def generate_launch_description():
         # Lane Mission Controller (미션별 활성화 제어)
         Node(
             package='perception',
-            executable='mission_controller',
-            name='mission_controller',
+            executable='preliminary_controller',
+            name='preliminary_controller',
             output='screen',
             parameters=[
                 {'use_sim_time': LaunchConfiguration('use_sim_time')},
@@ -25,39 +25,17 @@ def generate_launch_description():
             ]
         ),
 
-        # 신호등 탐지
-        Node(
-            package='perception',
-            executable='trafficlight',
-            name='trafficlight',
-            output='screen'
-        ),
-
-        # 배달 표지판 탐지
-        Node(
-            package='perception',
-            executable='sign',
-            name='sign',
-            output='screen'
-        ),
-        Node(
-            package='perception',
-            executable='sensor_fusion_sign',
-            name='sensor_fusion_sign',
-            output='screen'
-        ),
-
         # 장애물 탐지
+        Node( # 사람 인식
+            package='perception',
+            executable='person_detect',
+            name='person_detect',
+            output='screen'
+        ),
         Node( # 드럼통 인식
             package='perception',
             executable='drum_detect',
             name='drum_detect',
-            output='screen'
-        ),
-        Node( # 차 인식
-            package='perception',
-            executable='car_detect',
-            name='car_detect',
             output='screen'
         ),
         Node(
@@ -67,7 +45,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # 주차 라바콘 탐지
+        # 주차 및 유턴 라바콘 탐지
         Node(
             package='perception',
             executable='rubber_detect',

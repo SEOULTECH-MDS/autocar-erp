@@ -49,7 +49,7 @@ class DeliveryPlanner(Node):
         super().__init__('delivery_planner')
 
         # 파라미터 선언
-        self.declare_parameter('use_velocity_check', False)  # 속도 체크 사용 여부
+        self.declare_parameter('use_velocity_check', True)  # 속도 체크 사용 여부
         self.declare_parameter('velocity_threshold', 0.01)   # 정지 판단 속도 임계값 (m/s)
         
         # QoS 프로파일 설정

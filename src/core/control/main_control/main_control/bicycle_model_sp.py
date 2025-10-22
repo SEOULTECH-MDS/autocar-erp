@@ -31,6 +31,12 @@ def export_spline_bicycle_model() -> AcadosModel:
 
     controls = vertcat(delta, a)
 
+    # controls (속도 지연 모델용)
+    # delta = SX.sym("delta") # steering angle
+    # v_cmd = SX.sym("v_cmd") # commanded velocity
+    # tau = 0.5
+    # controls = vertcat(delta, v_cmd)
+
     # dynamics
     x_dot = SX.sym("x_dot")
     y_dot = SX.sym("y_dot")
@@ -46,6 +52,7 @@ def export_spline_bicycle_model() -> AcadosModel:
     # 실제 가속도 = 입력 가속도 - 저항력/질량
     effective_a = a - rolling_resistance / MASS
 
+    # simplified bicycle model (가속도 입력 모델)
     f_expl = vertcat(
         v * cos(yaw),         # x_dot
         v * sin(yaw),         # y_dot
@@ -53,6 +60,19 @@ def export_spline_bicycle_model() -> AcadosModel:
         effective_a,  # v_dot (저항력 고려)
         v  # s_dot (spline parameter changes with speed)
     )
+
+    # simplified bicycle model (속도 지연 모델 )
+    '''
+    이 모델을 사용할 경우 제어 입력은 delta, v_cmd가 되고, mpc loop에서 속도 입력을 u_opt[0, 1]로 주어야 함.
+    '''
+    # f_expl = vertcat(
+    #     v * cos(yaw),         # x_dot
+    #     v * sin(yaw),         # y_dot
+    #     v / WB * tan(delta),  # yaw_dot
+    #     (v_cmd - v) / tau,  # v_dot 
+    #     v  # s_dot (spline parameter changes with speed)
+    # )
+
 
     f_impl = xdot - f_expl
 

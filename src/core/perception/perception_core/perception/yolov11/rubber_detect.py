@@ -45,6 +45,7 @@ class YOLO(Node):
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
         self.subscription = self.create_subscription(Image, '/camera_side/image_raw', self.image_callback, 10)
+        self.subscription = self.create_subscription(Image, '/camera_front/image_raw', self.image_callback, 10)
         # self.subscription = self.create_subscription(Image, '/usb_cam_1/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 
@@ -157,10 +158,6 @@ class YOLO(Node):
                 name = safe_name(self.names, cls_id)
                 label = f'{name} {conf:.2f}'
                 plot_one_box([xmin, ymin, xmax, ymax], cv_image, label=label, color=self.colors[cls_id % len(self.colors)], line_thickness=2)
-            
-            # 결과 이미지를 실시간으로 디스플레이
-            # cv2.imshow("YOLO Rubber Detection", cv_image)
-            # cv2.waitKey(1)
             
             # 결과 이미지를 ROS 이미지 메시지로 변환 후 퍼블리시
             image_message = self.bridge.cv2_to_imgmsg(cv_image, encoding="bgr8")

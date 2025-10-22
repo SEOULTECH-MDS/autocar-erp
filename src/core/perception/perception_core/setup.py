@@ -72,6 +72,7 @@ setup(
 
             # Lane Mission Controller (미션별 활성화 제어)
             'mission_controller = perception.mission_controller:main',
+            'preliminary_controller = perception.preliminary_controller:main',
         ],
     },
 )
