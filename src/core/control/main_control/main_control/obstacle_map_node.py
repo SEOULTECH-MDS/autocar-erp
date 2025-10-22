@@ -10,7 +10,7 @@ import numpy as np
 
 from geometry_msgs.msg import PointStamped, Point
 from visualization_msgs.msg import Marker, MarkerArray
-from std_msgs.msg import int64, Bool
+from std_msgs.msg import Bool
 
 
 class ObstacleMap(Node):

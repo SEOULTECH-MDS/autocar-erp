@@ -31,9 +31,12 @@ mission_mapping:
   obstacle:
     - start: 7    # 대형 정적장애물
       end: 7      
-    - start: 19    # 소형 정적장애물
-      end: 19
-    
+    # - start: 19    # 소형 정적장애물
+    #   end: 19
+    - start: 5    # 소형 정적장애물 (아름관 우측 직선 구간)
+      end: 5
+
+
   # 라바콘 탐지 미션 (주차 구간)
   rubber:
     - start: 21

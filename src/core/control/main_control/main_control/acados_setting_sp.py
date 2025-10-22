@@ -110,6 +110,7 @@ def acados_solver():
     obs4_x = ocp.model.p[21]  # 장애물4 x 좌표
     obs4_y = ocp.model.p[22]  # 장애물4 y 좌표
     r_safe = ocp.model.p[23]  # 장애물 회피 반경
+    # TODO: r_safe를 고정값 써야할듯
 
     vehicle_x = ocp.model.x[0]  # 차량 x 좌표
     vehicle_y = ocp.model.x[1]  # 차량 y 좌표
@@ -151,7 +152,8 @@ def acados_solver():
     distance3 = (vehicle_x - obs3_x)**2 + (vehicle_y - obs3_y)**2
     distance4 = (vehicle_x - obs4_x)**2 + (vehicle_y - obs4_y)**2
     ocp.model.con_h_expr = vertcat(distance1, distance2, distance3, distance4)
-    ocp.constraints.lh = np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2])  
+    ocp.constraints.lh = np.array([1.5**2, 1.5**2, 1.5**2, 1.5**2])
+    # ocp.constraints.lh = np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2])  
     ocp.constraints.uh = np.array([1e10, 1e10, 1e10, 1e10]) 
 
     # Solver 옵션 설정 
