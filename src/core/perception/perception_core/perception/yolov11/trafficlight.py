@@ -139,8 +139,8 @@ class YOLOv11(Node):
             img_res_msg = self.bridge.cv2_to_imgmsg(cap, encoding="bgr8")
 
         # OpenCV 창에 실시간 이미지 표시
-        cv2.imshow("Traffic Light Detection", cap if not self.yolo_mode else img_res)
-        cv2.waitKey(1)
+        # cv2.imshow("Traffic Light Detection", cap if not self.yolo_mode else img_res)
+        # cv2.waitKey(1)
 
         self.img_res_pub.publish(img_res_msg)
 

@@ -165,12 +165,12 @@ class YOLOv11(Node):
 
                 poses.poses.append(pose)
             self.boungingboxes_pub.publish(poses)
-            cv2.imshow("Real-time Result", result)
+            # cv2.imshow("Real-time Result", result)
         else:
             image_message = bridge.cv2_to_imgmsg(cap, encoding="bgr8")
-            cv2.imshow("Real-time Result", cap) 
+            # cv2.imshow("Real-time Result", cap) 
 
-        cv2.waitKey(1)
+        # cv2.waitKey(1)
 
         # header stamp 갱신
         image_message.header.stamp = self.get_clock().now().to_msg()
