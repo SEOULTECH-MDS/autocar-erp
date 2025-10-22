@@ -120,7 +120,6 @@ class PlannerNode(Node):
         
         # ==================== 스테이지 제어 파라미터 ====================
         self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
-        self.declare_parameter('test_mode_immediate_s_curve', False)  # 테스트 모드: 주차 포즈 수신 시 즉시 S자 경로 생성
         self.declare_parameter('stage_position_tolerance', 2.0)  # 스테이지 완료 위치 허용 오차 [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 100.0)    # 스테이지 완료 방향 허용 오차 [도]
         self.declare_parameter('publish_unified_waypoints', False)  # 현재 스테이지만 /waypoints 퍼블리시 여부
@@ -168,6 +167,11 @@ class PlannerNode(Node):
         
         # 테스트 모드 상태
         self._test_mode_published: bool = False                # 테스트 모드 경로 발행 완료 플래그
+        
+        # 로그 중복 방지용 상태 추적 (상태 변경 감지)
+        self._last_logged_stage: int = -1                      # 마지막 로그 출력 시 스테이지
+        self._last_logged_path_length: int = -1                # 마지막 로그 출력 시 경로 길이
+        self._last_logged_parking_state: str = ''              # 마지막 로그 출력 시 주차 상태
         
         # ==================== 좌표 변환 설정 ====================
         self._tf_buffer = tf2_ros.Buffer()                      # TF 변환 버퍼
@@ -348,9 +352,9 @@ class PlannerNode(Node):
             
             stage1_path = self._compute_stage1_path_test(test_vehicle, stage1_goal)
             if stage1_path:
-                self.get_logger().info(f"[TEST] Stage-1 경로: {len(stage1_path.poses)}개 점 ✅")
+                self.get_logger().info(f"[TEST] Stage-1 경로: {len(stage1_path.poses)}개 점")
             else:
-                self.get_logger().error("[TEST] Stage-1 경로 생성 실패 ❌")
+                self.get_logger().error("[TEST] Stage-1 경로 생성 실패")
         except Exception as e:
             self.get_logger().error(f"[TEST] Stage-1 계산 오류: {e}")
             stage1_goal = None
@@ -369,14 +373,14 @@ class PlannerNode(Node):
                     stage2_path = self._compute_stage2_path_oldlogic(stage1_goal, stage2_goal, test_parking)
                     if stage2_path:
                         self._last_stage2_path = stage2_path
-                        self.get_logger().info(f"[TEST] Stage-2 경로: {len(stage2_path.poses)}개 점 ✅")
+                        self.get_logger().info(f"[TEST] Stage-2 경로: {len(stage2_path.poses)}개 점")
                     else:
-                        self.get_logger().error("[TEST] Stage-2 경로 생성 실패 ❌")
+                        self.get_logger().error("[TEST] Stage-2 경로 생성 실패")
                 else:
                     self.get_logger().error("[TEST] Stage-1 목표 없음 - Stage-2 건너뜀")
                     stage2_path = None
             else:
-                self.get_logger().error("[TEST] Stage-2 목표 계산 실패 ❌")
+                self.get_logger().error("[TEST] Stage-2 목표 계산 실패")
                 stage2_path = None
         except Exception as e:
             self.get_logger().error(f"[TEST] Stage-2 계산 오류: {e}")
@@ -388,9 +392,9 @@ class PlannerNode(Node):
         try:
             stage3_path = self._compute_stage3_exit_path()
             if stage3_path:
-                self.get_logger().info(f"[TEST] Stage-3 경로: {len(stage3_path.poses)}개 점 ✅")
+                self.get_logger().info(f"[TEST] Stage-3 경로: {len(stage3_path.poses)}개 점")
             else:
-                self.get_logger().error("[TEST] Stage-3 경로 생성 실패 ❌")
+                self.get_logger().error("[TEST] Stage-3 경로 생성 실패")
         except Exception as e:
             self.get_logger().error(f"[TEST] Stage-3 계산 오류: {e}")
             stage3_path = None
@@ -431,6 +435,35 @@ class PlannerNode(Node):
         self._test_mode_published = True
 
     # ==================== 핵심 로직 ====================
+    def _log_on_change(self, level: str, message: str, state_key: str = None) -> None:
+        """상태 변경 시에만 로그 출력 (중복 로그 방지)
+        
+        Args:
+            level: 'info', 'warn', 'error', 'debug'
+            message: 로그 메시지
+            state_key: 상태 추적 키 (None이면 항상 출력)
+        """
+        # 상태 키가 없으면 항상 출력 (WARN/ERROR용)
+        if state_key is None:
+            if level == 'info':
+                self.get_logger().info(message)
+            elif level == 'warn':
+                self.get_logger().warn(message)
+            elif level == 'error':
+                self.get_logger().error(message)
+            elif level == 'debug':
+                self.get_logger().debug(message)
+            return
+        
+        # 상태 변경 시에만 출력
+        current_state = f"{self._stage}_{state_key}"
+        if current_state != self._last_logged_parking_state:
+            if level == 'info':
+                self.get_logger().info(message)
+            elif level == 'debug':
+                self.get_logger().debug(message)
+            self._last_logged_parking_state = current_state
+
     def _on_timer(self) -> None:
         """주기적으로 호출되는 메인 루프 (0.2초마다)
         주차 경로 생성 및 발행
@@ -438,57 +471,49 @@ class PlannerNode(Node):
         self._maybe_publish_goal()
 
     def _transform_utm_to_map(self, utm_pose: Odometry) -> Optional[PoseStamped]:
-        """UTM 좌표를 map 프레임으로 변환
+        """UTM 좌표(world 프레임)를 map 프레임으로 변환
+        
+        TF2 표준 transform 함수를 사용하여 좌표계 변환을 수행합니다.
+        수동 계산 대신 ROS2 TF2 라이브러리가 자동으로 올바른 변환을 처리합니다.
+        
+        변환 과정:
+            world (UTM 좌표계) → map (로컬 좌표계)
+            - world: GPS 기반 UTM 절대 좌표계 (예: 302150m, 4164350m)
+            - map: 지도 원점 기준 상대 좌표계 (예: 10m, 20m)
+        
         Args:
-            utm_pose: UTM 좌표계의 pose (world 프레임)
+            utm_pose: UTM 좌표계의 pose (world 프레임, /autocar/location 토픽)
+            
         Returns:
             map 프레임의 PoseStamped 또는 None (변환 실패 시)
         """
         try:
-            # 1. world → map static transform 조회 (map 원점의 UTM 좌표)
-            try:
-                world_to_map = self._tf_buffer.lookup_transform(
-                    'map',
-                    'world',
-                    rclpy.time.Time(),
-                    timeout=rclpy.duration.Duration(seconds=1.0)
-                )
-                self.get_logger().debug(f"World→Map static transform 조회 성공")
-            except Exception as e:
-                self.get_logger().error(f"World→Map transform 조회 실패: {e}")
-                return None
-
-            # 2. UTM 좌표에서 map 원점을 빼서 map 프레임 상대 좌표 계산
-            map_origin_x = world_to_map.transform.translation.x
-            map_origin_y = world_to_map.transform.translation.y
+            # 1. Odometry를 PoseStamped로 변환
+            utm_pose_stamped = PoseStamped()
+            utm_pose_stamped.header = utm_pose.header
+            utm_pose_stamped.header.frame_id = 'world'  # UTM 좌표계 명시
+            utm_pose_stamped.pose = utm_pose.pose.pose
             
-            vehicle_utm_x = utm_pose.pose.pose.position.x
-            vehicle_utm_y = utm_pose.pose.pose.position.y
+            # 2. TF2 표준 변환 함수 사용
+            # tf_buffer.transform()이 자동으로 world→map 변환을 계산
+            # 내부적으로 static transform(world→map)을 조회하여 좌표 변환 수행
+            map_pose = self._tf_buffer.transform(
+                utm_pose_stamped,
+                'map',  # 목표 프레임
+                timeout=rclpy.duration.Duration(seconds=1.0)
+            )
             
-            vehicle_map_x = vehicle_utm_x + map_origin_x
-            vehicle_map_y = vehicle_utm_y + map_origin_y
-
-            # 3. map 프레임의 PoseStamped 생성
-            map_pose = PoseStamped()
-            map_pose.header = utm_pose.header
-            map_pose.header.frame_id = 'map'
-            map_pose.pose.position.x = vehicle_map_x
-            map_pose.pose.position.y = vehicle_map_y
-            map_pose.pose.position.z = 0.0
-            map_pose.pose.orientation = utm_pose.pose.pose.orientation
-
             # 디버깅용 로그
             self.get_logger().debug(
-                f"\n[UTM→Map 변환]"
-                f"\n  UTM 좌표: ({vehicle_utm_x:.2f}, {vehicle_utm_y:.2f})"
-                f"\n  Map 원점(UTM): ({map_origin_x:.2f}, {map_origin_y:.2f})"
-                f"\n  Map 좌표: ({vehicle_map_x:.2f}, {vehicle_map_y:.2f})"
+                f"\n[UTM→Map 변환 (TF2 자동)]"
+                f"\n  World(UTM) 좌표: ({utm_pose_stamped.pose.position.x:.2f}, {utm_pose_stamped.pose.position.y:.2f})"
+                f"\n  Map 좌표: ({map_pose.pose.position.x:.2f}, {map_pose.pose.position.y:.2f})"
             )
 
             return map_pose
 
         except Exception as e:
-            self.get_logger().error(f"UTM→Map 변환 중 예상치 못한 오류 발생: {e}")
+            self.get_logger().error(f"UTM→Map 변환 실패: {e}")
             return None
 
 
@@ -594,7 +619,7 @@ class PlannerNode(Node):
                 complete_msg = Bool()
                 complete_msg.data = True
                 self._parking_complete_flag_pub.publish(complete_msg)
-                self.get_logger().info("✅ 주차 미션 완료 - 탈출 완료")
+                self.get_logger().info("주차 미션 완료 - 탈출 완료")
         
         return self._stage != old_stage
 
@@ -657,7 +682,7 @@ class PlannerNode(Node):
         self._parking_stop_flag_pub.publish(stop_msg)
         
         exit_delay = float(self.get_parameter('exit_delay').value)
-        self.get_logger().info(f"🛑 주차 도착 감지 - {exit_delay}초 정지 후 탈출 시작")
+        self.get_logger().info(f"주차 도착 감지 - {exit_delay}초 정지 후 탈출 시작")
 
     def _check_parking_stop_timer(self) -> None:
         """주차 정지 타이머 확인 및 Stage-3 전환 또는 완료 처리"""
@@ -687,14 +712,14 @@ class PlannerNode(Node):
                 stop_msg.data = False
                 self._parking_stop_flag_pub.publish(stop_msg)
                 
-                self.get_logger().info("🚀 Stage-2 정지 완료 - Stage-3 탈출 시작")
+                self.get_logger().info("Stage-2 정지 완료 - Stage-3 탈출 시작")
             else:
                 # 자동 탈출 비활성화 - 주차 완료
                 self._parking_complete_state = 'completed'
                 complete_msg = Bool()
                 complete_msg.data = True
                 self._parking_complete_flag_pub.publish(complete_msg)
-                self.get_logger().info("✅ 주차 미션 완료 (자동 탈출 비활성화)")
+                self.get_logger().info("주차 미션 완료 (자동 탈출 비활성화)")
 
     def _maybe_publish_goal(self) -> None:
         """현재 스테이지의 경로를 계산하고 통합 waypoint로 발행
@@ -734,17 +759,10 @@ class PlannerNode(Node):
             self.get_logger().warn(f'Stage-1 목표 계산 실패: {e}')
             return
 
-        # 테스트 모드: 주차 포즈 수신 시 즉시 S자 경로 생성
-        test_mode = bool(self.get_parameter('test_mode_immediate_s_curve').value)
-        if test_mode:
-            self.get_logger().info("테스트 모드 활성화 - 즉시 S자 경로 생성")
-            self._stage = 2  # 강제로 Stage-2로 설정
-            self._publish_reverse_flag(True)  # 후진 모드 활성화
-        else:
-            # 자동 스테이지 전환 체크
-            stage_advanced = self._check_stage_advancement()
-            if stage_advanced:
-                self.get_logger().info(f"스테이지 전환됨: {self._stage}")
+        # 자동 스테이지 전환 체크
+        stage_advanced = self._check_stage_advancement()
+        if stage_advanced:
+            self.get_logger().info(f"스테이지 전환됨: {self._stage}")
         
         # 현재 스테이지에 맞는 경로만 계산하고 발행
         current_path = None
@@ -753,17 +771,21 @@ class PlannerNode(Node):
             # Stage-1 경로 (전진 이동)
             show_stage1 = bool(self.get_parameter('show_stage1_path').value)
             if show_stage1:
-                self.get_logger().info("Stage-1 경로 계산 중...")
+                # 반복 로그는 DEBUG로
+                self.get_logger().debug("Stage-1 경로 계산 중...")
                 try:
                     current_path = self._compute_stage1_path(current_odom, stage1_goal)
                     if current_path is not None:
-                        self.get_logger().info(f"Stage-1 경로 생성: {len(current_path.poses)}개 점")
+                        # 경로 생성 성공은 DEBUG (반복)
+                        self.get_logger().debug(f"Stage-1 경로: {len(current_path.poses)}개 점")
                     else:
-                        self.get_logger().warn("Stage-1 경로 생성 실패")
+                        # 실패는 항상 WARN
+                        self.get_logger().warn("⚠️ Stage-1 경로 생성 실패")
                 except Exception as e:
-                    self.get_logger().error(f"Stage-1 경로 계산 실패: {e}")
+                    # 오류는 항상 ERROR
+                    self.get_logger().error(f"❌ Stage-1 경로 계산 오류: {e}")
                     import traceback
-                    self.get_logger().error(f"상세 오류: {traceback.format_exc()}")
+                    self.get_logger().error(f"상세: {traceback.format_exc()}")
         
         elif self._stage == 2:
             # Stage-2 목표와 경로 (후진 주차)
@@ -776,7 +798,7 @@ class PlannerNode(Node):
             stage2_goal = self._compute_stage2_goal(self._parking_pose)
             if stage2_goal is not None:
                 self._last_stage2_goal = stage2_goal
-                self.get_logger().info(f"✅ Stage-2 목표 계산 성공: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
+                self.get_logger().info(f"Stage-2 목표 계산 성공: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
                 
                 # Stage-2 경로 계산 (작년 로직 사용)
                 current_path = None
@@ -790,22 +812,22 @@ class PlannerNode(Node):
                                                                           stage2_goal,
                                                                           self._parking_pose)
                         if current_path is not None:
-                            self.get_logger().info(f"✅ Old-logic path OK: {len(current_path.poses)} pts")
+                            self.get_logger().info(f"Old-logic path OK: {len(current_path.poses)} pts")
                         else:
-                            self.get_logger().warn("⚠️ 로직 경로 생성 실패")
+                            self.get_logger().warn("로직 경로 생성 실패")
                     else:
-                        self.get_logger().warn("⚠️ Stage-1 목표가 없음")
+                        self.get_logger().warn("Stage-1 목표가 없음")
                 else:
-                    self.get_logger().error("❌ oldlogic_use가 비활성화됨 - Stage-2 경로 생성 불가")
+                    self.get_logger().error("oldlogic_use가 비활성화됨 - Stage-2 경로 생성 불가")
                 
                 if current_path is not None:
                     # Stage-2 경로를 저장 (Stage-3 탈출용)
                     self._last_stage2_path = current_path
-                    self.get_logger().info(f"📤 Stage-2 경로 발행 완료: {len(current_path.poses)}개 점")
+                    self.get_logger().info(f"Stage-2 경로 발행 완료: {len(current_path.poses)}개 점")
                 else:
-                    self.get_logger().error("❌ Stage-2 모든 경로 생성 실패")
+                    self.get_logger().error("Stage-2 모든 경로 생성 실패")
             else:
-                self.get_logger().error("❌ Stage-2 목표 계산 실패")
+                self.get_logger().error("Stage-2 목표 계산 실패")
             self.get_logger().info("=== Stage-2 디버그 종료 ===")
         
         elif self._stage == 3:
@@ -814,11 +836,11 @@ class PlannerNode(Node):
             try:
                 current_path = self._compute_stage3_exit_path()
                 if current_path is not None:
-                    self.get_logger().info(f"✅ Stage-3 탈출 경로 생성: {len(current_path.poses)}개 점")
+                    self.get_logger().info(f"Stage-3 탈출 경로 생성: {len(current_path.poses)}개 점")
                 else:
-                    self.get_logger().error("❌ Stage-3 탈출 경로 생성 실패")
+                    self.get_logger().error("Stage-3 탈출 경로 생성 실패")
             except Exception as e:
-                self.get_logger().error(f"❌ Stage-3 경로 계산 실패: {e}")
+                self.get_logger().error(f"Stage-3 경로 계산 실패: {e}")
                 import traceback
                 self.get_logger().error(f"상세 오류: {traceback.format_exc()}")
             self.get_logger().info("=== Stage-3 탈출 경로 종료 ===")
@@ -829,9 +851,18 @@ class PlannerNode(Node):
             clean_path = self._remove_orientation_from_path(current_path)
             self._waypoints_pub.publish(clean_path)
             self._publish_points(self._waypoints_points_pub, clean_path)
-            self.get_logger().info(f"스테이지 {self._stage} 웨이포인트 발행: {len(clean_path.poses)}개 점 (방향 정보 제거됨)")
+            
+            # 경로 길이 변경 시에만 INFO, 그 외에는 DEBUG
+            path_len = len(clean_path.poses)
+            if path_len != self._last_logged_path_length or self._stage != self._last_logged_stage:
+                self.get_logger().info(f"✅ Stage-{self._stage} 경로 발행: {path_len}개 점")
+                self._last_logged_path_length = path_len
+                self._last_logged_stage = self._stage
+            else:
+                self.get_logger().debug(f"Stage-{self._stage} 경로 발행: {path_len}개 점 (반복)")
         else:
-            self.get_logger().warn(f"스테이지 {self._stage}에 사용 가능한 경로 없음")
+            # 경로 없음은 항상 WARN (문제 상황)
+            self.get_logger().warn(f"⚠️ Stage-{self._stage} 경로 없음")
         
         # 주차 완료 체크 및 처리
         if self._parking_complete_state == 'normal':
@@ -957,7 +988,7 @@ class PlannerNode(Node):
         self.get_logger().info("Stage-2 목표 계산 시작")
         
         if parking_pose is None:
-            self.get_logger().error("❌ parking_pose가 None입니다")
+            self.get_logger().error("parking_pose가 None입니다")
             return None
             
         yaw_slot = quaternion_to_yaw(parking_pose.pose.orientation)
@@ -992,7 +1023,7 @@ class PlannerNode(Node):
             goal.pose.orientation = yaw_to_quaternion(yaw_slot)
             self.get_logger().info("주차 공간 방향 사용")
         
-        self.get_logger().info("✅ Stage-2 목표 계산 성공")
+        self.get_logger().info("Stage-2 목표 계산 성공")
         return goal
 
     def _compute_stage3_exit_path(self) -> Optional[Path]:
@@ -1001,11 +1032,11 @@ class PlannerNode(Node):
             탈출 경로 또는 None (실패 시)
         """
         if self._last_stage2_path is None:
-            self.get_logger().error("❌ Stage-2 경로가 저장되지 않음")
+            self.get_logger().error("Stage-2 경로가 저장되지 않음")
             return None
         
         if self._last_stage1_goal is None:
-            self.get_logger().error("❌ Stage-1 목표가 없음")
+            self.get_logger().error("Stage-1 목표가 없음")
             return None
         
         # Stage-3 목표 설정 (Stage-1 골 위치)
@@ -1028,7 +1059,7 @@ class PlannerNode(Node):
             
             exit_path.poses.append(exit_pose)
         
-        self.get_logger().info(f"✅ Stage-3 탈출 경로 생성: {len(exit_path.poses)}개 점 (Stage-2 역순)")
+        self.get_logger().info(f"Stage-3 탈출 경로 생성: {len(exit_path.poses)}개 점 (Stage-2 역순)")
         return exit_path
 
     def _compute_stage2_path_oldlogic(self,
@@ -1136,7 +1167,7 @@ class PlannerNode(Node):
                 ps.pose.orientation = yaw_to_quaternion(hd)
                 path.poses.append(ps)
 
-            self.get_logger().info(f"✅ 단순 3개 직선 경로 생성 완료: {len(path.poses)}개 점")
+            self.get_logger().info(f"단순 3개 직선 경로 생성 완료: {len(path.poses)}개 점")
             self.get_logger().info("=== 단순 직선 경로 생성 종료 ===")
             return path if path.poses else None
 
