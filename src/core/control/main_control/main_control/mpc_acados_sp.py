@@ -118,7 +118,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-5, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # DRIVE
+            0: np.array([1e-5, 0.1, 3.5, 2.0, 1.5, 2.0, 0.4]), # DRIVE
             1: np.array([1e-5, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
@@ -130,7 +130,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 3.5,  # DRIVE
+            0: 1.0,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
