@@ -150,11 +150,17 @@ def acados_solver():
     distance2 = (vehicle_x - obs2_x)**2 + (vehicle_y - obs2_y)**2
     distance3 = (vehicle_x - obs3_x)**2 + (vehicle_y - obs3_y)**2
     distance4 = (vehicle_x - obs4_x)**2 + (vehicle_y - obs4_y)**2
+    ocp.model.con_h_expr_0 = vertcat(distance1, distance2, distance3, distance4)
+    ocp.constraints.lh_0 = np.array([1.5**2, 1.5**2, 1.5**2, 1.5**2])
+    ocp.constraints.uh_0 = np.array([1e10, 1e10, 1e10, 1e10])
+
     ocp.model.con_h_expr = vertcat(distance1, distance2, distance3, distance4)
     ocp.constraints.lh = np.array([1.5**2, 1.5**2, 1.5**2, 1.5**2])
-    ocp.constraints.lh_e = np.array([1.5**2, 1.5**2, 1.5**2, 1.5**2])
+    ocp.constraints.uh = np.array([1e10, 1e10, 1e10, 1e10])
+    
     # ocp.constraints.lh = np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2])  
-    ocp.constraints.uh = np.array([1e10, 1e10, 1e10, 1e10]) 
+    ocp.model.con_h_expr_e = vertcat(distance1, distance2, distance3, distance4)
+    ocp.constraints.lh_e = np.array([1.5**2, 1.5**2, 1.5**2, 1.5**2]) 
     ocp.constraints.uh_e = np.array([1e10, 1e10, 1e10, 1e10])
 
     # Solver 옵션 설정 
