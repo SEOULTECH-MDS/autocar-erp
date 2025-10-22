@@ -152,8 +152,10 @@ def acados_solver():
     distance4 = (vehicle_x - obs4_x)**2 + (vehicle_y - obs4_y)**2
     ocp.model.con_h_expr = vertcat(distance1, distance2, distance3, distance4)
     ocp.constraints.lh = np.array([1.5**2, 1.5**2, 1.5**2, 1.5**2])
+    ocp.constraints.lh_e = np.array([1.5**2, 1.5**2, 1.5**2, 1.5**2])
     # ocp.constraints.lh = np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2])  
     ocp.constraints.uh = np.array([1e10, 1e10, 1e10, 1e10]) 
+    ocp.constraints.uh_e = np.array([1e10, 1e10, 1e10, 1e10])
 
     # Solver 옵션 설정 
     ocp.solver_options.tf = T  # 예측 시간
