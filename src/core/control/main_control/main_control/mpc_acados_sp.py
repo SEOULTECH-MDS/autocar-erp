@@ -56,6 +56,7 @@ class Control(Node):
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10) # 정지선 까지 거리
         self.delivery_sub = self.create_subscription(Float64, '/delivery_distance', self.delivery_cb, 10) # 배달 지점 까지 거리
         self.reverse_flag_sub = self.create_subscription(Bool, '/reverse_flag', self.reverse_flag_cb, 10) # 후진 플래그
+        self.person_detected_sub = self.create_subscription(Bool, '/person/detected', self.person_detected_cb, 10) # 사람 감지 플래그
 
         # 변수 초기화
         self.x = None
@@ -113,6 +114,8 @@ class Control(Node):
     
         # self.is_reverse = True
         self.is_reverse = False
+
+        self.person_detected = False
 
         self.obs_type = 0 #미분류
 
@@ -225,6 +228,17 @@ class Control(Node):
 
     def reverse_flag_cb(self, msg):
         self.is_reverse = msg.data
+
+    def person_detected_cb(self, msg):
+        """
+        사람 감지 플래그 콜백
+        """
+        person_detected = msg.data
+        if person_detected:
+            self.person_detected = True
+            self.get_logger().info("사람 감지됨")
+        else:
+            self.person_detected = False
 
     def calc_current_s(self, _cubic_spline):
         """
@@ -638,6 +652,9 @@ class Control(Node):
             self.velocity = 0.0
 
         if self.mode == 4 and self.delivery_distance < 4.0: # Delivery 모드이고 배달 지점 까지 거리가 4.0m 이내이면 정지
+            self.velocity = 0.0
+
+        if self.person_detected:
             self.velocity = 0.0
 
         # 차량에 제어 명령 전송
