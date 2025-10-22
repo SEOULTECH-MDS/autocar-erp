@@ -29,6 +29,11 @@ AUGMENT = False
 PERSON_CLASS_ID = 0
 FRAME_ID = 'yolo'  # PoseArray header.frame_id
 
+# 위험 감지 조건 설정
+CENTER_REGION_MIN = 0.3  # 중점이 화면 가로의 30% 이상
+CENTER_REGION_MAX = 0.7  # 중점이 화면 가로의 70% 이하  
+MIN_BOX_AREA = 5000      # 최소 박스 면적 (픽셀²)
+
 
 class YoloPersonNode(Node):
     def __init__(self):
@@ -52,11 +57,6 @@ class YoloPersonNode(Node):
             '/mission/obstacle/enable',
             self.callback_enable,
             10)
-
-        # DISPLAY 유무 확인(헤드리스면 imshow 생략)
-        self.display_ok = self._check_display_support()
-        if not self.display_ok:
-            self.get_logger().warn("GUI 지원이 없어 화면 표시(cv2.imshow)를 생략합니다.")
 
         # 디바이스/half 설정
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -96,11 +96,19 @@ class YoloPersonNode(Node):
             status = "활성화" if self.is_enabled else "비활성화"
             self.get_logger().info(f'사람 탐지 {status}')
 
-    def _check_display_support(self):
-        """GUI 디스플레이 지원 여부를 안전하게 확인"""
-        # DISPLAY 환경변수가 없으면 GUI 불가
-        if not os.environ.get('DISPLAY'):
-            return False
+    def is_person_in_danger_zone(self, xmin, ymin, xmax, ymax, frame_width, frame_height):
+        """바운딩 박스가 위험 조건을 만족하는지 확인"""
+        # 조건 1: 중점이 화면 가운데 영역에 있는가?
+        center_x = (xmin + xmax) / 2
+        center_x_ratio = center_x / frame_width
+        is_center = CENTER_REGION_MIN <= center_x_ratio <= CENTER_REGION_MAX
+        
+        # 조건 2: 박스 크기가 충분한가?
+        box_area = (xmax - xmin) * (ymax - ymin)
+        is_large_enough = box_area >= MIN_BOX_AREA
+        
+        # 두 조건 모두 만족해야 위험으로 판단
+        return is_center and is_large_enough
 
     def callback_img(self, img_msg: Image):
         t0 = time.perf_counter()
@@ -144,16 +152,24 @@ class YoloPersonNode(Node):
         pose_array = PoseArray()
         pose_array.header.stamp = self.get_clock().now().to_msg()
         pose_array.header.frame_id = FRAME_ID
+        
+        # 프레임 크기 및 위험 감지 플래그 초기화
+        frame_height, frame_width = frame.shape[:2]
+        dangerous_person_detected = False
 
         # 박스가 없으면 화면만 업데이트하고 종료
         if len(result.boxes) == 0:
-            # 빈 PoseArray도 퍼블리시(구독자 동기화용)
-            self.pose_pub.publish(pose_array)
+            # # 빈 PoseArray도 퍼블리시(구독자 동기화용)
+            # self.pose_pub.publish(pose_array)
             
             # 사람 미감지 상태 발행
             person_detected_msg = Bool()
             person_detected_msg.data = False
             self.person_detected_pub.publish(person_detected_msg)
+            
+            # 원본 이미지 발행
+            result_img_msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+            self.img_pub.publish(result_img_msg)
             return
 
         # 박스 그리기 & PoseArray 구성 & 로그 출력
@@ -170,14 +186,18 @@ class YoloPersonNode(Node):
             xyxy = box.xyxy.detach().view(-1).cpu().tolist()
             xmin, ymin, xmax, ymax = [int(v) for v in xyxy]
 
-            # 로그: 클래스 이름/신뢰도/좌표
-            # self.get_logger().info(
-            #     f"[car] conf={conf:.2f}  bbox(xmin,ymin,xmax,ymax)=({xmin},{ymin},{xmax},{ymax})  name={cls_name}"
-            # )
+            # 위험 조건 확인 (중점이 가운데 영역 + 박스 크기 충분)
+            if self.is_person_in_danger_zone(xmin, ymin, xmax, ymax, frame_width, frame_height):
+                dangerous_person_detected = True
+                # 위험한 사람은 빨간색으로 표시
+                color = (0, 0, 255)  # 빨간색
+                label = f"{cls_name} {conf:.2f} [DANGER]"
+            else:
+                # 일반 사람은 기본 색상
+                color = self.colors[cls_id] if cls_id < len(self.colors) else (0, 255, 0)
+                label = f"{cls_name} {conf:.2f}"
 
             # 시각화
-            label = f"{cls_name} {conf:.2f}"
-            color = self.colors[cls_id] if cls_id < len(self.colors) else (0, 255, 0)
             plot_one_box([xmin, ymin, xmax, ymax], frame, label=label, color=color, line_thickness=3)
 
             # PoseArray(규칙: pos.x=class, pos.y=conf, ori.xyzw=xmin/ymin/xmax/ymax)
@@ -190,21 +210,13 @@ class YoloPersonNode(Node):
             pose.orientation.w = float(ymax)
             pose_array.poses.append(pose)
 
-        # 퍼블리시
-        self.pose_pub.publish(pose_array)
+        # # 퍼블리시
+        # self.pose_pub.publish(pose_array)
 
         # 사람 감지 상태 발행 (바운딩 박스가 있으면 True)
         person_detected_msg = Bool()
-        person_detected_msg.data = len(pose_array.poses) > 0
+        person_detected_msg.data = dangerous_person_detected
         self.person_detected_pub.publish(person_detected_msg)
-
-        # 실시간 화면 표시
-        if self.display_ok:
-            try:
-                cv2.imshow("YOLOv11 Car Detection", frame)
-                cv2.waitKey(1)
-            except cv2.error:
-                self.display_ok = False  # GUI 지원 불가능하면 비활성화
         
         # 결과 이미지 퍼블리시
         try:
@@ -225,12 +237,6 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         node.get_logger().info("Keyboard Interrupt (SIGINT)")
-    finally:
-        if node.display_ok:
-            try:
-                cv2.destroyAllWindows()
-            except cv2.error:
-                pass  # GUI 지원이 없으면 무시
         node.destroy_node()
         rclpy.shutdown()
 
