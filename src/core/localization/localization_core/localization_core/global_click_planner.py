@@ -65,11 +65,11 @@ class LaneletClickPlanner(QMainWindow):
         self.node.declare_parameter('allowed_lanelet_subtypes', ['road'])
         # Maximum distance to snap selection to an allowed lanelet (meters)
         self.node.declare_parameter('max_select_distance', 3.0)
-        # Smoothing params for /autocar/goals endpoint
-        self.node.declare_parameter('smooth_goal_end', True)
-        self.node.declare_parameter('smooth_goal_length_m', 1.0)
-        self.node.declare_parameter('smooth_goal_pre_length_m', 0.5)
-        self.node.declare_parameter('smooth_goal_samples', 0)  # 0 = keep original count
+        # Smoothing disabled: keep raw lanelet centerline points for controller
+        self.node.declare_parameter('smooth_goal_end', False)
+        self.node.declare_parameter('smooth_goal_length_m', 0.0)
+        self.node.declare_parameter('smooth_goal_pre_length_m', 0.0)
+        self.node.declare_parameter('smooth_goal_samples', 0)
         self.map_frame = self.node.get_parameter('map_frame').get_parameter_value().string_value
         self.map_origin_lat = self.node.get_parameter('map_origin.lat').get_parameter_value().double_value
         self.map_origin_lon = self.node.get_parameter('map_origin.lon').get_parameter_value().double_value
@@ -153,8 +153,12 @@ class LaneletClickPlanner(QMainWindow):
         self.publish_btn.clicked.connect(self.publish_waypoints)
         self.clear_btn = QPushButton('Clear Selection')
         self.clear_btn.clicked.connect(self.clear_selection)
+        # Select All button: select all allowed lanelets in ascending ID order
+        self.select_all_btn = QPushButton('Select All (ID order)')
+        self.select_all_btn.clicked.connect(self.select_all_lanelets)
         controls_layout.addWidget(self.publish_btn)
         controls_layout.addWidget(self.clear_btn)
+        controls_layout.addWidget(self.select_all_btn)
         
         # Info labels
         info_layout = QHBoxLayout()
@@ -520,12 +524,7 @@ class LaneletClickPlanner(QMainWindow):
             self.node.get_logger().warn("Not enough unique points to form a path.")
             return
 
-        # Optional: smooth the tail of the path to reduce spline jumps on route switches
-        if self.smooth_goal_end:
-            before_cnt = len(all_points)
-            all_points = self._smooth_goal_tail(all_points)
-            after_cnt = len(all_points)
-            self.node.get_logger().info(f"Applied tail smoothing (points: {before_cnt} -> {after_cnt})")
+        # Smoothing is intentionally disabled to keep lanelet geometry intact
 
         # Create a PoseArray from the collected (optionally smoothed) centerline points
         for i in range(len(all_points)):
@@ -549,6 +548,27 @@ class LaneletClickPlanner(QMainWindow):
             self.node.get_logger().info(f"Successfully published {len(pose_array.poses)} raw waypoints to /autocar/goals topic.")
         else:
             self.node.get_logger().warn("No valid waypoints found to publish.")
+
+    def select_all_lanelets(self):
+        if not self.lanelet_map:
+            return
+        # Filter by allowed subtype if configured, then sort by lanelet id
+        ids = []
+        allowed_subtypes_lower = set(s.lower() for s in (self.allowed_lanelet_subtypes or []))
+        for ll in self.lanelet_map.laneletLayer:
+            subtype_val = self._get_attr(ll.attributes, 'subtype').lower()
+            ltype_val = self._get_attr(ll.attributes, 'type').lower()
+            ped_val = self._get_attr(ll.attributes, 'participant:pedestrian').lower()
+            if allowed_subtypes_lower and subtype_val not in allowed_subtypes_lower:
+                continue
+            if ped_val == 'yes' or ltype_val == 'stop_line':
+                continue
+            ids.append(ll.id)
+        ids = sorted(ids)
+        self.selected_lanelet_ids = ids
+        self.selection_label.setText(f'Selected: {len(self.selected_lanelet_ids)} lanelets')
+        self.draw_map()
+        self.publish_selected_lanelets_viz()
 
     def clear_selection(self):
         self.selected_lanelet_ids = []

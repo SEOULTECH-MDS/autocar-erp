@@ -306,7 +306,7 @@ class Control(Node):
             self.get_logger().warn(f"S 값 역행 제한: {best_s:.2f} (이전: {self.prev_s:.2f})")
         
         self.prev_s = best_s  # 이전 s 값 업데이트
-        self.s = best_s
+        self.s = best_s # 인스턴스 변수 self.s에 물리적 투영 s 값을 저장
         return
 
     def global_waypoints_cb(self, path_msg):
@@ -467,7 +467,8 @@ class Control(Node):
             self.delivery_distance = 1e6
 
 
-    def calc_ref_trajectory(self, _cubic_spline):
+    # calc_ref_trajectory 함수 수정: x0 인수를 추가하고 s 시작점을 x0[4]로 설정
+    def calc_ref_trajectory(self, _cubic_spline, x0):
         """
         MPC 예측 step에 대한 refrecne trajectory 계산
         """
@@ -477,11 +478,14 @@ class Control(Node):
         tan_vec = np.zeros((2, N)) # 접선 벡터 tx, ty
 
         if cubic_spline:
-            current_s = self.s
+
+            # 수정 핵심: x0 상태 벡터의 5번째 요소인 s (Solver가 예측/제어하는 s)를 시작점으로 사용
+            current_s_start = x0[4]
+            current_s_ref = current_s_start
 
             for i in range(N):
-                # 다음 s 값을 먼저 계산
-                s = current_s + self.dt * self.target_vel
+                # 다음 s 값을 현재의 참조 s 값(current_s_ref)에서 목표 속도로 전진하여 계산
+                s = current_s_ref + self.dt * self.target_vel
                 
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
@@ -497,9 +501,9 @@ class Control(Node):
                         target_vel = 2.0  # 장애물 감지 시 2.0 m/s로 제한
                     else:
                         target_vel = self.target_vel  # 정상 범위 내라면 원래 목표 속도 사용
-                
-                # 다음 iteration을 위해 current_s 업데이트
-                current_s = s
+
+                # 다음 iteration을 위해 current_s_ref 업데이트
+                current_s_ref = s
 
                 # 곡률에 따라 target_vel 조정
                 curvature = abs(cubic_spline.calc_curvature(s))
@@ -561,12 +565,17 @@ class Control(Node):
                 self.get_logger().warn("Local cubic spline이 초기화되지 않았습니다.")
                 return
 
-        # 현재 s 값 계산, reference trajectory 계산
+        # 현재 s 값 계산 (self.s 업데이트)
         self.calc_current_s(current_cubic_spline)
-        xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
+        
+        # 현재 상태 벡터 x0 설정 (s는 self.s로 초기화됨)
+        x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
+
+        # calc_ref_trajectory에 x0를 전달하여 동적 Reference Trajectory 계산
+        xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline, x0)
 
         # 초기 상태 및 장애물 정보 설정
-        x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
+        # x0 = np.array([self.x, self.y, self.yaw, self.v, self.s]) # 이미 위에서 설정됨
         obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y, self.obs3_x, self.obs3_y, self.obs4_x, self.obs4_y])
 
         # obs = np.array([1e4, 1e4, self.obs2_x, self.obs2_y])
@@ -604,14 +613,17 @@ class Control(Node):
                 u_opt[i, 0],
                 tan_vec[:, i],
                 weights,
-                obs,
-                r_safe
+                obs
             ])
             self.solver.set(i, "p", params)
+            self.solver.constraints_set(i, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
+            self.solver.constraints_set(i, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정
             # self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
         # self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
 
-        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], weights, obs, r_safe]))
+        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
+        self.solver.constraints_set(N, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
+        self.solver.constraints_set(N, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정   
 
         # Solver 실행, status 확인
         status = self.solver.solve()

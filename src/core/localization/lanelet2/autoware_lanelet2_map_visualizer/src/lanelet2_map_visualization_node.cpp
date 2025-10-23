@@ -187,19 +187,20 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   std_msgs::msg::ColorRGBA cl_dashed_lines;
   std_msgs::msg::ColorRGBA cl_virtual_lines;
   std_msgs::msg::ColorRGBA cl_general_lines;
-  set_color(&cl_road, 0.27, 0.27, 0.27, 0.999);
+  // Make road surface brighter and more transparent for better overlay visibility
+  set_color(&cl_road, 0.35, 0.35, 0.35, 0.55);
   set_color(&cl_shoulder, 0.15, 0.15, 0.15, 0.999);
   set_color(&cl_cross, 0.27, 0.3, 0.27, 0.5);
   set_color(&cl_partitions, 0.25, 0.25, 0.25, 0.999);
-  set_color(&cl_pedestrian_markings, 0.5, 0.5, 0.5, 0.999);
+  set_color(&cl_pedestrian_markings, 1.0, 1.0, 1.0, 0.5);
   set_color(&cl_ll_borders, 0.5, 0.5, 0.5, 0.999);
   set_color(&cl_shoulder_borders, 0.2, 0.2, 0.2, 0.999);
-  set_color(&cl_stoplines, 0.85, 0.85, 0.85, 0.999);
+  set_color(&cl_stoplines, 1.0, 1.0, 1.0, 0.999);
   set_color(&cl_trafficlights, 0.5, 0.5, 0.5, 0.8);
   set_color(&cl_detection_areas, 0.27, 0.27, 0.37, 0.5);
   set_color(&cl_no_stopping_areas, 0.37, 0.37, 0.37, 0.5);
   set_color(&cl_speed_bumps, 0.56, 0.40, 0.27, 0.5);
-  set_color(&cl_crosswalks, 0.00, 0.80, 0.0, 0.5);
+  set_color(&cl_crosswalks, 1.0, 1.0, 1.0, 0.5);
   set_color(&cl_obstacle_polygons, 0.4, 0.27, 0.27, 0.9);
   set_color(&cl_parking_lots, 1.0, 0.0, 0.0, 0.7);
   set_color(&cl_parking_spaces, 1.0, 1.0, 1.0, 0.3);
@@ -226,16 +227,20 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   set_color(&cl_intersection_area, 0.16, 1.0, 0.69, 0.5);
   set_color(&cl_bus_stop_area, 0.863, 0.863, 0.863, 0.5);
   set_color(&cl_bicycle_lane, 0.0, 0.3843, 0.6274, 0.5);
-  set_color(&cl_dashed_lines, 0.9, 0.9, 0.0, 0.5);
+  set_color(&cl_dashed_lines, 0.9, 0.9, 0.0, 0.2);
   set_color(&cl_virtual_lines, 0.0, 0.9, 0.9, 0.3);
   set_color(&cl_general_lines, 0.6, 0.6, 0.6, 0.9);
 
   visualization_msgs::msg::MarkerArray map_marker_array;
 
-  // Collect thin dashed/virtual line strings from raw layer
+  // Collect thin line strings by subtype for finer styling
   lanelet::ConstLineStrings3d thin_dashed;
   lanelet::ConstLineStrings3d thin_virtual;
   lanelet::ConstLineStrings3d thin_general;
+  lanelet::ConstLineStrings3d thin_stop;
+  lanelet::ConstLineStrings3d thin_roadborder;
+  lanelet::ConstLineStrings3d thin_crosswalk;
+  lanelet::ConstLineStrings3d thin_centerline;
   for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
     const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
     if (type == "line_thin") {
@@ -244,6 +249,14 @@ void Lanelet2MapVisualizationNode::on_map_bin(
         thin_dashed.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else if (subtype == "virtual") {
         thin_virtual.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "stop_line" || subtype == "stopline") {
+        thin_stop.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "road_border" || subtype == "roadborder") {
+        thin_roadborder.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "crosswalk") {
+        thin_crosswalk.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "centerline") {
+        thin_centerline.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else {
         thin_general.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       }
@@ -426,6 +439,19 @@ void Lanelet2MapVisualizationNode::on_map_bin(
     &map_marker_array,
     lanelet::visualization::lineStringsAsMarkerArray(thin_virtual, "virtual_lines", cl_virtual_lines,
                                                      0.15));
+  // Subtype-mapped thin lines reusing existing colors
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_stop, "stop_lines", cl_stoplines, 0.3));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_roadborder, "roadborder", cl_curbstones, 0.15));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_crosswalk, "crosswalk_lines", cl_crosswalks, 0.2));
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_centerline, "centerline_lines", cl_general_lines, 0.15));
   insert_marker_array(
     &map_marker_array,
     lanelet::visualization::lineStringsAsMarkerArray(thin_general, "general_lines", cl_general_lines,
@@ -443,13 +469,17 @@ void Lanelet2MapVisualizationNode::on_map_bin(
     }
   };
 
-  // Lower road surface slightly and raise stop lines slightly
-  adjust_z_by_namespace("road_lanelets", -0.05);
-  adjust_z_by_namespace("stop_lines", +0.05);
-  adjust_z_by_namespace("stop_lines_raw", +0.05);
-  adjust_z_by_namespace("dashed_lines", +0.03);
-  adjust_z_by_namespace("virtual_lines", +0.035);
-  adjust_z_by_namespace("general_lines", +0.025);
+  // Lower road surface further and raise line features to avoid z-fighting
+  adjust_z_by_namespace("road_lanelets", -0.08);
+  adjust_z_by_namespace("stop_lines", +0.07);
+  adjust_z_by_namespace("stop_lines_raw", +0.07);
+  adjust_z_by_namespace("dashed_lines", +0.07);
+  adjust_z_by_namespace("virtual_lines", +0.08);
+  adjust_z_by_namespace("stop_lines", +0.07);
+  adjust_z_by_namespace("roadborder", +0.06);
+  adjust_z_by_namespace("crosswalk_lines", +0.07);
+  adjust_z_by_namespace("centerline_lines", +0.06);
+  adjust_z_by_namespace("general_lines", +0.06);
   // Raise obstacles slightly to make them more visible above road surface
   adjust_z_by_namespace("obstacles", +0.02);
 
