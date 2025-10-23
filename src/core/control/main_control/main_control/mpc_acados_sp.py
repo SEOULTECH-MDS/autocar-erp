@@ -100,7 +100,7 @@ class Control(Node):
         
         # s 값 제약을 위한 변수들
         self.prev_s = 0.0  # 이전 s 값 저장
-        self.s_tolerance = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
+        self.s_tolerance = 3.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
         
         # map 원점
         self.map_origin_x = None
@@ -133,7 +133,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 1.0,  # DRIVE
+            0: 3.0,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
@@ -606,10 +606,14 @@ class Control(Node):
         else:
             r_safe = 0.0
 
-        # MPC Solver에 파라미터 변수 전달
+        # MPC Solver에 파라미터 변수 전달 (yaw 오차는 wrap 적용)
         for i in range(N):
+            # wrap yaw reference around current yaw to avoid ±pi jump in cost
+            yaw_ref_wrapped = xref[2, i]
+            if not np.isnan(self.yaw):
+                yaw_ref_wrapped = normalise_angle(yaw_ref_wrapped - self.yaw) + self.yaw
             params = np.hstack([
-                xref[:5, i],
+                np.array([xref[0, i], xref[1, i], yaw_ref_wrapped, xref[3, i], xref[4, i]]),
                 u_opt[i, 0],
                 tan_vec[:, i],
                 weights,
@@ -621,7 +625,10 @@ class Control(Node):
             # self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
         # self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
 
-        self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
+        yaw_ref_wrapped_last = xref[2, -1]
+        if not np.isnan(self.yaw):
+            yaw_ref_wrapped_last = normalise_angle(yaw_ref_wrapped_last - self.yaw) + self.yaw
+        self.solver.set(N, "p", np.hstack([np.array([xref[0, -1], xref[1, -1], yaw_ref_wrapped_last, xref[3, -1], xref[4, -1]]), u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
         self.solver.constraints_set(N, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
         self.solver.constraints_set(N, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정   
 
