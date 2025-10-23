@@ -5,44 +5,42 @@
 mission_mapping:
   # 신호등 탐지 미션 (교차로 구간)
   trafficlight:
+    - start: 3
+      end: 3     
     - start: 5
-      end: 5     
+      end: 5
     - start: 7
-      end: 7
-    - start: 10
-      end: 10
-    - start: 12
-      end: 12
+      end: 7     
+    - start: 9
+      end: 9
+    - start: 13
+      end: 13
     - start: 15
       end: 15
-    - start: 16
-      end: 16
-    - start: 20
-      end: 20
-    - start: 22
-      end: 22
+    - start: 17
+      end: 17
     
   # 표지판 탐지 미션 (배달 구역)  
   sign:
-    - start: 2    # 배달A
-      end: 2
-    - start: 19   # 배달B
-      end: 19      
+    - start: 1    # 배달A
+      end: 1
+    - start: 15   # 배달B
+      end: 15      
     
   # 장애물 탐지 미션 (장애물 회피 구간)
   obstacle:
-    - start: 9    # 대형 정적장애물
-      end: 9      
-    # - start: 25    # 소형 정적장애물
-    #   end: 25
+    - start: 7    # 대형 정적장애물
+      end: 7      
+    # - start: 19    # 소형 정적장애물
+    #   end: 19
     - start: 1    # 소형 정적장애물 (아름관 우측 직선 구간)
       end: 1
 
 
   # 라바콘 탐지 미션 (주차 구간)
   rubber:
-    # - start: 27
-    #   end: 27
+    # - start: 21
+    #   end: 21
       - start: 1    # 주차 (아름관 우측 직선 구간)
         end: 8
 
