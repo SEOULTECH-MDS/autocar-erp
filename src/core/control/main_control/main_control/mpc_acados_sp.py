@@ -133,7 +133,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 3.0,  # DRIVE
+            0: 1.0,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)

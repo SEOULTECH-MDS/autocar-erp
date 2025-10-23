@@ -99,7 +99,7 @@ class PlannerNode(Node):
         self.declare_parameter('default_slot_width', 2.5)       # 주차 공간 폭 기본값 [m]
         
         # ==================== Stage-1 (전진 이동) 파라미터 ====================
-        self.declare_parameter('front_margin', 5.0)               # 주차 공간 전방 경계에서 추가 여유 [m]
+        self.declare_parameter('front_margin', 4.5)               # 주차 공간 전방 경계에서 추가 여유 [m]
         self.declare_parameter('clear_lateral', 2.0)            # 주차 공간 옆쪽(도로쪽) 여유 [m]
         self.declare_parameter('yaw_offset_deg', 0.0)           # Stage-1에서 좌측으로 선회할 각도 [도]
         self.declare_parameter('show_stage1_path', True)        # Stage-1 경로 시각화 여부
@@ -114,7 +114,7 @@ class PlannerNode(Node):
         
         # === 1순위: 작년 로직 (Old-logic) - 3개 직선 구간 경로 ===
         self.declare_parameter('oldlogic_use', True)            # 작년 로직 사용 여부 (최우선)
-        self.declare_parameter('oldlogic_pre_reverse', 3.0)     # Stage-1 골에서 반대방향 직진 거리 [m]
+        self.declare_parameter('oldlogic_pre_reverse', 3.5)     # Stage-1 골에서 반대방향 직진 거리 [m]
         self.declare_parameter('oldlogic_pre_straight', 0.2)    # 초기 직선 step 크기 [m]
         self.declare_parameter('oldlogic_center_offset', 2.5)   # 구역 중심 오프셋 (주차위치에서 앞으로) [m]
         
@@ -122,10 +122,10 @@ class PlannerNode(Node):
         self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
         self.declare_parameter('stage_position_tolerance', 2.0)  # 스테이지 완료 위치 허용 오차 [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 100.0)    # 스테이지 완료 방향 허용 오차 [도]
-        self.declare_parameter('publish_unified_waypoints', False)  # 현재 스테이지만 /waypoints 퍼블리시 여부
+        self.declare_parameter('publish_unified_waypoints', False)  # (삭제 예정)현재 스테이지만 /waypoints 퍼블리시 여부
         
         # ==================== 주차 완료 파라미터 ====================
-        self.declare_parameter('parking_complete_yaw_tolerance_deg', 5.0)  # 주차 완료 방향 임계치 [도]
+        self.declare_parameter('parking_complete_yaw_tolerance_deg', 100.0)  # 주차 완료 방향 임계치 [도]
         
         # ==================== Stage-3 (탈출) 파라미터 ====================
         self.declare_parameter('auto_exit_after_parking', True)  # 주차 후 자동 탈출 여부
@@ -148,7 +148,7 @@ class PlannerNode(Node):
         self._parking_pose: Optional[PoseStamped] = None      # 주차 공간 위치
         self._odom: Optional[Odometry] = None                 # 차량 현재 위치 (오도메트리)
         self._current_lanelet_id: Optional[int] = None        # 현재 차량이 위치한 Lanelet ID
-        self._parking_zone_ids: List[int] = [21]             # 주차 구역 ID (K-City 본선 기준)
+        self._parking_zone_ids: List[int] = [1, 2, 3]             # 주차 구역 ID (K-City 본선 기준)
         
         # 각 스테이지별 목표 위치 저장
         self._last_stage1_goal: Optional[PoseStamped] = None  # Stage-1 목표 위치

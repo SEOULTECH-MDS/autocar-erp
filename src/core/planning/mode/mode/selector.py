@@ -142,9 +142,9 @@ class ModeSelector(Node):
         self.declare_parameter('kcity_uturn_zones', [7])                        # 예선 유턴 구역
         self.declare_parameter('kcity_gps_off_zones', [10])                     # 예선 GPS 차단 구역
         # 본선 배달 구역 (상차/하차 구분)
-        self.declare_parameter('kcity_delivery_pickup_zones', [1])              # 본선 상차 구역
+        self.declare_parameter('kcity_delivery_pickup_zones', [21])              # 본선 상차 구역 1번
         self.declare_parameter('kcity_delivery_dropoff_zones', [15])           # 본선 하차 구역
-        self.declare_parameter('kcity_final_parking_zones', [21])               # 본선 주차 구역
+        self.declare_parameter('kcity_final_parking_zones', [1, 2])               # 본선 주차 구역 21번
         self.declare_parameter('kcity_right_pause_zones', [10])                 # 본선 우회전 정지선 구역
 
         # 미래관 맵 구역 설정 (예선/본선 구분 없이 통일)
@@ -283,11 +283,11 @@ class ModeSelector(Node):
         self.get_logger().info(f'Competition: {self.competition_type}, Map: {self.map_type}')
         self.get_logger().info(f'Parking zones ({self.competition_type}): {self.parking_zone_ids}')
         
-        if self.competition_type == CompetitionType.PRELIMINARY:
+        if self.competition_type == CompetitionType.QUALIFYING:
             self.get_logger().info(f'Uturn zones: {self.uturn_zone_ids}')
             self.get_logger().info(f'GPS-off zones: {self.gps_off_zone_ids}')
         else:  # FINAL
-            self.get_logger().info(f'Delivery zones: {self.delivery_zone_ids}')
+            self.get_logger().info(f'Delivery zones: {self.delivery_pickup_zone_ids}')
 
     # ===========================================
     # 콜백 함수들

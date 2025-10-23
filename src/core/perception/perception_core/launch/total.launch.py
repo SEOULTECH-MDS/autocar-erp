@@ -67,41 +67,41 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # # 주차 라바콘 탐지
-        # Node(
-        #     package='perception',
-        #     executable='rubber_detect',
-        #     name='rubber_detect',
-        #     output='screen',
-        #     parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
-        # ),
-        # Node(
-        #     package='perception',
-        #     executable='sensor_fusion_rubber',
-        #     name='sensor_fusion_rubber',
-        #     output='screen',
-        #     parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
-        #     remappings=[('/markers', '/adaptive_clustering/markers')],
-        # ),
-        # Node(
-        #     package='perception',
-        #     executable='bbox_tracker',
-        #     name='bbox_tracker',
-        #     output='screen',
-        #     parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
-        # ),
-        # Node(
-        #     package='perception',
-        #     executable='object_tracker3D',
-        #     name='object_tracker3D',
-        #     output='screen',
-        #     parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
-        # ),
-        # Node(
-        #     package='perception',
-        #     executable='rubber_visualizer',
-        #     name='rubber_visualizer',
-        #     output='screen',
-        #     parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
-        # )
+        # 주차 라바콘 탐지
+        Node(
+            package='perception',
+            executable='rubber_detect',
+            name='rubber_detect',
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        ),
+        Node(
+            package='perception',
+            executable='sensor_fusion_rubber',
+            name='sensor_fusion_rubber',
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+            remappings=[('/markers', '/adaptive_clustering/markers')],
+        ),
+        Node(
+            package='perception',
+            executable='bbox_tracker',
+            name='bbox_tracker',
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        ),
+        Node(
+            package='perception',
+            executable='object_tracker3D',
+            name='object_tracker3D',
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        ),
+        Node(
+            package='perception',
+            executable='rubber_visualizer',
+            name='rubber_visualizer',
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        )
     ])
