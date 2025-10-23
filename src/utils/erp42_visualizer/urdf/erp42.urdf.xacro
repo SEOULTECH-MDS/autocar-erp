@@ -78,10 +78,10 @@
     <visual>
       <!-- Shape: <box>, <cylinder>, or <sphere> -->
       <geometry>
-        <box size="0.05 0.05 0.02"/>
+        <box size="0.05 0.05 0.03"/>
       </geometry>
       <material name="red">
-        <color rgba="1.0 0.0 0.0 1.0"/>
+        <color rgba="1.0 0.0 0.0 0.9"/>
       </material>
     </visual>
   </link>
@@ -90,17 +90,17 @@
     <parent link="base_link"/>
     <child link="imu_link"/>
     <!-- Position (xyz) and Orientation (rpy) -->
-    <origin xyz="0.0 0.0 1.12" rpy="0 0 0"/>
+    <origin xyz="0.05 0.0 1.40" rpy="0 0 0"/>
   </joint>
 
   <!-- 2. GPS SENSOR -->
   <link name="gps_link">
     <visual>
       <geometry>
-        <box size="0.05 0.05 0.02"/>
+        <box size="0.12 0.06 0.03"/>
       </geometry>
       <material name="green">
-        <color rgba="0.0 1.0 0.0 1.0"/>
+        <color rgba="0.0 1.0 0.0 0.9"/>
       </material>
     </visual>
   </link>
@@ -109,17 +109,17 @@
     <parent link="base_link"/>
     <child link="gps_link"/>
     <!-- Positioned on the rear of the roof -->
-    <origin xyz="0.2 0.0 1.27" rpy="0 0 0"/>
+    <origin xyz="0.40 0.0 1.40" rpy="0 0 0"/>
   </joint>
 
   <!-- 3. LIDAR SENSOR -->
   <link name="velodyne">
     <visual>
       <geometry>
-        <cylinder radius="0.06" length="0.08"/>
+        <cylinder radius="0.1" length="0.1"/>
       </geometry>
       <material name="blue">
-        <color rgba="0.0 0.0 1.0 1.0"/>
+        <color rgba="0.0 0.0 1.0 0.9"/>
       </material>
     </visual>
   </link>
@@ -128,33 +128,33 @@
     <parent link="base_link"/>
     <child link="velodyne"/>
     <!-- Positioned on the center of the roof -->
-    <origin xyz="1.3 0.0 0.7" rpy="0 0 0"/>
+    <origin xyz="1.33 0.0 0.7" rpy="0 0 0"/>
   </joint>
 
   <!-- 4. CAMERA SENSOR (adds TF for 'camera' to match CameraInfo frame_id) -->
-  <link name="camera">
+  <link name="camera_front_link">
     <visual>
       <geometry>
-        <box size="0.04 0.04 0.04"/>
+        <box size="0.03 0.10 0.03"/>
       </geometry>
       <material name="grey">
-        <color rgba="0.5 0.5 0.5 1.0"/>
+        <color rgba="0.5 0.5 0.5 0.9"/>
       </material>
     </visual>
   </link>
 
-  <joint name="camera_joint" type="fixed">
+  <joint name="camera_front_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="camera"/>
+    <child link="camera_front_link"/>
     <!-- Approximate front-mounted camera pose (adjust as needed) -->
-    <origin xyz="0.70 0.00 1.20" rpy="0 0 0"/>
+    <origin xyz="0.58 0.00 1.33" rpy="0 0 0"/>
   </joint>
 
   <!-- Optional optical frame for visualization conventions -->
-  <link name="camera_optical_frame"/>
-  <joint name="camera_optical_joint" type="fixed">
-    <parent link="camera"/>
-    <child link="camera_optical_frame"/>
+  <link name="camera_front_optical_frame"/>
+  <joint name="camera_front_optical_joint" type="fixed">
+    <parent link="camera_front_link"/>
+    <child link="camera_front_optical_frame"/>
     <!-- REP-103: optical frame has Z forward, X right, Y down -->
     <origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/>
   </joint>

@@ -308,7 +308,7 @@ class PathSelector(QMainWindow):
         try:
             # 선택된 경로를 PoseArray 메시지로 변환
             path_msg = PoseArray()
-            path_msg.header.frame_id = "world"
+            path_msg.header.frame_id = "map"
             path_msg.header.stamp = self.node.get_clock().now().to_msg()
             
             for way_id in self.selected_path:

@@ -240,7 +240,6 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   lanelet::ConstLineStrings3d thin_stop;
   lanelet::ConstLineStrings3d thin_roadborder;
   lanelet::ConstLineStrings3d thin_crosswalk;
-  lanelet::ConstLineStrings3d thin_centerline;
   for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
     const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
     if (type == "line_thin") {
@@ -249,14 +248,14 @@ void Lanelet2MapVisualizationNode::on_map_bin(
         thin_dashed.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else if (subtype == "virtual") {
         thin_virtual.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "marking" || subtype == "Markings") {
+        continue;
       } else if (subtype == "stop_line" || subtype == "stopline") {
         thin_stop.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else if (subtype == "road_border" || subtype == "roadborder") {
         thin_roadborder.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else if (subtype == "crosswalk") {
         thin_crosswalk.push_back(static_cast<lanelet::ConstLineString3d>(ls));
-      } else if (subtype == "centerline") {
-        thin_centerline.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else {
         thin_general.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       }
@@ -451,9 +450,6 @@ void Lanelet2MapVisualizationNode::on_map_bin(
     lanelet::visualization::lineStringsAsMarkerArray(thin_crosswalk, "crosswalk_lines", cl_crosswalks, 0.2));
   insert_marker_array(
     &map_marker_array,
-    lanelet::visualization::lineStringsAsMarkerArray(thin_centerline, "centerline_lines", cl_general_lines, 0.15));
-  insert_marker_array(
-    &map_marker_array,
     lanelet::visualization::lineStringsAsMarkerArray(thin_general, "general_lines", cl_general_lines,
                                                      0.15));
 
@@ -478,7 +474,6 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   adjust_z_by_namespace("stop_lines", +0.07);
   adjust_z_by_namespace("roadborder", +0.06);
   adjust_z_by_namespace("crosswalk_lines", +0.07);
-  adjust_z_by_namespace("centerline_lines", +0.06);
   adjust_z_by_namespace("general_lines", +0.06);
   // Raise obstacles slightly to make them more visible above road surface
   adjust_z_by_namespace("obstacles", +0.02);

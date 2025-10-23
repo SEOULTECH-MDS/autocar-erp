@@ -17,7 +17,6 @@ from visualization_msgs.msg import MarkerArray, Marker
 from autoware_map_msgs.msg import LaneletMapBin
 
 from autocar_utils.yaw_to_quaternion import yaw_to_quaternion
-from autocar_utils.utils import CubicSpline2D
 # REMOVED: from autocar_utils.utils import generate_target_course
 
 import lanelet2
@@ -57,7 +56,7 @@ class LaneletClickPlanner(QMainWindow):
         self.node = Node('lanelet_click_planner')
 
         # Parameters
-        self.node.declare_parameter('map_frame', 'world')
+        self.node.declare_parameter('map_frame', 'map')
         self.node.declare_parameter('map_origin.lat', 37.630117)
         self.node.declare_parameter('map_origin.lon', 127.081431)
         self.node.declare_parameter('lanelet2_map_path', '')
@@ -65,21 +64,15 @@ class LaneletClickPlanner(QMainWindow):
         self.node.declare_parameter('allowed_lanelet_subtypes', ['road'])
         # Maximum distance to snap selection to an allowed lanelet (meters)
         self.node.declare_parameter('max_select_distance', 3.0)
-        # Smoothing disabled: keep raw lanelet centerline points for controller
-        self.node.declare_parameter('smooth_goal_end', False)
-        self.node.declare_parameter('smooth_goal_length_m', 0.0)
-        self.node.declare_parameter('smooth_goal_pre_length_m', 0.0)
-        self.node.declare_parameter('smooth_goal_samples', 0)
+        # Uniform waypoint spacing along the full path (meters)
+        self.node.declare_parameter('goal_spacing_m', 1.0)
         self.map_frame = self.node.get_parameter('map_frame').get_parameter_value().string_value
         self.map_origin_lat = self.node.get_parameter('map_origin.lat').get_parameter_value().double_value
         self.map_origin_lon = self.node.get_parameter('map_origin.lon').get_parameter_value().double_value
         self.projector = UtmProjector(Origin(self.map_origin_lat, self.map_origin_lon))
         self.allowed_lanelet_subtypes = list(self.node.get_parameter('allowed_lanelet_subtypes').get_parameter_value().string_array_value)
         self.max_select_distance = self.node.get_parameter('max_select_distance').get_parameter_value().double_value
-        self.smooth_goal_end = self.node.get_parameter('smooth_goal_end').get_parameter_value().bool_value
-        self.smooth_goal_length_m = self.node.get_parameter('smooth_goal_length_m').get_parameter_value().double_value
-        self.smooth_goal_pre_length_m = self.node.get_parameter('smooth_goal_pre_length_m').get_parameter_value().double_value
-        self.smooth_goal_samples = self.node.get_parameter('smooth_goal_samples').get_parameter_value().integer_value
+        self.goal_spacing_m = self.node.get_parameter('goal_spacing_m').get_parameter_value().double_value
 
         # Remove map subscriber
         # self.map_sub = self.node.create_subscription(...)
@@ -425,78 +418,6 @@ class LaneletClickPlanner(QMainWindow):
 
         if marker_array.markers:
             self.selected_lanelets_pub.publish(marker_array)
-    
-    def _smooth_goal_tail(self, points):
-        """
-        Smooth the last `smooth_goal_length_m` of the assembled goal points using a local
-        cubic spline fit. Optionally include `smooth_goal_pre_length_m` before the tail
-        to ensure continuity. Keeps the number of points by default, unless
-        `smooth_goal_samples` > 0 is provided.
-        """
-        try:
-            if not points or len(points) < 4:
-                return points
-
-            # Build arrays and cumulative distances
-            xs = [p.x for p in points]
-            ys = [p.y for p in points]
-            s_acc = [0.0]
-            for i in range(1, len(points)):
-                dx = xs[i] - xs[i-1]
-                dy = ys[i] - ys[i-1]
-                s_acc.append(s_acc[-1] + float(np.hypot(dx, dy)))
-
-            total_len = s_acc[-1]
-            if total_len <= max(0.1, float(self.smooth_goal_length_m)):
-                return points
-
-            tail_len = max(0.0, float(self.smooth_goal_length_m))
-            pre_len = max(0.0, float(self.smooth_goal_pre_length_m))
-            win_start_dist = max(0.0, total_len - tail_len - pre_len)
-
-            # Find start index for smoothing window
-            start_idx = 0
-            for i, sv in enumerate(s_acc):
-                if sv >= win_start_dist:
-                    start_idx = i
-                    break
-
-            if len(points) - start_idx < 4:
-                return points
-
-            xs_w = xs[start_idx:]
-            ys_w = ys[start_idx:]
-
-            # Fit local spline and resample
-            spline = CubicSpline2D(xs_w, ys_w)
-            window_len = spline.s[-1]
-            if window_len <= 1e-6:
-                return points
-
-            # Keep original number of points in the window unless overridden
-            num_samples = len(xs_w) if int(self.smooth_goal_samples) <= 0 else int(self.smooth_goal_samples)
-            ss = np.linspace(0.0, window_len, num_samples)
-
-            # Prepare simple z interpolation over the window
-            z_window = [points[i].z for i in range(start_idx, len(points))]
-            z0 = z_window[0]
-            z1 = z_window[-1]
-
-            smoothed_tail = []
-            for j, sj in enumerate(ss):
-                sx, sy = spline.calc_position(sj)
-                # Linear z across window (fallback if map has varying z)
-                z = z0 + (z1 - z0) * (j / max(1, (len(ss) - 1)))
-                smoothed_tail.append(Point(x=float(sx), y=float(sy), z=float(z)))
-
-            # Reassemble points
-            return points[:start_idx] + smoothed_tail
-        except Exception as e:
-            try:
-                self.node.get_logger().warn(f"Tail smoothing failed: {e}. Publishing raw points.")
-            except Exception:
-                pass
-            return points
 
     def publish_waypoints(self):
         self.node.get_logger().info("'Publish Waypoints' button clicked.")
@@ -504,50 +425,101 @@ class LaneletClickPlanner(QMainWindow):
             self.node.get_logger().warn("No lanelets selected, cannot publish waypoints.")
             return
         
-        pose_array = PoseArray()
-        pose_array.header.frame_id = self.map_frame
-        pose_array.header.stamp = self.node.get_clock().now().to_msg()
-        
-        all_points = []
-        # This assumes the user clicks the lanelets in the correct driving order.
+        # 1) Collect all centerline points across the selected lanelets as one polyline
+        poly_points = []
         for lanelet_id in self.selected_lanelet_ids:
             if self.lanelet_map.laneletLayer.exists(lanelet_id):
                 lanelet = self.lanelet_map.laneletLayer[lanelet_id]
                 centerline = lanelet.centerline
                 for p in centerline:
-                    # Avoid duplicates at lanelet connections
-                    if not all_points or (all_points[-1].x != p.x or all_points[-1].y != p.y):
-                        # For now, we only need x and y for path generation
-                        all_points.append(Point(x=p.x, y=p.y, z=p.z))
+                    if not poly_points or (poly_points[-1].x != p.x or poly_points[-1].y != p.y):
+                        poly_points.append(Point(x=p.x, y=p.y, z=p.z))
 
-        if len(all_points) < 2:
+        if len(poly_points) < 2:
             self.node.get_logger().warn("Not enough unique points to form a path.")
             return
 
-        # Smoothing is intentionally disabled to keep lanelet geometry intact
+        # 2) Uniformly resample the entire polyline with spacing goal_spacing_m
+        resampled_points = self._resample_polyline(poly_points, max(0.01, float(self.goal_spacing_m)))
 
-        # Create a PoseArray from the collected (optionally smoothed) centerline points
-        for i in range(len(all_points)):
+        # 3) Build PoseArray with orientations from forward differences
+        pose_array = PoseArray()
+        pose_array.header.frame_id = self.map_frame
+        pose_array.header.stamp = self.node.get_clock().now().to_msg()
+
+        for i in range(len(resampled_points)):
             pose = Pose()
-            pose.position = all_points[i]
-            
-            # Calculate orientation from the vector to the next point
-            if i < len(all_points) - 1:
-                dx = all_points[i+1].x - all_points[i].x
-                dy = all_points[i+1].y - all_points[i].y
-            else: # For the last point, use the previous vector
-                dx = all_points[i].x - all_points[i-1].x
-                dy = all_points[i].y - all_points[i-1].y
-            
-            yaw = np.arctan2(dy, dx)
+            pose.position = resampled_points[i]
+
+            if i < len(resampled_points) - 1:
+                dx = resampled_points[i+1].x - resampled_points[i].x
+                dy = resampled_points[i+1].y - resampled_points[i].y
+            else:
+                dx = resampled_points[i].x - resampled_points[i-1].x
+                dy = resampled_points[i].y - resampled_points[i-1].y
+
+            yaw = float(np.arctan2(dy, dx))
             pose.orientation = yaw_to_quaternion(yaw)
             pose_array.poses.append(pose)
-        
+
         if pose_array.poses:
             self.way_pub.publish(pose_array)
-            self.node.get_logger().info(f"Successfully published {len(pose_array.poses)} raw waypoints to /autocar/goals topic.")
+            self.node.get_logger().info(f"Published {len(pose_array.poses)} uniformly spaced goals (spacing={self.goal_spacing_m} m).")
         else:
-            self.node.get_logger().warn("No valid waypoints found to publish.")
+            self.node.get_logger().warn("No valid waypoints found to publish after resampling.")
+
+    def _resample_polyline(self, points: list, spacing: float) -> list:
+        """Resample a polyline of geometry_msgs/Point to uniform arc-length spacing.
+        Returns a new list of Points at approximately equal distances along the path.
+        """
+        if not points or len(points) < 2:
+            return points
+
+        # Accumulate segment lengths and total length
+        xs = [p.x for p in points]
+        ys = [p.y for p in points]
+        zs = [p.z for p in points]
+
+        s_acc = [0.0]
+        for i in range(1, len(points)):
+            dx = xs[i] - xs[i-1]
+            dy = ys[i] - ys[i-1]
+            seg_len = float(np.hypot(dx, dy))
+            if seg_len <= 0.0:
+                s_acc.append(s_acc[-1])
+            else:
+                s_acc.append(s_acc[-1] + seg_len)
+
+        total_len = s_acc[-1]
+        if total_len <= 1e-6:
+            return [points[0]]
+
+        # Target samples from 0 to total_len
+        num_samples = max(2, int(total_len / spacing) + 1)
+        target_s = np.linspace(0.0, total_len, num_samples)
+
+        # Interpolate x,y (and z linear) by arc length
+        resampled = []
+        j = 0
+        for ts in target_s:
+            while j < len(s_acc) - 2 and s_acc[j+1] < ts:
+                j += 1
+            s0 = s_acc[j]
+            s1 = s_acc[j+1] if j+1 < len(s_acc) else s_acc[j]
+            if s1 - s0 <= 1e-9:
+                alpha = 0.0
+            else:
+                alpha = (ts - s0) / (s1 - s0)
+
+            x = xs[j] + alpha * (xs[j+1] - xs[j]) if j+1 < len(xs) else xs[j]
+            y = ys[j] + alpha * (ys[j+1] - ys[j]) if j+1 < len(ys) else ys[j]
+            z = zs[j] + alpha * (zs[j+1] - zs[j]) if j+1 < len(zs) else zs[j]
+            resampled.append(Point(x=float(x), y=float(y), z=float(z)))
+
+        # Ensure last point is exact end
+        if resampled and (resampled[-1].x != points[-1].x or resampled[-1].y != points[-1].y):
+            resampled[-1] = points[-1]
+        return resampled
 
     def select_all_lanelets(self):
         if not self.lanelet_map:

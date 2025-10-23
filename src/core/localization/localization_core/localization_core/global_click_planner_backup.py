@@ -625,7 +625,7 @@ class GlobalPathPlanning(Node):
     # ROS
     def make_waypoints_msg(self, waypoints, possible_change_direction, path):
         waypoints_msg = PoseArray()
-        waypoints_msg.header.frame_id = 'world'
+        waypoints_msg.header.frame_id = 'map'
 
         for i in range(len(waypoints)-1):
             pose = Pose()
@@ -653,7 +653,7 @@ class GlobalPathPlanning(Node):
     # ROS
     def make_way_msg(self, ways_for_visualize):
         ways = PoseArray()
-        ways.header.frame_id = "world"
+        ways.header.frame_id = "map"
         if self.location_msg:
             ways.header.stamp = self.location_msg.header.stamp
         else:
