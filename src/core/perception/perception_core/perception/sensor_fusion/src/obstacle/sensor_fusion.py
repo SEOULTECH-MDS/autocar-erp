@@ -22,7 +22,7 @@ from std_msgs.msg import Bool
 
 class SensorFusion(Node):
     def __init__(self):
-        super().__init__('sensor_fusion')
+        super().__init__('sensor_fusion_obstacle')
         
         # Lane Mission Controller에서 오는 enable 상태
         self.is_enabled = False

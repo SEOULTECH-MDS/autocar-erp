@@ -17,7 +17,8 @@ class PreliminaryController(Node):
         # 미션별 enable 상태 초기화
         self.mission_states = {
             'obstacle': False,
-            'rubber': False
+            'rubber': False,
+            'rubber_uturn': False
         }
         
         # 현재 lane ID
@@ -37,7 +38,8 @@ class PreliminaryController(Node):
         # 발행자: 각 미션별 enable 토픽
         self.mission_publishers = {
             'obstacle': self.create_publisher(Bool, '/mission/obstacle/enable', 10),
-            'rubber': self.create_publisher(Bool, '/mission/rubber/enable', 10)
+            'rubber': self.create_publisher(Bool, '/mission/rubber/enable', 10),
+            'rubber_uturn': self.create_publisher(Bool, '/mission/rubber_uturn/enable', 10)
         }
 
         # 타이머: 주기적으로 enable 상태 발행
@@ -71,15 +73,16 @@ class PreliminaryController(Node):
         """기본 미션 매핑 설정 - 다중 구간 지원"""
         self.mission_mapping = {
             'obstacle': [
-                {'start': 7, 'end': 7},  # 드럼통
-                {'start': 19, 'end': 19}   # 사람
+                {'start': 10, 'end': 10},  # 터널 구간(드럼통, 사람)
             ],
             'rubber': [
-                {'start': 21, 'end': 21},  # 주차
-                {'start': 22, 'end': 22}   # 유턴
+                {'start': 2, 'end': 2},  # 주차
+            ],
+            'rubber_uturn': [
+                {'start': 5, 'end': 7}   # 유턴
             ]
         }
-        self.get_logger().info('본선 미션 매핑 사용')
+        self.get_logger().info('예선 미션 매핑 사용')
     
     def lane_id_callback(self, msg):
         """현재 lane ID 수신 콜백"""

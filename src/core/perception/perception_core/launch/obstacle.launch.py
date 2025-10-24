@@ -18,19 +18,19 @@ def generate_launch_description():
         #     output='screen'
         # ),
 
-        Node( # 드럼통 인식
-            package='perception',
-            executable='drum_detect',
-            name='drum_detect',
-            output='screen'
-        ),
-
-        # Node( # 차 인식
+        # Node( # 드럼통 인식
         #     package='perception',
-        #     executable='car_detect',
-        #     name='car_detect',
+        #     executable='drum_detect',
+        #     name='drum_detect',
         #     output='screen'
         # ),
+
+        Node( # 차 인식
+            package='perception',
+            executable='car_detect',
+            name='car_detect',
+            output='screen'
+        ),
 
         Node(
             package='perception',

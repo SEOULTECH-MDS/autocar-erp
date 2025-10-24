@@ -49,9 +49,11 @@ setup(
             # 신호등
             'trafficlight = perception.yolov11.trafficlight:main',
 
-            # 라바콘 (주차)
-            'rubber_detect = perception.yolov11.rubber_detect:main',
-            "sensor_fusion_rubber = perception.sensor_fusion.src.rubber.sensor_fusion:main",
+            # 라바콘
+            'rubber_detect = perception.yolov11.rubber_detect:main', # 주차
+            'rubber_uturn = perception.yolov11.rubber_uturn:main', # 유턴
+            "sensor_fusion_rubber = perception.sensor_fusion.src.rubber.sensor_fusion:main", # 주차
+            "sensor_fusion_rubber_uturn = perception.sensor_fusion.src.rubber.sensor_fusion_uturn:main", # 유턴
             "bbox_tracker = perception.tracker.src.bbox_tracker:main",
             "object_tracker3D = perception.tracker.src.object_tracker3D:main",
             "rubber_visualizer = perception.rubber_visualizer.src.rubber_visualizer:main",
