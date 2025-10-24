@@ -126,7 +126,9 @@ def acados_solver():
                  W_v * ((vehicle_v - v_ref) ** 2) + \
                  W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                  W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
-                 W_yaw * ((vehicle_yaw - yaw_ref) ** 2)
+                 W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
+
+                #  W_yaw * ((vehicle_yaw - yaw_ref) ** 2)
                 # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
     ocp.model.cost_expr_ext_cost = stage_cost
 
@@ -134,7 +136,9 @@ def acados_solver():
     terminal_cost = We_v * ((vehicle_v - v_ref) ** 2) + \
                     We_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                     We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
-                    We_yaw * ((vehicle_yaw - yaw_ref) ** 2)    
+                    We_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
+
+                    # We_yaw * ((vehicle_yaw - yaw_ref) ** 2)    
                     # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
                 
     ocp.model.cost_expr_ext_cost_e = terminal_cost

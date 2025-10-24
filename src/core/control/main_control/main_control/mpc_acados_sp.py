@@ -126,19 +126,21 @@ class Control(Node):
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
             4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # DELIVERY 
-            5: np.array([0.1, 0.1, 2.5, 0.1, 0.5, 7.0, 2.5]), # PARKING
+            5: np.array([0.1, 0.1, 4.0, 0.5, 0.01, 7.0, 5.0]), # PARKING
             6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1])  # RETURN (사용X)
         }       
         self.current_weights = self.mode_weights[self.mode]
+            # 5: np.array([0.1, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING 1005
+
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 3.0,  # DRIVE
+            0: 1.0,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
-            5: 1.5,  # PARKING
+            5: 2.5,  # PARKING
             6: 3.0   # RETURN (사용X)
         }
         self.target_vel = self.mode_target_vel[self.mode]
@@ -498,7 +500,7 @@ class Control(Node):
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
                     # 끝점을 넘어갔으면 끝점으로 고정
-                    s = cubic_spline.s[-1] - 0.01
+                    s = cubic_spline.s[-1] - 0.1
                     target_vel_current = 0.0
                 else:
                     # 장애물 감지 확인
@@ -520,12 +522,12 @@ class Control(Node):
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 if self.is_reverse:
                     xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
-                    xref[3, i] = -curv_based_vel  # 후진 시 음수 속도의 reference 사용
+                    # xref[3, i] = -curv_based_vel  # 후진 시 음수 속도의 reference 사용
                 else:
                     xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
-                    xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
+                    # xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
                 xref[4, i] = s
-
+                xref[3, i] = target_vel_current  # 항상 양수 속도의 reference 사용
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
                 tan_vec[1, i] = math.sin(cubic_spline.calc_yaw(s))
 
@@ -596,6 +598,7 @@ class Control(Node):
         for i in range(N):
             # wrap yaw reference around current yaw to avoid ±pi jump in cost
             yaw_ref_wrapped = xref[2, i]
+            # if not np.isnan(self.yaw) & self.is_reverse==False:
             if not np.isnan(self.yaw):
                 yaw_ref_wrapped = normalise_angle(yaw_ref_wrapped - self.yaw) + self.yaw
             params = np.hstack([
@@ -612,6 +615,7 @@ class Control(Node):
         # self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
 
         yaw_ref_wrapped_last = xref[2, -1]
+        # if not np.isnan(self.yaw) & self.is_reverse==False:
         if not np.isnan(self.yaw):
             yaw_ref_wrapped_last = normalise_angle(yaw_ref_wrapped_last - self.yaw) + self.yaw
         self.solver.set(N, "p", np.hstack([np.array([xref[0, -1], xref[1, -1], yaw_ref_wrapped_last, xref[3, -1], xref[4, -1]]), u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
@@ -647,7 +651,8 @@ class Control(Node):
 
         # s 값이 목표 지점에 도달했는지 확인 -> local path 활용 시 s의 끝에 도달했을 떄 속도를 0으로 설정
         remaining_distance = current_cubic_spline.s[-1] - self.s
-        if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 0.8): # s의 20%(path가 4.0m보다 짧을 경우) or 0.8m 이내에 도달했으면 정지
+        # if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 2.5): # s의 20%(path가 4.0m보다 짧을 경우) or 2.5m 이내에 도달했으면 정지
+        if remaining_distance <= 1.7: # 1.7m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
         if self.mode == 1 and self.stopline_distance < 3.5: # PAUSE 모드이고 정지선 까지 거리가 3.5m 이내이면 정지

@@ -92,8 +92,8 @@ class PlannerNode(Node):
         # 차량 물리적 특성
         self.declare_parameter('vehicle_width', 1.16)           # 차량 폭 [m]
         self.declare_parameter('vehicle_length', 2.02)          # 차량 길이 [m]
-        self.declare_parameter('path_resolution', 0.3)         # 경로 점들 사이의 간격 [m]
-        
+        self.declare_parameter('path_resolution', 0.1)         # 경로 점들 사이의 간격 [m]
+
         # 주차 공간 기본 정보
         self.declare_parameter('default_slot_len', 5.0)         # 주차 공간 길이 기본값 [m]
         self.declare_parameter('default_slot_width', 2.5)       # 주차 공간 폭 기본값 [m]
@@ -115,12 +115,12 @@ class PlannerNode(Node):
         # === 1순위: 작년 로직 (Old-logic) - 3개 직선 구간 경로 ===
         self.declare_parameter('oldlogic_use', True)            # 작년 로직 사용 여부 (최우선)
         self.declare_parameter('oldlogic_pre_reverse', 3.5)     # Stage-1 골에서 반대방향 직진 거리 [m]
-        self.declare_parameter('oldlogic_pre_straight', 0.3)    # 초기 직선 step 크기 [m]
+        self.declare_parameter('oldlogic_pre_straight', 0.1)    # 초기 직선 step 크기 [m]
         self.declare_parameter('oldlogic_center_offset', 2.0)   # 구역 중심 오프셋 (주차위치에서 앞으로) [m]
         
         # ==================== 스테이지 제어 파라미터 ====================
         self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
-        self.declare_parameter('stage_position_tolerance', 2.0)  # 스테이지 완료 위치 허용 오차 [m]
+        self.declare_parameter('stage_position_tolerance', 1.5)  # 스테이지 완료 위치 허용 오차 [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 100.0)    # 스테이지 완료 방향 허용 오차 [도]
         self.declare_parameter('publish_unified_waypoints', False)  # (삭제 예정1023)현재 스테이지만 /waypoints 퍼블리시 여부
         self.declare_parameter('lock_parking_pose', True)          # 주차 포즈 최초 1회만 고정할지 여부(T:1회)
