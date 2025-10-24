@@ -138,7 +138,8 @@ def acados_solver():
                     We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
                     We_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
 
-                    # We_yaw * ((vehicle_yaw - yaw_ref) ** 2)    
+                    # We_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
+
                     # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
                 
     ocp.model.cost_expr_ext_cost_e = terminal_cost
