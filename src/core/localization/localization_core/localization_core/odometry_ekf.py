@@ -115,11 +115,9 @@ class OdometryNode(Node):
 
         # 퍼블리셔 초기화
         self.odom_pub = self.create_publisher(Odometry, '/autocar/location', 10)
-        # EKF 포즈도 PoseWithCovariance로 추가 발행(포즈 선택/퓨전용)
-        self.ekf_pose_pub = self.create_publisher(PoseWithCovarianceStamped, '/localization/ekf/pose_with_covariance', 10)
+        # yabloc 용 Pose
+        self.ekf_pose_pub = self.create_publisher(PoseWithCovarianceStamped, '/localization/pose_with_covariance', 10)
         
-        # self.location_viz_pub = self.create_publisher(PolygonStamped, '/autocar/viz_location', 10)
-
         # 타이머 초기화
         self.timer = self.create_timer(0.05, self.publish_odometry)
 

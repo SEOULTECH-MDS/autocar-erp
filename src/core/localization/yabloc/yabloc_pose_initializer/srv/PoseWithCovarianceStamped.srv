@@ -1,0 +1,7 @@
+# Request
+geometry_msgs/PoseWithCovarianceStamped pose_with_covariance
+---
+# Response
+bool success
+bool reliable
+geometry_msgs/PoseWithCovarianceStamped pose_with_covariance

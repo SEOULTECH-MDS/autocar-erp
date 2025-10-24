@@ -1,0 +1,57 @@
+<launch>
+  <!-- 공통 인자 -->
+  <arg name="input_particle_pose" default="/localization/pose_twist_fusion_filter/pose"/>
+  <arg name="ground_server_param_path" default="$(find-pkg-share yabloc_common)/config/ground_server.param.yaml"/>
+  <arg name="ll2_decomposer_param_path" default="$(find-pkg-share yabloc_common)/config/ll2_decomposer.param.yaml"/>
+
+  <!-- 선택: 이미지/초기자세 관련 인자 -->
+  <arg name="image_raw" default="/camera_front/image_raw"/>
+  <arg name="camera_info" default="/camera_front/camera_info"/>
+  <arg name="input_pose" default="/localization/pose_twist_fusion_filter/pose"/>
+  <arg name="angle_resolution" default="180"/>
+  <arg name="model_path" default="/path/to/segmentation_model.onnx"/>
+  <arg name="with_monitor" default="false"/>
+  <!-- 초기 자세 입력 토픽: 첫 메시지를 파티클 초기화 시드로 사용 -->
+  <arg name="initialpose_topic" default="/initialpose3d"/>
+
+  <!-- yabloc_common: ground_server + ll2_decomposer -->
+  <include file="$(find-pkg-share yabloc_common)/launch/yabloc_common.launch.xml">
+    <arg name="input_particle_pose" value="$(var input_particle_pose)"/>
+    <arg name="ground_server_param_path" value="$(var ground_server_param_path)"/>
+    <arg name="ll2_decomposer_param_path" value="$(var ll2_decomposer_param_path)"/>
+    <!-- Ground server outputs under YabLoc namespace -->
+    <arg name="output_height" value="/localization/pose_estimator/yabloc/map/height"/>
+    <arg name="output_ground" value="/localization/pose_estimator/yabloc/map/ground"/>
+    <arg name="output_ground_markers" value="/localization/pose_estimator/yabloc/map/ground_markers"/>
+    <arg name="output_ground_status" value="/localization/pose_estimator/yabloc/map/ground_status"/>
+    <arg name="output_near_cloud" value="/localization/pose_estimator/yabloc/map/near_cloud"/>
+    <!-- LL2 decomposer outputs under YabLoc namespace -->
+    <arg name="output_ll2_road_marking" value="/localization/pose_estimator/yabloc/map/ll2_road_marking"/>
+    <arg name="output_ll2_sign_board" value="/localization/pose_estimator/yabloc/map/ll2_sign_board"/>
+    <arg name="output_ll2_bounding_box" value="/localization/pose_estimator/yabloc/map/ll2_bounding_box"/>
+    <arg name="output_sign_board_marker" value="/localization/pose_estimator/yabloc/map/sign_board_marker"/>
+  </include>
+
+  <!-- yabloc_image_processing -->
+  <include file="$(find-pkg-share yabloc_image_processing)/launch/yabloc_image_processing.launch.xml">
+    <arg name="src_image" value="$(var image_raw)"/>
+    <arg name="src_info" value="$(var camera_info)"/>
+    <arg name="input_pose" value="$(var input_pose)"/>
+  </include>
+
+  <!-- yabloc_particle_filter -->
+  <include file="$(find-pkg-share yabloc_particle_filter)/launch/yabloc_particle_filter.launch.xml">
+    <arg name="input_initialpose" value="$(var initialpose_topic)"/>
+  </include>
+
+  <!-- 선택: yabloc_pose_initializer -->
+  <include file="$(find-pkg-share yabloc_pose_initializer)/launch/yabloc_pose_initializer.launch.xml">
+    <arg name="angle_resolution" value="$(var angle_resolution)"/>
+    <arg name="model_path" value="$(var model_path)"/>
+  </include>
+
+  <!-- 선택: YabLoc 상태 모니터(진단) -->
+  <include if="$(var with_monitor)" file="$(find-pkg-share yabloc_monitor)/launch/yabloc_monitor.launch.xml"/>
+</launch>
+
+
