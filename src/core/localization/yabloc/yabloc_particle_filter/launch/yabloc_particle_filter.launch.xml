@@ -2,6 +2,7 @@
   <!-- predict update -->
   <arg name="input_initialpose" default="/initialpose3d"/>
   <arg name="twist_cov_for_prediction" default="/localization/twist_estimator/twist_with_covariance"/>
+  <arg name="use_sim_time" default="false"/>
   <arg name="predictor_param_path" default="$(find-pkg-share yabloc_particle_filter)/config/predictor.param.yaml"/>
   <arg name="camera_particle_corrector_param_path" default="$(find-pkg-share yabloc_particle_filter)/config/camera_particle_corrector.param.yaml"/>
   <arg name="gnss_particle_corrector_param_path" default="$(find-pkg-share yabloc_particle_filter)/config/gnss_particle_corrector.param.yaml"/>
@@ -9,6 +10,7 @@
   <let name="output_particles_marker_array" value="predicted_particles_marker"/>
   <node pkg="yabloc_particle_filter" exec="yabloc_predictor_node" output="both">
     <param from="$(var predictor_param_path)"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
 
     <remap from="~/input/initialpose" to="$(var input_initialpose)"/>
     <remap from="~/input/twist_with_covariance" to="$(var twist_cov_for_prediction)"/>
@@ -30,6 +32,7 @@
   <arg name="input_ll2_bounding_box" default="/localization/pose_estimator/yabloc/map/ll2_bounding_box"/>
   <node pkg="yabloc_particle_filter" exec="yabloc_camera_particle_corrector_node" output="both">
     <param from="$(var camera_particle_corrector_param_path)"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
 
     <remap from="~/input/predicted_particles" to="predicted_particles"/>
     <remap from="~/input/line_segments_cloud" to="$(var input_projected_line_segments_cloud)"/>
@@ -51,6 +54,7 @@
   <!-- gnss correction -->
   <node pkg="yabloc_particle_filter" exec="yabloc_gnss_particle_corrector_node" output="both">
     <param from="$(var gnss_particle_corrector_param_path)"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
 
     <remap from="~/input/predicted_particles" to="predicted_particles"/>
     <remap from="~/input/height" to="/localization/pose_estimator/yabloc/map/height"/>

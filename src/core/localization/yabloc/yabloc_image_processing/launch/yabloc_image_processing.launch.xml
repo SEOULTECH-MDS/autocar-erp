@@ -5,6 +5,7 @@
   <arg name="resized_info" default="undistorted/camera_info"/>
   <arg name="input_pose" default="undistorted"/>
   <arg name="validation" default="true"/>
+  <arg name="use_sim_time" default="false"/>
 
   <include file="$(find-pkg-share yabloc_image_processing)/launch/image_processing.launch.xml">
     <arg name="src_image" value="$(var src_image)"/>
@@ -18,6 +19,7 @@
       <arg name="input_overlaid_pose" value="$(var input_pose)"/>
       <arg name="resized_image" value="$(var resized_image)"/>
       <arg name="resized_info" value="$(var resized_info)"/>
+      <arg name="use_sim_time" value="$(var use_sim_time)"/>
     </include>
   </group>
 </launch>

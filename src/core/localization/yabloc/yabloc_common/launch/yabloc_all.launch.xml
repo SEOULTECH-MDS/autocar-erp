@@ -1,21 +1,24 @@
 <launch>
   <!-- 공통 인자 -->
-  <arg name="input_particle_pose" default="/localization/pose_twist_fusion_filter/pose"/>
+  <arg name="input_particle_pose" default="/localization/pose_with_covariance"/>
   <arg name="ground_server_param_path" default="$(find-pkg-share yabloc_common)/config/ground_server.param.yaml"/>
   <arg name="ll2_decomposer_param_path" default="$(find-pkg-share yabloc_common)/config/ll2_decomposer.param.yaml"/>
 
   <!-- 선택: 이미지/초기자세 관련 인자 -->
   <arg name="image_raw" default="/camera_front/image_raw"/>
   <arg name="camera_info" default="/camera_front/camera_info"/>
-  <arg name="input_pose" default="/localization/pose_twist_fusion_filter/pose"/>
+  <arg name="input_pose" default="/localization/pose_with_covariance"/>
   <arg name="angle_resolution" default="180"/>
   <arg name="model_path" default="/path/to/segmentation_model.onnx"/>
   <arg name="with_monitor" default="false"/>
   <!-- 초기 자세 입력 토픽: 첫 메시지를 파티클 초기화 시드로 사용 -->
-  <arg name="initialpose_topic" default="/initialpose3d"/>
+  <arg name="initialpose_topic" default="/localization/pose_with_covariance"/>
+  <!-- 시뮬레이션 시간 사용 여부 -->
+  <arg name="use_sim_time" default="true"/>
 
   <!-- yabloc_common: ground_server + ll2_decomposer -->
   <include file="$(find-pkg-share yabloc_common)/launch/yabloc_common.launch.xml">
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
     <arg name="input_particle_pose" value="$(var input_particle_pose)"/>
     <arg name="ground_server_param_path" value="$(var ground_server_param_path)"/>
     <arg name="ll2_decomposer_param_path" value="$(var ll2_decomposer_param_path)"/>
@@ -37,17 +40,20 @@
     <arg name="src_image" value="$(var image_raw)"/>
     <arg name="src_info" value="$(var camera_info)"/>
     <arg name="input_pose" value="$(var input_pose)"/>
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
   </include>
 
   <!-- yabloc_particle_filter -->
   <include file="$(find-pkg-share yabloc_particle_filter)/launch/yabloc_particle_filter.launch.xml">
     <arg name="input_initialpose" value="$(var initialpose_topic)"/>
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
   </include>
 
   <!-- 선택: yabloc_pose_initializer -->
   <include file="$(find-pkg-share yabloc_pose_initializer)/launch/yabloc_pose_initializer.launch.xml">
     <arg name="angle_resolution" value="$(var angle_resolution)"/>
     <arg name="model_path" value="$(var model_path)"/>
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
   </include>
 
   <!-- 선택: YabLoc 상태 모니터(진단) -->
