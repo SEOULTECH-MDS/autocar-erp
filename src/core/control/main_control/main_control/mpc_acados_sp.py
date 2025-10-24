@@ -65,6 +65,9 @@ class Control(Node):
         self.v = None
         self.s = None
 
+        # [복구] Unwrapped Yaw 상태를 저장할 누적 변수 초기화
+        self.yaw_unwrapped = None
+
         self.xs_global = []
         self.ys_global = []
         self.cubic_spline_global = None  
@@ -98,6 +101,8 @@ class Control(Node):
         self.prev_velocity = 0.0
         self.fail_count = 0  # 실패 횟수 카운트
         
+        # [롤백] Hot-Start 관련 변수 제거 (acados 내부 Hot-Start에 의존)
+        
         # s 값 제약을 위한 변수들
         self.prev_s = 0.0  # 이전 s 값 저장
         self.s_tolerance = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
@@ -109,8 +114,6 @@ class Control(Node):
         # 모드 상태
         self.mode = 0 
         self.mode_description = "Drive"  
-        # self.mode = 5
-        # self.mode_description = "Parking"
     
         # self.is_reverse = True
         self.is_reverse = False
@@ -121,26 +124,25 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-4, 0.1, 4.0, 2.0, 1.0, 2.0, 0.1]), # DRIVE
+            0: np.array([1e-4, 0.08, 5.0, 2.0, 0.7, 2.0, 10.0]), # DRIVE
             1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.1]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
             4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # DELIVERY 
-            5: np.array([0.1, 0.1, 4.0, 0.5, 0.01, 7.0, 5.0]), # PARKING
+            5: np.array([0.1, 0.08, 5.0, 0.5, 0.7, 8.0, 10.0]), # PARKING
             6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1])  # RETURN (사용X)
         }       
         self.current_weights = self.mode_weights[self.mode]
-            # 5: np.array([0.1, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING 1005
 
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 1.0,  # DRIVE
+            0: 1.5,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
-            5: 2.5,  # PARKING
+            5: 2.0,  # PARKING
             6: 3.0   # RETURN (사용X)
         }
         self.target_vel = self.mode_target_vel[self.mode]
@@ -174,8 +176,28 @@ class Control(Node):
         self.y = msg.pose.pose.position.y - self.map_origin_y
 
         q = msg.pose.pose.orientation
-        self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+        self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w) # self.yaw는 [-pi, pi]로 정규화됨
 
+        # [복구] Unwrapped Yaw 업데이트 로직 추가: 연속적인 yaw 상태 유지
+        if self.yaw_unwrapped is not None:
+            # 현재 측정된 self.yaw를 [-pi, pi] 범위로 정규화
+            wrapped_current_yaw = normalise_angle(self.yaw)
+            
+            # 이전 unwrapped yaw를 [-pi, pi]로 래핑하여 차이 계산의 기준점을 찾음
+            yaw_diff = wrapped_current_yaw - normalise_angle(self.yaw_unwrapped)
+            
+            # 오차가 pi보다 크면 -2pi, -pi보다 작으면 +2pi를 더하여 보정 (가장 짧은 각도 차이)
+            if yaw_diff > np.pi:
+                yaw_diff -= 2 * np.pi
+            elif yaw_diff < -np.pi:
+                yaw_diff += 2 * np.pi
+                
+            # 누적된 yaw_unwrapped에 가장 짧은 각도 차이만큼 더하여 업데이트
+            self.yaw_unwrapped = self.yaw_unwrapped + yaw_diff
+        else:
+            self.yaw_unwrapped = self.yaw # 초기값은 첫 측정된 yaw와 동일
+
+        # Yaw가 None이면 unwrapped_yaw도 None이므로, 이 상태에서는 로그를 남기지 않음
 
         if self.is_reverse:
             self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state 
@@ -186,9 +208,6 @@ class Control(Node):
             self.v = 0.1
             
         self.yawrate = msg.twist.twist.angular.z
-
-        # if len(self.xs_global) > 0 or len(self.xs_local) > 0:
-        #     self.calc_current_s()
 
         self.lock.release()
 
@@ -490,17 +509,20 @@ class Control(Node):
         xref = np.zeros((NX, N)) # reference x, y, yaw, v, s
         tan_vec = np.zeros((2, N)) # 접선 벡터 tx, ty
 
+        s_end = cubic_spline.s[-1] if cubic_spline else 0.0
+        epsilon = 1e-6 # Robust Clamping을 위한 안전 여유
+
         if cubic_spline:
             current_s = self.s
+            current_yaw = self.yaw_unwrapped if self.yaw_unwrapped is not None else self.yaw
 
             for i in range(N):
                 # 다음 s 값을 먼저 계산
                 s = current_s + self.dt * abs(self.target_vel) # v가 음수일 때도 s는 증가해야 함
                 
-                # s가 끝점을 넘어갔는지 확인
-                if s > cubic_spline.s[-1]:
-                    # 끝점을 넘어갔으면 끝점으로 고정
-                    s = cubic_spline.s[-1] - 0.1
+                # [복구] s가 끝점을 넘어갔거나 같으면 클램핑
+                if s >= s_end:
+                    s = s_end - epsilon # 끝점에서 아주 작은 값만큼 뒤로 물림
                     target_vel_current = 0.0
                 else:
                     # 장애물 감지 확인
@@ -520,14 +542,28 @@ class Control(Node):
                 curv_based_vel = target_vel_current * speed_factor
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
-                if self.is_reverse:
-                    xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
-                    # xref[3, i] = -curv_based_vel  # 후진 시 음수 속도의 reference 사용
+                
+                # Yaw Reference: 경로에서 얻은 yaw는 [-pi, pi] 범위임
+                path_yaw = cubic_spline.calc_yaw(s)
+                
+                # [복구] Path Yaw를 현재 Unwrapped Yaw 주변으로 래핑하여 연속적인 Reference Yaw를 생성
+                if current_yaw is not None:
+                    # current_yaw(unwrapped) 주변의 가장 가까운 2pi 배수로 path_yaw를 보정
+                    yaw_correction = round((current_yaw - path_yaw) / (2 * np.pi)) * 2 * np.pi
+                    ref_yaw_unwrapped = path_yaw + yaw_correction
                 else:
-                    xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
-                    # xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
+                    ref_yaw_unwrapped = path_yaw
+
+                if self.is_reverse:
+                    # 후진 시 yaw에 180도(pi)를 더한 값의 unwrapped 버전을 사용
+                    xref[2, i] = ref_yaw_unwrapped + math.pi 
+                else:
+                    xref[2, i] = ref_yaw_unwrapped  # 전진 시 unwrapped yaw 사용
+
                 xref[4, i] = s
                 xref[3, i] = target_vel_current  # 항상 양수 속도의 reference 사용
+                
+                # 접선 벡터는 래핑된 yaw를 사용해도 됨 (방향만 필요)
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
                 tan_vec[1, i] = math.sin(cubic_spline.calc_yaw(s))
 
@@ -541,7 +577,7 @@ class Control(Node):
         """
 
         # 차량 상태 초기화 확인
-        if self.x is None or self.y is None or self.yaw is None or self.v is None:
+        if self.x is None or self.y is None or self.yaw_unwrapped is None or self.v is None: # [복구] self.yaw_unwrapped로 변경
             self.get_logger().warn("차량 상태가 초기화되지 않았습니다.")
             return
 
@@ -567,8 +603,10 @@ class Control(Node):
         # 현재 s 값 계산 (self.s 업데이트)
         self.calc_current_s(current_cubic_spline)
         
-        # 현재 상태 벡터 x0 설정 
-        x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
+        # [복구] 현재 상태 벡터 x0 설정: self.yaw_unwrapped 사용
+        x0 = np.array([self.x, self.y, self.yaw_unwrapped, self.v, self.s])
+
+        # [롤백 유지] Hot-Start 로직 제거 (acados 내부 설정에 의존)
 
         # calc_ref_trajectory에 x0를 전달하여 동적 Reference Trajectory 계산
         xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
@@ -576,10 +614,11 @@ class Control(Node):
         # 초기 상태 및 장애물 정보 설정
         obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y, self.obs3_x, self.obs3_y, self.obs4_x, self.obs4_y])
 
-        u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a) -> **이전에 얻은 솔루션으로 채워지지 않았다면 0으로 유지**
+        # [롤백 유지] 제어 입력 및 상태 변수는 0으로 초기화 (Cold-Start와 유사)
+        u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a)
         x_opt = np.zeros((N, NX))  # 상태 변수 초기화 (x, y, yaw, v, s)
 
-        # Solver 초기 상태 변수 설정 
+        # Solver 초기 상태 변수 설정 (k=0의 상태는 현재 측정된 x0로 고정)
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
@@ -594,16 +633,15 @@ class Control(Node):
         else:
             r_safe = 0.0
 
-        # MPC Solver에 파라미터 변수 전달 (yaw 오차는 wrap 적용)
+        # MPC Solver에 파라미터 변수 전달
         for i in range(N):
-            # wrap yaw reference around current yaw to avoid ±pi jump in cost
-            yaw_ref_wrapped = xref[2, i]
-            # if not np.isnan(self.yaw) & self.is_reverse==False:
-            if not np.isnan(self.yaw):
-                yaw_ref_wrapped = normalise_angle(yaw_ref_wrapped - self.yaw) + self.yaw
+            # [복구] Yaw Reference 래핑 로직 제거: xref[2, i]는 이미 calc_ref_trajectory에서 unwrapped version으로 준비됨.
+            yaw_ref_unwrapped = xref[2, i]
+            
+            # 파라미터 설정
             params = np.hstack([
-                np.array([xref[0, i], xref[1, i], yaw_ref_wrapped, xref[3, i], xref[4, i]]),
-                u_opt[i, 0],
+                np.array([xref[0, i], xref[1, i], yaw_ref_unwrapped, xref[3, i], xref[4, i]]),
+                self.prev_steering_angle, # [롤백 유지] 이전 제어 입력(self.prev_steering_angle) 사용
                 tan_vec[:, i],
                 weights,
                 obs
@@ -611,14 +649,10 @@ class Control(Node):
             self.solver.set(i, "p", params)
             self.solver.constraints_set(i, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
             self.solver.constraints_set(i, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정
-            # self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
-        # self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
-
-        yaw_ref_wrapped_last = xref[2, -1]
-        # if not np.isnan(self.yaw) & self.is_reverse==False:
-        if not np.isnan(self.yaw):
-            yaw_ref_wrapped_last = normalise_angle(yaw_ref_wrapped_last - self.yaw) + self.yaw
-        self.solver.set(N, "p", np.hstack([np.array([xref[0, -1], xref[1, -1], yaw_ref_wrapped_last, xref[3, -1], xref[4, -1]]), u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
+        
+        # Terminal Stage (N)
+        yaw_ref_unwrapped_last = xref[2, -1]
+        self.solver.set(N, "p", np.hstack([np.array([xref[0, -1], xref[1, -1], yaw_ref_unwrapped_last, xref[3, -1], xref[4, -1]]), self.prev_steering_angle, tan_vec[:, -1], weights, obs]))
         self.solver.constraints_set(N, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
         self.solver.constraints_set(N, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정   
 
@@ -635,9 +669,13 @@ class Control(Node):
         self.fail_count = 0  # 성공 시 fail count 초기화
 
         # Solver에서 최적화된 제어 입력, 상태 변수 추출
+        # x_opt는 k=0부터 N까지 N+1개의 상태를 가져오도록 수정
         u_opt = np.array([self.solver.get(i, "u") for i in range(N)])
-        x_opt = np.array([self.solver.get(i, "x") for i in range(N)])
-        self.visualize_predicted_trajectory(x_opt)
+        x_opt = np.array([self.solver.get(i, "x") for i in range(N+1)]) 
+        
+        # [롤백 유지] 새로운 최적 해를 다음 루프를 위해 저장하는 로직 제거
+
+        self.visualize_predicted_trajectory(x_opt[1:, :]) # k=1부터 N까지만 시각화
 
         # 제어 입력
         self.velocity = x_opt[1, 3]        # 속도 (v) -> 속도는 1step 뒤의 값을 사용
@@ -707,7 +745,8 @@ class Control(Node):
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \
             \n Reverse: {self.is_reverse} \
-            \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f}) \
+            \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw_unwrapped:.2f}, {self.v:.2f}, {self.s:.2f}) \
+            \n wrapped yaw: {self.yaw:.2f} \
             \n weights: {self.current_weights} \
             \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), \
             Obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f}), Obs4: ({self.obs4_x:.2f}, {self.obs4_y:.2f}) \
@@ -737,8 +776,9 @@ class Control(Node):
             marker.pose.position.z = 0.0
 
             # 방향 설정 (yaw를 쿼터니언으로 변환)
-            yaw = x_opt[i, 2]  # yaw 값
-            quaternion = yaw_to_quaternion(yaw)
+            # [복구 유지] Unwrapped Yaw를 시각화할 때는 [-pi, pi]로 래핑해야 Rviz에서 올바른 방향을 표시함
+            yaw_wrapped = normalise_angle(x_opt[i, 2])
+            quaternion = yaw_to_quaternion(yaw_wrapped)
             marker.pose.orientation.x = quaternion.x
             marker.pose.orientation.y = quaternion.y
             marker.pose.orientation.z = quaternion.z
@@ -784,8 +824,9 @@ class Control(Node):
             arrow_marker.pose.position.z = 0.0
 
             # 방향 설정 (yaw를 쿼터니언으로 변환)
-            yaw = xref[2, i]  # yaw 값
-            quaternion = yaw_to_quaternion(yaw)
+            # [복구 유지] Unwrapped Yaw를 시각화할 때는 [-pi, pi]로 래핑해야 Rviz에서 올바른 방향을 표시함
+            yaw_wrapped = normalise_angle(xref[2, i])
+            quaternion = yaw_to_quaternion(yaw_wrapped)
             arrow_marker.pose.orientation.x = quaternion.x
             arrow_marker.pose.orientation.y = quaternion.y
             arrow_marker.pose.orientation.z = quaternion.z

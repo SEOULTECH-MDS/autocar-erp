@@ -72,6 +72,8 @@ class UturnPlanner(Node):
         self.declare_parameter('arc_radius', 2.0)  # 원호 반지름 [m] (지름 4m)
         self.declare_parameter('completion_distance', 2.0)  # 완료 거리 [m]
         self.declare_parameter('min_cone_count', 3)  # 최소 라바콘 개수
+        self.declare_parameter('distance_threshold', 8.0)  # 라바콘 평균 거리 임계치 [m]
+        self.declare_parameter('enable_debug_visualization', False)  # 디버그 시각화 활성화
         self.declare_parameter('frame_id', 'map')  # 기본 좌표계
         
         # U턴 구역 ID (selector.py와 동일)
@@ -102,6 +104,10 @@ class UturnPlanner(Node):
         # 테스트 모드용 시각화 퍼블리셔
         self.test_vehicle_marker_pub = self.create_publisher(
             Marker, '/uturn/test_vehicle_marker', qos_default)
+        
+        # 디버그 시각화 퍼블리셔
+        self.debug_cone_distances_pub = self.create_publisher(
+            MarkerArray, '/uturn/debug_cone_distances', qos_default)
             
         # Subscribers
         self.cones_sub = self.create_subscription(
@@ -122,6 +128,8 @@ class UturnPlanner(Node):
         self._current_mode = None
         self._current_lanelet_id = None
         self._cone_count = 0
+        self._tracked_cones = []  # 감지된 라바콘 위치 리스트 (map 프레임)
+        self._cone_distances = []  # 각 라바콘과 차량 간 거리 리스트 (디버그용)
         self._vehicle_location = None  # UTM 좌표계
         self._start_location = None  # U턴 시작 시점의 위치 (map 프레임)
         self._uturn_path = None  # 생성된 U턴 경로
@@ -160,14 +168,20 @@ class UturnPlanner(Node):
         if not self._is_active:
             return
             
-        # 라바콘 개수 계산 (유효한 마커만)
+        # 라바콘 개수 및 위치 저장
         cone_count = 0
+        self._tracked_cones = []  # 라바콘 위치 리스트 초기화
+        
         for marker in msg.markers:
             if marker.type == Marker.CYLINDER or marker.type == Marker.SPHERE:
                 cone_count += 1
+                # 라바콘 위치를 map 프레임으로 변환하여 저장
+                cone_pose = self._transform_cone_to_map(marker)
+                if cone_pose is not None:
+                    self._tracked_cones.append(cone_pose)
         
         self._cone_count = cone_count
-        self.get_logger().debug(f'감지된 라바콘 개수: {cone_count}')
+        self.get_logger().debug(f'감지된 라바콘 개수: {cone_count} (map 변환 성공: {len(self._tracked_cones)})')
         
         # U턴 시작 조건 체크
         self._check_uturn_start_condition()
@@ -234,6 +248,40 @@ class UturnPlanner(Node):
         if self._vehicle_location is None:
             return  # 차량 위치 정보 없음
         
+        # 라바콘과 차량 간 평균 거리 계산
+        if len(self._tracked_cones) == 0:
+            return  # 변환된 라바콘 위치 없음
+        
+        current_pose = self._transform_utm_to_map(self._vehicle_location)
+        if current_pose is None:
+            return  # 차량 위치 변환 실패
+        
+        total_distance = 0.0
+        self._cone_distances = []
+        
+        for cone_pose in self._tracked_cones:
+            distance = math.sqrt(
+                (current_pose.pose.position.x - cone_pose.pose.position.x)**2 +
+                (current_pose.pose.position.y - cone_pose.pose.position.y)**2
+            )
+            total_distance += distance
+            self._cone_distances.append(distance)
+        
+        average_distance = total_distance / len(self._tracked_cones)
+        distance_threshold = float(self.get_parameter('distance_threshold').value)
+        
+        # 디버그 로그 (debug 레벨)
+        self.get_logger().debug(
+            f'라바콘 평균 거리: {average_distance:.2f}m (임계치: {distance_threshold:.2f}m)'
+        )
+        
+        if average_distance > distance_threshold:
+            return  # 평균 거리가 임계치보다 멀면 시작하지 않음
+        
+        # 디버그 시각화 발행
+        if bool(self.get_parameter('enable_debug_visualization').value):
+            self._publish_debug_visualization(current_pose)
+        
         # U턴 시작!
         self._start_uturn()
     
@@ -277,6 +325,28 @@ class UturnPlanner(Node):
             
         except Exception as e:
             self.get_logger().error(f"UTM→Map 변환 실패: {e}")
+            return None
+    
+    def _transform_cone_to_map(self, marker: Marker) -> Optional[PoseStamped]:
+        """라바콘 마커를 센서 프레임에서 map 프레임으로 변환"""
+        try:
+            # 마커를 PoseStamped로 변환
+            cone_pose_stamped = PoseStamped()
+            cone_pose_stamped.header = marker.header
+            cone_pose_stamped.header.stamp = rclpy.time.Time().to_msg()  # 최신 TF 사용
+            cone_pose_stamped.pose = marker.pose
+            
+            # TF2 변환
+            map_pose = self.tf_buffer.transform(
+                cone_pose_stamped,
+                'map',
+                timeout=rclpy.duration.Duration(seconds=0.5)
+            )
+            
+            return map_pose
+            
+        except Exception as e:
+            self.get_logger().debug(f"라바콘 변환 실패 ({marker.header.frame_id}→map): {e}")
             return None
     
     def _generate_uturn_path(self) -> None:
@@ -387,6 +457,83 @@ class UturnPlanner(Node):
         self._start_location = None
         
         self.get_logger().info('U턴 완료!')
+    
+    def _publish_debug_visualization(self, vehicle_pose: PoseStamped) -> None:
+        """라바콘과 차량을 잇는 선을 시각화"""
+        if len(self._tracked_cones) == 0 or len(self._cone_distances) == 0:
+            return
+        
+        marker_array = MarkerArray()
+        
+        # 라바콘과 차량을 잇는 선 마커
+        line_marker = Marker()
+        line_marker.header.frame_id = 'map'
+        line_marker.header.stamp = self.get_clock().now().to_msg()
+        line_marker.ns = 'uturn_debug'
+        line_marker.id = 0
+        line_marker.type = Marker.LINE_LIST
+        line_marker.action = Marker.ADD
+        
+        # 선의 두께
+        line_marker.scale.x = 0.1  # 선 두께
+        
+        # 선 색상 (노란색)
+        line_marker.color.r = 1.0
+        line_marker.color.g = 1.0
+        line_marker.color.b = 0.0
+        line_marker.color.a = 0.8
+        
+        # 차량 위치와 각 라바콘을 잇는 선 생성
+        vehicle_point = Point()
+        vehicle_point.x = vehicle_pose.pose.position.x
+        vehicle_point.y = vehicle_pose.pose.position.y
+        vehicle_point.z = 0.0
+        
+        for i, cone_pose in enumerate(self._tracked_cones):
+            # 차량 위치
+            line_marker.points.append(vehicle_point)
+            
+            # 라바콘 위치
+            cone_point = Point()
+            cone_point.x = cone_pose.pose.position.x
+            cone_point.y = cone_pose.pose.position.y
+            cone_point.z = 0.0
+            line_marker.points.append(cone_point)
+        
+        marker_array.markers.append(line_marker)
+        
+        # 거리 텍스트 마커 (선택적)
+        for i, (cone_pose, distance) in enumerate(zip(self._tracked_cones, self._cone_distances)):
+            text_marker = Marker()
+            text_marker.header.frame_id = 'map'
+            text_marker.header.stamp = self.get_clock().now().to_msg()
+            text_marker.ns = 'uturn_debug'
+            text_marker.id = i + 1
+            text_marker.type = Marker.TEXT_VIEW_FACING
+            text_marker.action = Marker.ADD
+            
+            # 텍스트 위치 (라바콘과 차량 중간점)
+            text_marker.pose.position.x = (vehicle_pose.pose.position.x + cone_pose.pose.position.x) / 2
+            text_marker.pose.position.y = (vehicle_pose.pose.position.y + cone_pose.pose.position.y) / 2
+            text_marker.pose.position.z = 0.5
+            text_marker.pose.orientation.w = 1.0
+            
+            # 텍스트 크기
+            text_marker.scale.z = 0.3
+            
+            # 텍스트 색상 (흰색)
+            text_marker.color.r = 1.0
+            text_marker.color.g = 1.0
+            text_marker.color.b = 1.0
+            text_marker.color.a = 1.0
+            
+            # 텍스트 내용
+            text_marker.text = f'{distance:.1f}m'
+            
+            marker_array.markers.append(text_marker)
+        
+        # 마커 발행
+        self.debug_cone_distances_pub.publish(marker_array)
     
     # ==================== 테스트 모드 함수 ====================
     def _create_test_vehicle_pose(self) -> PoseStamped:
