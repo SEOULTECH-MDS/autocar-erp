@@ -172,22 +172,43 @@ def acados_solver():
 
     # Solver 옵션 설정 
     ocp.solver_options.tf = T  # 예측 시간
-    ocp.solver_options.N_horizon = N
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  
-    ocp.solver_options.qp_solver_cond_N = 5  
-    ocp.solver_options.hessian_approx = "EXACT"  
-    ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP"
-    ocp.solver_options.nlp_solver_max_iter = 200  
-    ocp.solver_options.qp_solver_iter_max = 100  
-    ocp.solver_options.nlp_solver_tol_stat = 1e-4  
+    ocp.solver_options.N_horizon = N #
+    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  #
+    ocp.solver_options.qp_solver_cond_N = 5  #
+    ocp.solver_options.hessian_approx = "EXACT"  #
+    ocp.solver_options.integrator_type = "ERK" #
+    ocp.solver_options.nlp_solver_type = "SQP" #
+    ocp.solver_options.nlp_solver_max_iter = 200  #
+    ocp.solver_options.qp_solver_iter_max = 100  #
+    ocp.solver_options.globalization = "MERIT_BACKTRACKING"  #
+    ocp.solver_options.regularize_method = "MIRROR" #
+    
+    # [수정] Hot-Start 옵션 추가 및 강화
+    # 1. QP Solver Warm Start 레벨 설정 (Hot Start 사용)
+    # 0: no warm start; 1: warm start; 2: hot start
+    ocp.solver_options.qp_solver_warm_start = 2 # [cite: 1229]
+    
+    # 2. NLP의 첫 번째 QP도 Warm Start를 사용하도록 설정 (가장 중요)
+    ocp.solver_options.nlp_solver_warm_start_first_qp = True # [cite: 1162]
+
+    # 3. QP Solver의 Tolerance를 NLP보다 엄격하게 설정 (수렴 품질 향상)
+    # nlp_solver_tol_stat/eq/ineq/comp: 1e-4
+    ocp.solver_options.qp_solver_tol_stat = 1e-6 
+    ocp.solver_options.qp_solver_tol_eq = 1e-6
+    ocp.solver_options.qp_solver_tol_ineq = 1e-6
+    ocp.solver_options.qp_solver_tol_comp = 1e-6
+    
+    # 4. Levenberg-Marquardt 정규화 계수 증가 (안정성 강화)
+    ocp.solver_options.levenberg_marquardt = 1e-2  # 1e-4 -> 1e-2로 증가 [cite: 1116]
+
+    # [수정] NLP Tolerance는 기존 설정보다 약간 완화 (수렴 실패 방지)
+    ocp.solver_options.nlp_solver_tol_stat = 1e-3  # 1e-4 -> 1e-3
     ocp.solver_options.nlp_solver_tol_eq = 1e-4    
     ocp.solver_options.nlp_solver_tol_ineq = 1e-4  
     ocp.solver_options.nlp_solver_tol_comp = 1e-4  
-    ocp.solver_options.globalization = "MERIT_BACKTRACKING"  
-    ocp.solver_options.regularize_method = "MIRROR" # MIRROR 방식 유지
-    ocp.solver_options.globalization_fixed_step_length = 0.05
-    ocp.solver_options.levenberg_marquardt = 1e-4
+    
+    # [수정] MERIT_BACKTRACKING 사용 시, 고정 스텝 길이는 제거하거나 0.0으로 설정
+    ocp.solver_options.globalization_fixed_step_length = 0.0 # [cite: 1068]
 
     solver = AcadosOcpSolver(ocp)
 

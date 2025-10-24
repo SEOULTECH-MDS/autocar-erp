@@ -113,7 +113,7 @@ class Control(Node):
         # self.mode_description = "Parking"
     
         # self.is_reverse = True
-        # self.is_reverse = False
+        self.is_reverse = False
 
         self.person_detected = False
 
