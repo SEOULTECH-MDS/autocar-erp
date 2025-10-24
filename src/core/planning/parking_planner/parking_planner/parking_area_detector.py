@@ -540,7 +540,7 @@ class ParkingAreaDetector(Node):
                         tx += sign_to_ref * off_x * ux
                         ty += sign_to_ref * off_x * uy
                     # Pose yaw faces opposite of reference direction (i.e., -yaw_line)
-                    pyaw = yaw_line + math.pi
+                    pyaw = yaw_center + math.pi
                     pose = PoseStamped()
                     pose.header.frame_id = 'map'
                     pose.header.stamp = now_msg
@@ -645,6 +645,45 @@ class ParkingAreaDetector(Node):
                     log_once('error_too_long', '[ERROR] Area Detection Failed : Cluster too long', level='error')
                     self._area_decided = True
                     return
+            else:
+                # len(xs) < 2: 클러스터가 아직 형성되지 않은 초기 상황 처리
+                # base_link 진행방향을 map 프레임으로 가져와 축을 정의하고,
+                # 기준 콘 이후 clear_d 이상 전방의 다음 콘을 탐색하여 idx=0으로 판정한다.
+                try:
+                    bl_tf = self._lookup_map_to_bl()
+                    byaw = bl_tf[2] if bl_tf is not None else 0.0
+                    ux = math.cos(byaw)
+                    uy = math.sin(byaw)
+
+                    # 기준 콘 좌표
+                    ref_x, ref_y = float(ref_x), float(ref_y)
+
+                    next_found = None
+                    next_t = float('inf')
+                    for cid, (px, py) in pts.items():
+                        if cid == ref_id:
+                            continue
+                        # 기준 콘을 원점으로 한 진행방향 투영 거리
+                        tpr = ux * (px - ref_x) + uy * (py - ref_y)
+                        if tpr >= clear_d:
+                            # 횡방향 편차 제한
+                            latp = abs(-(uy) * (px - ref_x) + (ux) * (py - ref_y))
+                            if latp <= lat_tol and tpr < next_t:
+                                next_t = tpr
+                                next_found = (px, py)
+                    if next_found is not None:
+                        # publish_open에서 참조하는 외부 변수들 셋업
+                        look_start = (ref_x, ref_y)
+                        look_end = (next_found[0], next_found[1])
+                        # 기준과 끝점의 상대적 위치 파악을 위한 가상 파라미터
+                        tref = 0.0
+                        tend = float(next_t)
+                        log_once('open_idx_0_init', 'Open Area idx: 0 (init, single-cone)')
+                        publish_open(0, ref_x, ref_y, byaw)
+                        self._area_decided = True
+                        return
+                except Exception as e:
+                    self.get_logger().warn(f'initial open-area check failed: {e}')
         except Exception as e:
             self.get_logger().warn(f'open-area check failed: {e}')
 
