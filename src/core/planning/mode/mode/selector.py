@@ -451,6 +451,16 @@ class ModeSelector(Node):
         # ===========================================
         
         # 1. 주차 미션 처리
+        #    (a) pose_ready 기반 전환: 플래너가 준비 신호를 보낸 경우 즉시 예선 주차 시작
+        if (self.parking_pose_ready and
+            not self.parking_mission_started and
+            self.current_mode == ModeType.QUALIFYING_DRIVING):
+            self.parking_mission_started = True
+            self.parking_pose_ready = False
+            self.get_logger().info('예선 주차 포즈 준비 완료 - QUALIFYING_PARKING 모드로 전환')
+            return ModeType.QUALIFYING_PARKING
+
+        #    (b) 구역 기반 전환: 지정된 예선 주차 구역에 진입했을 때 시작
         if (self.current_lanelet_id is not None and 
             self.current_lanelet_id in self.parking_zone_ids and 
             not self.parking_mission_started and

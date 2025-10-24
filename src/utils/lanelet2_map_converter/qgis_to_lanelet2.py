@@ -195,6 +195,7 @@ def main():
     parser.add_argument('--centerline-gap', type=float, default=6.0, help='Max allowed gap (m) between consecutive centerline points; larger gaps are cut')
     parser.add_argument('--export-centerline-shp', type=str, default='', help='Optional: output Shapefile path (directory or .shp) for generated centerlines (EPSG:4326)')
     parser.add_argument('--reverse-centerlines', type=str, default='', help='Comma-separated lane ids whose centerlines should be reversed')
+    parser.add_argument('--centerline-step', type=float, default=0.0, help='Resample centerline at fixed step (meters) in metric CRS; 0 disables')
     args = parser.parse_args()
 
     path_gdf = load_layer(args.input_dir, 'path')
@@ -538,6 +539,59 @@ def main():
         except Exception:
             return None
 
+    def resample_linestring_metric(ls: LineString, step_m: float) -> Optional[LineString]:
+        if not isinstance(ls, LineString) or ls.is_empty:
+            return None
+        if step_m is None or step_m <= 0.0:
+            return ls
+        try:
+            L = float(ls.length)
+            if not math.isfinite(L) or L <= 0.0:
+                return ls
+            num = max(2, int(math.floor(L / step_m)) + 1)
+            dists = [min(L, i * step_m) for i in range(num - 1)] + [L]
+            pts = []
+            for d in dists:
+                try:
+                    p = ls.interpolate(d)
+                except Exception:
+                    # Fallback: normalized interpolate
+                    t = 0.0 if L <= 0 else d / L
+                    p = ls.interpolate(t, normalized=True)
+                pts.append((float(p.x), float(p.y)))
+            return LineString(pts) if len(pts) >= 2 else None
+        except Exception:
+            return ls
+
+    def adjust_side_orientation_with_center(left_m: LineString, right_m: LineString, center_m: LineString) -> Tuple[LineString, LineString]:
+        # Ensure left flows with center; right flows opposite to center
+        try:
+            def head_vec(ls: LineString) -> Tuple[float, float]:
+                coords = list(ls.coords)
+                if len(coords) < 2:
+                    return (1.0, 0.0)
+                x0, y0 = coords[0][0], coords[0][1]
+                x1, y1 = coords[1][0], coords[1][1]
+                return (x1 - x0, y1 - y0)
+
+            def dot(a: Tuple[float, float], b: Tuple[float, float]) -> float:
+                return a[0] * b[0] + a[1] * b[1]
+
+            cvec = head_vec(center_m)
+            lvec = head_vec(left_m)
+            rvec = head_vec(right_m)
+
+            # Left should align with center
+            if dot(cvec, lvec) < 0.0:
+                left_m = LineString(list(left_m.coords)[::-1])
+            # Right should be opposite to center
+            rvec = head_vec(right_m)
+            if dot(cvec, rvec) > 0.0:
+                right_m = LineString(list(right_m.coords)[::-1])
+        except Exception:
+            pass
+        return left_m, right_m
+
     # Heuristic fixes for problematic lanes: smooth gaps and extend/truncate to match side bounds
     def fix_centerline_geometry(center: LineString, left_ls: LineString, right_ls: LineString) -> LineString:
         # If centerline has tiny kinks or duplicates, simplify slightly
@@ -590,6 +644,15 @@ def main():
         # Apply heuristic fix and snap ends inside side envelope
         centerline = fix_centerline_geometry(centerline, left_geom_m, right_geom_m)
 
+        # Optional resampling of centerline in metric space
+        if args.centerline_step and args.centerline_step > 0.0:
+            try:
+                cl_res = resample_linestring_metric(centerline, args.centerline_step)
+                if isinstance(cl_res, LineString) and not cl_res.is_empty:
+                    centerline = cl_res
+            except Exception:
+                pass
+
         if isinstance(centerline, MultiLineString):
             # Take longest piece
             centerline = max(centerline.geoms, key=lambda ln: ln.length)
@@ -599,6 +662,9 @@ def main():
         # left/right already selected from layers; ensure LineString
         if not isinstance(left_geom_m, LineString) or not isinstance(right_geom_m, LineString):
             continue
+
+        # Adjust left/right orientation relative to centerline for lanelet conventions
+        left_geom_m, right_geom_m = adjust_side_orientation_with_center(left_geom_m, right_geom_m, centerline)
 
         # Convert to lon/lat
         tmp_gdf = gpd.GeoDataFrame(geometry=[centerline, left_geom_m, right_geom_m], crs='EPSG:3857')

@@ -187,6 +187,7 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   std_msgs::msg::ColorRGBA cl_dashed_lines;
   std_msgs::msg::ColorRGBA cl_virtual_lines;
   std_msgs::msg::ColorRGBA cl_general_lines;
+  std_msgs::msg::ColorRGBA cl_parking_path;
   // Make road surface brighter and more transparent for better overlay visibility
   set_color(&cl_road, 0.35, 0.35, 0.35, 0.55);
   set_color(&cl_shoulder, 0.15, 0.15, 0.15, 0.999);
@@ -230,6 +231,8 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   set_color(&cl_dashed_lines, 0.9, 0.9, 0.0, 0.2);
   set_color(&cl_virtual_lines, 0.0, 0.9, 0.9, 0.3);
   set_color(&cl_general_lines, 0.6, 0.6, 0.6, 0.9);
+  // Distinct color for pre-defined parking path
+  set_color(&cl_parking_path, 1.0, 0.0, 1.0, 0.5);
 
   visualization_msgs::msg::MarkerArray map_marker_array;
 
@@ -240,6 +243,7 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   lanelet::ConstLineStrings3d thin_stop;
   lanelet::ConstLineStrings3d thin_roadborder;
   lanelet::ConstLineStrings3d thin_crosswalk;
+  lanelet::ConstLineStrings3d thin_parking_path;
   for (const auto & ls : viz_lanelet_map_->lineStringLayer) {
     const std::string type = ls.attributeOr(lanelet::AttributeName::Type, "none");
     if (type == "line_thin") {
@@ -248,6 +252,8 @@ void Lanelet2MapVisualizationNode::on_map_bin(
         thin_dashed.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else if (subtype == "virtual") {
         thin_virtual.push_back(static_cast<lanelet::ConstLineString3d>(ls));
+      } else if (subtype == "parking_path") {
+        thin_parking_path.push_back(static_cast<lanelet::ConstLineString3d>(ls));
       } else if (subtype == "marking" || subtype == "Markings") {
         continue;
       } else if (subtype == "stop_line" || subtype == "stopline") {
@@ -438,6 +444,11 @@ void Lanelet2MapVisualizationNode::on_map_bin(
     &map_marker_array,
     lanelet::visualization::lineStringsAsMarkerArray(thin_virtual, "virtual_lines", cl_virtual_lines,
                                                      0.15));
+  // Parking path highlighted separately for clarity
+  insert_marker_array(
+    &map_marker_array,
+    lanelet::visualization::lineStringsAsMarkerArray(thin_parking_path, "parking_path", cl_parking_path,
+                                                     0.25));
   // Subtype-mapped thin lines reusing existing colors
   insert_marker_array(
     &map_marker_array,
@@ -471,6 +482,7 @@ void Lanelet2MapVisualizationNode::on_map_bin(
   adjust_z_by_namespace("stop_lines_raw", +0.07);
   adjust_z_by_namespace("dashed_lines", +0.07);
   adjust_z_by_namespace("virtual_lines", +0.08);
+  adjust_z_by_namespace("parking_path", +0.09);
   adjust_z_by_namespace("stop_lines", +0.07);
   adjust_z_by_namespace("roadborder", +0.06);
   adjust_z_by_namespace("crosswalk_lines", +0.07);

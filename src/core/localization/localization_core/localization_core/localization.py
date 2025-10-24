@@ -131,6 +131,8 @@ class Localization(Node):
                 except Exception as e:
                     self.get_logger().warn(f"Failed to map stoplines by ref id: {e}")
 
+                # Note: No geometry-based fallback mapping; rely on subtype/type=='stop_line' with explicit ref ids.
+
             except Exception as e:
                 self.get_logger().error(f"Failed to load lanelet2 map: {e}")
 
