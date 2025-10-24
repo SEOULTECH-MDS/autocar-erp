@@ -27,8 +27,8 @@ from geometry_msgs.msg import TransformStamped, PointStamped
 
 NX = 5  # 상태 변수 크기 (x, y, yaw, v, s)
 NU = 2 # 제어 입력 크기 (delta , a)
-T = 2.0  # 예측 시간 [s]
-N = 20  # 예측 구간 [s]
+T = 2.5  # 예측 시간 [s]
+N = 25  # 예측 구간 [s]
 
 class Control(Node):
     def __init__(self):
@@ -121,8 +121,8 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-5, 0.08, 4.0, 2.0, 1.0, 2.0, 0.4]), # DRIVE
-            1: np.array([1e-5, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
+            0: np.array([1e-4, 0.08, 4.0, 0.1, 1.0, 1.0, 0.4]), # DRIVE
+            1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
             4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
@@ -498,7 +498,7 @@ class Control(Node):
                                     self.obs3_x < 1e3 or self.obs4_x < 1e3)
                     
                     if obstacle_detected:
-                        target_vel = 2.0  # 장애물 감지 시 2.0 m/s로 제한
+                        target_vel = 1.0  # 장애물 감지 시 2.0 m/s로 제한
                     else:
                         target_vel = self.target_vel  # 정상 범위 내라면 원래 목표 속도 사용
                 
@@ -602,7 +602,7 @@ class Control(Node):
         weights = self.current_weights
 
         if self.obs_type == 1: # 드럼
-            r_safe = 1.5
+            r_safe = 1.2
         elif self.obs_type == 2: # 차량
             r_safe = 2.0
         else:
@@ -764,7 +764,7 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = x_opt[i, 3] / 3.0  # 속도에 비례하여 빨간색 조절 (최대 10m/s 기준)  
+            marker.color.r = 1.0  
             marker.color.g = 0.0
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
@@ -810,8 +810,8 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = xref[3, i] / 5.0  # 속도에 비례하여 빨간색 조절 (최대 10m/s 기준)
-            marker.color.g = 1.0  # 초록색
+            marker.color.r = 0.0 
+            marker.color.g = 1.0 
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
 

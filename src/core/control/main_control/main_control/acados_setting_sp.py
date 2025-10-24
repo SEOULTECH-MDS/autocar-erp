@@ -33,8 +33,8 @@ def acados_solver():
     NW = 7 # cost function weights 크기 (W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw)
     NO = 8  # 장애물 정보 크기 (obs1_x, obs1_y, obs2_x, obs2_y, obs3_x, obs3_y, obs4_x, obs4_y)
 
-    T = 2.0
-    N = 20  # 예측 구간 [s]
+    T = 2.5
+    N = 25  # 예측 구간 [s]
 
     # cost type
     ocp.cost.cost_type = 'EXTERNAL'
