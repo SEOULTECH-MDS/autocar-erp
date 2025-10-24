@@ -100,7 +100,7 @@ class Control(Node):
         
         # s 값 제약을 위한 변수들
         self.prev_s = 0.0  # 이전 s 값 저장
-        self.s_tolerance = 3.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
+        self.s_tolerance = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
         
         # map 원점
         self.map_origin_x = None
@@ -126,7 +126,7 @@ class Control(Node):
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
             4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
-            5: np.array([0.1, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
+            5: np.array([0.001, 0.1, 1.2, 0.3, 0.3, 7.0, 2.5]), # PARKING
             6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN (사용X)
         }        
         self.current_weights = self.mode_weights[self.mode]
@@ -176,7 +176,7 @@ class Control(Node):
 
 
         if self.is_reverse:
-            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state (solver의 state s가 v에 의해 업데이트되므로)
+            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state 
         else:
             self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 정상 주행일 때 양수 속도 state
 
@@ -304,6 +304,9 @@ class Control(Node):
         if best_s < self.prev_s - self.s_tolerance:
             best_s = self.prev_s - self.s_tolerance
             self.get_logger().warn(f"S 값 역행 제한: {best_s:.2f} (이전: {self.prev_s:.2f})")
+
+        if best_s < 0.0:
+            best_s = 0.0
         
         self.prev_s = best_s  # 이전 s 값 업데이트
         self.s = best_s # 인스턴스 변수 self.s에 물리적 투영 s 값을 저장
@@ -467,7 +470,7 @@ class Control(Node):
             self.delivery_distance = 1e6
 
 
-    # calc_ref_trajectory 함수 수정: x0 인수를 추가하고 s 시작점을 x0[4]로 설정
+    # calc_ref_trajectory 
     def calc_ref_trajectory(self, _cubic_spline):
         """
         MPC 예측 step에 대한 refrecne trajectory 계산
@@ -478,17 +481,16 @@ class Control(Node):
         tan_vec = np.zeros((2, N)) # 접선 벡터 tx, ty
 
         if cubic_spline:
-
             current_s = self.s
 
             for i in range(N):
-                # 다음 s 값을 현재의 참조 s 값(current_s_ref)에서 목표 속도로 전진하여 계산
+                # 다음 s 값을 먼저 계산
                 s = current_s + self.dt * self.target_vel
-
+                
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
                     # 끝점을 넘어갔으면 끝점으로 고정
-                    s = cubic_spline.s[-1] - 0.1
+                    s = cubic_spline.s[-1] - 0.01
                     target_vel = 0.0
                 else:
                     # 장애물 감지 확인
@@ -499,11 +501,11 @@ class Control(Node):
                         target_vel = 2.0  # 장애물 감지 시 2.0 m/s로 제한
                     else:
                         target_vel = self.target_vel  # 정상 범위 내라면 원래 목표 속도 사용
-
+                
+                # 다음 iteration을 위해 current_s 업데이트
                 current_s = s
-                # 다음 iteration을 위해 current_s_ref 업데이트
 
-                # # 곡률에 따라 target_vel 조정
+                # 곡률에 따라 target_vel 조정
                 # curvature = abs(cubic_spline.calc_curvature(s))
 
                 # if curvature < 0.01:  # 직선 구간 
@@ -517,14 +519,16 @@ class Control(Node):
                 # else:  # 매우 급한 커브 
                 #     speed_factor = 0.2
 
-                # curv_based_vel = target_vel * speed_factor
+                speed_factor = 1.0
+                curv_based_vel = target_vel * speed_factor
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 if self.is_reverse:
                     xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
+                    xref[3, i] = -curv_based_vel  # 후진 시 속도 음수
                 else:
                     xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
-                xref[3, i] = target_vel  # 곡률 기반으로 조정된 속도 사용
+                    xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
                 xref[4, i] = s
 
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
@@ -760,8 +764,8 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = 0.0  
-            marker.color.g = 1.0
+            marker.color.r = x_opt[i, 3] / 3.0  # 속도에 비례하여 빨간색 조절 (최대 10m/s 기준)  
+            marker.color.g = 0.0
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
 
