@@ -9,7 +9,10 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/test_planner.launch.py']),
+        ('share/' + package_name + '/launch', [
+            'launch/test_planner.launch.py',
+            'launch/qualifying_parking.launch.py',
+        ]),
     ],
     install_requires=['setuptools', 'numpy>=1.21.0'],
     zip_safe=True,
@@ -23,6 +26,7 @@ setup(
             'planner_parking = planner.planner_parking:main',
             'planner_delivery = planner.planner_delivery:main',
             'planner_uturn = planner.planner_uturn:main',
+            'qualifying_parking_planner = planner.qualifying_parking_planner:main',
         ],
     },
 )
