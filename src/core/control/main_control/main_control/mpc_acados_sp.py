@@ -27,8 +27,8 @@ from geometry_msgs.msg import TransformStamped, PointStamped
 
 NX = 5  # 상태 변수 크기 (x, y, yaw, v, s)
 NU = 2 # 제어 입력 크기 (delta , a)
-T = 2.0  # 예측 시간 [s]
-N = 20  # 예측 구간 [s]
+T = 2.5  # 예측 시간 [s]
+N = 25  # 예측 구간 [s]
 
 class Control(Node):
     def __init__(self):
@@ -121,12 +121,12 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-5, 0.08, 4.0, 2.0, 1.0, 2.0, 0.4]), # DRIVE
-            1: np.array([1e-5, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
+            0: np.array([1e-4, 0.08, 4.0, 0.1, 1.0, 1.0, 0.4]), # DRIVE
+            1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
             4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
-            5: np.array([0.01, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
+            5: np.array([0.1, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
             6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN (사용X)
         }        
         self.current_weights = self.mode_weights[self.mode]
@@ -138,7 +138,7 @@ class Control(Node):
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
-            5: 1.0,  # PARKING
+            5: 3.0,  # PARKING
             6: 3.0   # RETURN (사용X)
         }
         self.target_vel = self.mode_target_vel[self.mode]
@@ -468,7 +468,7 @@ class Control(Node):
 
 
     # calc_ref_trajectory 함수 수정: x0 인수를 추가하고 s 시작점을 x0[4]로 설정
-    def calc_ref_trajectory(self, _cubic_spline, x0):
+    def calc_ref_trajectory(self, _cubic_spline):
         """
         MPC 예측 step에 대한 refrecne trajectory 계산
         """
@@ -479,14 +479,12 @@ class Control(Node):
 
         if cubic_spline:
 
-            # 수정 핵심: x0 상태 벡터의 5번째 요소인 s (Solver가 예측/제어하는 s)를 시작점으로 사용
-            current_s_start = x0[4]
-            current_s_ref = current_s_start
+            current_s = self.s
 
             for i in range(N):
                 # 다음 s 값을 현재의 참조 s 값(current_s_ref)에서 목표 속도로 전진하여 계산
-                s = current_s_ref + self.dt * self.target_vel
-                
+                s = current_s + self.dt * self.target_vel
+
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
                     # 끝점을 넘어갔으면 끝점으로 고정
@@ -498,35 +496,35 @@ class Control(Node):
                                     self.obs3_x < 1e3 or self.obs4_x < 1e3)
                     
                     if obstacle_detected:
-                        target_vel = 2.0  # 장애물 감지 시 2.0 m/s로 제한
+                        target_vel = 1.0  # 장애물 감지 시 2.0 m/s로 제한
                     else:
                         target_vel = self.target_vel  # 정상 범위 내라면 원래 목표 속도 사용
 
+                current_s = s
                 # 다음 iteration을 위해 current_s_ref 업데이트
-                current_s_ref = s
 
-                # 곡률에 따라 target_vel 조정
-                curvature = abs(cubic_spline.calc_curvature(s))
+                # # 곡률에 따라 target_vel 조정
+                # curvature = abs(cubic_spline.calc_curvature(s))
 
-                if curvature < 0.01:  # 직선 구간 
-                    speed_factor = 1.0
-                elif curvature < 0.1:  # 완만한 커브 
-                    speed_factor = 0.8
-                elif curvature < 0.15:  # 중간 커브 
-                    speed_factor = 0.7
-                elif curvature < 0.2:  # 급커브
-                    speed_factor = 0.5
-                else:  # 매우 급한 커브 
-                    speed_factor = 0.2
+                # if curvature < 0.01:  # 직선 구간 
+                #     speed_factor = 1.0
+                # elif curvature < 0.1:  # 완만한 커브 
+                #     speed_factor = 0.8
+                # elif curvature < 0.15:  # 중간 커브 
+                #     speed_factor = 0.7
+                # elif curvature < 0.2:  # 급커브
+                #     speed_factor = 0.5
+                # else:  # 매우 급한 커브 
+                #     speed_factor = 0.2
 
-                curv_based_vel = target_vel * speed_factor
+                # curv_based_vel = target_vel * speed_factor
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 if self.is_reverse:
                     xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
                 else:
                     xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
-                xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
+                xref[3, i] = target_vel  # 곡률 기반으로 조정된 속도 사용
                 xref[4, i] = s
 
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
@@ -568,11 +566,11 @@ class Control(Node):
         # 현재 s 값 계산 (self.s 업데이트)
         self.calc_current_s(current_cubic_spline)
         
-        # 현재 상태 벡터 x0 설정 (s는 self.s로 초기화됨)
+        # 현재 상태 벡터 x0 설정 
         x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
 
         # calc_ref_trajectory에 x0를 전달하여 동적 Reference Trajectory 계산
-        xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline, x0)
+        xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
 
         # 초기 상태 및 장애물 정보 설정
         # x0 = np.array([self.x, self.y, self.yaw, self.v, self.s]) # 이미 위에서 설정됨
@@ -600,7 +598,7 @@ class Control(Node):
         weights = self.current_weights
 
         if self.obs_type == 1: # 드럼
-            r_safe = 1.5
+            r_safe = 1.2
         elif self.obs_type == 2: # 차량
             r_safe = 2.0
         else:
@@ -762,8 +760,8 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = 0.0  
-            marker.color.g = 1.0
+            marker.color.r = 1.0  
+            marker.color.g = 0.0
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
 
@@ -808,8 +806,8 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = xref[3, i] / 5.0  # 속도에 비례하여 빨간색 조절 (최대 10m/s 기준)
-            marker.color.g = 1.0  # 초록색
+            marker.color.r = 0.0 
+            marker.color.g = 1.0 
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
 
