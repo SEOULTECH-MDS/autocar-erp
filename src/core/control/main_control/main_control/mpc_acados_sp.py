@@ -93,7 +93,7 @@ class Control(Node):
         self.velocity = 0.0
         self.acc = 0.0
 
-        # 이전 제어 입력 저장용 변수 (solver 실패 시 fallback용)
+        # 이전 제어 입력 저장용 변수 (solver 실패 시 fallback용, 조향 변화율 비용용)
         self.prev_steering_angle = 0.0
         self.prev_velocity = 0.0
         self.fail_count = 0  # 실패 횟수 카운트
@@ -121,24 +121,24 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-4, 0.08, 4.0, 0.1, 1.0, 1.0, 0.4]), # DRIVE
-            1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
-            2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
-            3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
-            4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
-            5: np.array([0.001, 0.1, 1.2, 0.3, 0.3, 7.0, 2.5]), # PARKING
-            6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN (사용X)
-        }        
+            0: np.array([1e-4, 0.1, 4.0, 2.0, 1.0, 2.0, 0.1]), # DRIVE
+            1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.1]), # PAUSE
+            2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
+            3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
+            4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # DELIVERY 
+            5: np.array([0.1, 0.1, 2.5, 0.1, 0.5, 7.0, 2.5]), # PARKING
+            6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1])  # RETURN (사용X)
+        }       
         self.current_weights = self.mode_weights[self.mode]
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 1.0,  # DRIVE
+            0: 3.0,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
-            5: 3.0,  # PARKING
+            5: 1.5,  # PARKING
             6: 3.0   # RETURN (사용X)
         }
         self.target_vel = self.mode_target_vel[self.mode]
@@ -368,8 +368,16 @@ class Control(Node):
         최대 4개 장애물 지원 - 개수 변경 시 기존 정보 초기화
         """
         if len(msg.markers) == 0:
-            self.get_logger().warn("장애물 데이터가 없습니다.")
             # 장애물이 없을 때는 멀리 있는 가상 위치로 설정
+            self.obs1_x = 1e4
+            self.obs1_y = 1e4
+            self.obs2_x = 1e4
+            self.obs2_y = 1e4
+            self.obs3_x = 1e4
+            self.obs3_y = 1e4
+            self.obs4_x = 1e4
+            self.obs4_y = 1e4
+            self.get_logger().debug("유효한 장애물이 없습니다. 가상 위치로 설정")
             return
         
         if self.map_origin_x is None or self.map_origin_y is None:
@@ -485,47 +493,34 @@ class Control(Node):
 
             for i in range(N):
                 # 다음 s 값을 먼저 계산
-                s = current_s + self.dt * self.target_vel
+                s = current_s + self.dt * abs(self.target_vel) # v가 음수일 때도 s는 증가해야 함
                 
                 # s가 끝점을 넘어갔는지 확인
                 if s > cubic_spline.s[-1]:
                     # 끝점을 넘어갔으면 끝점으로 고정
                     s = cubic_spline.s[-1] - 0.01
-                    target_vel = 0.0
+                    target_vel_current = 0.0
                 else:
                     # 장애물 감지 확인
                     obstacle_detected = (self.obs1_x < 1e3 or self.obs2_x < 1e3 or 
                                     self.obs3_x < 1e3 or self.obs4_x < 1e3)
                     
                     if obstacle_detected:
-                        target_vel = 1.0  # 장애물 감지 시 2.0 m/s로 제한
+                        target_vel_current = min(abs(self.target_vel), 1.0)  # 장애물 감지 시 1.0 m/s로 제한
                     else:
-                        target_vel = self.target_vel  # 정상 범위 내라면 원래 목표 속도 사용
+                        target_vel_current = abs(self.target_vel)  # 정상 범위 내라면 원래 목표 속도 사용
                 
                 # 다음 iteration을 위해 current_s 업데이트
                 current_s = s
 
-                # 곡률에 따라 target_vel 조정
-                # curvature = abs(cubic_spline.calc_curvature(s))
-
-                # if curvature < 0.01:  # 직선 구간 
-                #     speed_factor = 1.0
-                # elif curvature < 0.1:  # 완만한 커브 
-                #     speed_factor = 0.8
-                # elif curvature < 0.15:  # 중간 커브 
-                #     speed_factor = 0.7
-                # elif curvature < 0.2:  # 급커브
-                #     speed_factor = 0.5
-                # else:  # 매우 급한 커브 
-                #     speed_factor = 0.2
-
+                # 곡률에 따라 target_vel 조정 (주석 처리됨)
                 speed_factor = 1.0
-                curv_based_vel = target_vel * speed_factor
+                curv_based_vel = target_vel_current * speed_factor
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
                 if self.is_reverse:
                     xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
-                    xref[3, i] = -curv_based_vel  # 후진 시 속도 음수
+                    xref[3, i] = -curv_based_vel  # 후진 시 음수 속도의 reference 사용
                 else:
                     xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
                     xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
@@ -577,21 +572,10 @@ class Control(Node):
         xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
 
         # 초기 상태 및 장애물 정보 설정
-        # x0 = np.array([self.x, self.y, self.yaw, self.v, self.s]) # 이미 위에서 설정됨
         obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y, self.obs3_x, self.obs3_y, self.obs4_x, self.obs4_y])
 
-        # obs = np.array([1e4, 1e4, self.obs2_x, self.obs2_y])
-
-        u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a)
+        u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a) -> **이전에 얻은 솔루션으로 채워지지 않았다면 0으로 유지**
         x_opt = np.zeros((N, NX))  # 상태 변수 초기화 (x, y, yaw, v, s)
-
-        # if self.fail_count > 0:
-        #     try:
-        #         self.solver.set(0, "x", x0)
-        #         self.solver.constraints_set(0, "lbx", x0)
-        #         self.solver.constraints_set(0, "ubx", x0)
-        #     except Exception as e:
-        #         self.get_logger().error(f"Solver 상태 재설정 중 오류: {str(e)}")
 
         # Solver 초기 상태 변수 설정 
         self.solver.set(0, "x", x0)
@@ -602,7 +586,7 @@ class Control(Node):
         weights = self.current_weights
 
         if self.obs_type == 1: # 드럼
-            r_safe = 1.2
+            r_safe = 1.3
         elif self.obs_type == 2: # 차량
             r_safe = 2.0
         else:
@@ -646,9 +630,6 @@ class Control(Node):
         
         self.fail_count = 0  # 성공 시 fail count 초기화
 
-        # self.get_logger().info(f"tan_vec: {tan_vec}\
-        #                        \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
-        
         # Solver에서 최적화된 제어 입력, 상태 변수 추출
         u_opt = np.array([self.solver.get(i, "u") for i in range(N)])
         x_opt = np.array([self.solver.get(i, "x") for i in range(N)])
@@ -778,45 +759,75 @@ class Control(Node):
 
     def visualize_ref_trajectory(self, xref):
         """
-        xref를 시각화
+        xref를 시각화 (화살표 + 번호 텍스트)
         """
         marker_array = MarkerArray()
 
         for i in range(xref.shape[1]):  # xref의 각 점에 대해 반복
-            marker = Marker()
-            marker.header.frame_id = "map"
-            marker.header.stamp = self.get_clock().now().to_msg()
-            marker.ns = "xref_points"
-            marker.id = i
-            marker.type = Marker.ARROW  # 화살표로 표시
-            marker.action = Marker.ADD
+            # 화살표 마커
+            arrow_marker = Marker()
+            arrow_marker.header.frame_id = "map"
+            arrow_marker.header.stamp = self.get_clock().now().to_msg()
+            arrow_marker.ns = "xref_arrows"
+            arrow_marker.id = i
+            arrow_marker.type = Marker.ARROW  # 화살표로 표시
+            arrow_marker.action = Marker.ADD
 
             # 위치 설정
-            marker.pose.position.x = xref[0, i]  # x 위치
-            marker.pose.position.y = xref[1, i]  # y 위치
-            marker.pose.position.z = 0.0
+            arrow_marker.pose.position.x = xref[0, i]  # x 위치
+            arrow_marker.pose.position.y = xref[1, i]  # y 위치
+            arrow_marker.pose.position.z = 0.0
 
             # 방향 설정 (yaw를 쿼터니언으로 변환)
             yaw = xref[2, i]  # yaw 값
             quaternion = yaw_to_quaternion(yaw)
-            marker.pose.orientation.x = quaternion.x
-            marker.pose.orientation.y = quaternion.y
-            marker.pose.orientation.z = quaternion.z
-            marker.pose.orientation.w = quaternion.w
+            arrow_marker.pose.orientation.x = quaternion.x
+            arrow_marker.pose.orientation.y = quaternion.y
+            arrow_marker.pose.orientation.z = quaternion.z
+            arrow_marker.pose.orientation.w = quaternion.w
 
             # 크기 설정
-            marker.scale.x = 0.3  # 화살표 길이
-            marker.scale.y = 0.05  # 화살표 두께
-            marker.scale.z = 0.05  # 화살표 두께
+            arrow_marker.scale.x = 0.3  # 화살표 길이
+            arrow_marker.scale.y = 0.05  # 화살표 두께
+            arrow_marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = 0.0 
-            marker.color.g = 1.0 
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # 불투명
+            arrow_marker.color.r = 0.0 
+            arrow_marker.color.g = 1.0 
+            arrow_marker.color.b = 0.0
+            arrow_marker.color.a = 1.0  # 불투명
 
             # MarkerArray에 추가
-            marker_array.markers.append(marker)
+            marker_array.markers.append(arrow_marker)
+
+            # 번호 텍스트 마커
+            text_marker = Marker()
+            text_marker.header.frame_id = "map"
+            text_marker.header.stamp = self.get_clock().now().to_msg()
+            text_marker.ns = "xref_numbers"
+            text_marker.id = i
+            text_marker.type = Marker.TEXT_VIEW_FACING  # 카메라를 향하는 텍스트
+            text_marker.action = Marker.ADD
+
+            # 텍스트 위치 (화살표보다 약간 위쪽에 표시)
+            text_marker.pose.position.x = xref[0, i]
+            text_marker.pose.position.y = xref[1, i]
+            text_marker.pose.position.z = 0.3  # 지면에서 30cm 위
+
+            # 텍스트 내용
+            text_marker.text = str(i)
+
+            # 텍스트 크기 설정
+            text_marker.scale.z = 0.1  # 텍스트 높이
+
+            # 텍스트 색상 설정 (흰색)
+            text_marker.color.r = 1.0
+            text_marker.color.g = 1.0
+            text_marker.color.b = 1.0
+            text_marker.color.a = 1.0
+
+            # MarkerArray에 추가
+            marker_array.markers.append(text_marker)
 
         # 퍼블리시
         self.mpc_ref_pub.publish(marker_array)

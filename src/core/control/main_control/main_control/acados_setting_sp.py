@@ -3,7 +3,7 @@
 from acados_template import AcadosOcp, AcadosModel, AcadosOcpSolver
 from .bicycle_model_sp import export_spline_bicycle_model
 import numpy as np
-from casadi import SX, vertcat
+from casadi import SX, vertcat, sin
 
 def acados_solver():
     ocp = AcadosOcp()
@@ -125,14 +125,18 @@ def acados_solver():
                  W_steer_rate * (steering_angle - prev_steering_angle) ** 2 + \
                  W_v * ((vehicle_v - v_ref) ** 2) + \
                  W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
-                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 
+                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
+                 W_yaw * ((vehicle_yaw - yaw_ref) ** 2)
+                # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
     ocp.model.cost_expr_ext_cost = stage_cost
 
     # terminal cost function
     terminal_cost = We_v * ((vehicle_v - v_ref) ** 2) + \
                     We_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
                     We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
-                    We_yaw * ((vehicle_yaw - yaw_ref) ** 2)                    
+                    We_yaw * ((vehicle_yaw - yaw_ref) ** 2)    
+                    # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
+                
     ocp.model.cost_expr_ext_cost_e = terminal_cost
 
     # constraints
@@ -177,11 +181,9 @@ def acados_solver():
     ocp.solver_options.nlp_solver_tol_ineq = 1e-4  
     ocp.solver_options.nlp_solver_tol_comp = 1e-4  
     ocp.solver_options.globalization = "MERIT_BACKTRACKING"  
-    # ocp.solver_options.regularize_method = "CONVEXIFY" 
-    ocp.solver_options.regularize_method = "MIRROR" 
+    ocp.solver_options.regularize_method = "MIRROR" # MIRROR 방식 유지
     ocp.solver_options.globalization_fixed_step_length = 0.05
-    ocp.solver_options.levenberg_marquardt = 1e-4  
-    
+    ocp.solver_options.levenberg_marquardt = 1e-4
 
     solver = AcadosOcpSolver(ocp)
 
