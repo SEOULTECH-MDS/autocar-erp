@@ -46,14 +46,21 @@ def generate_launch_description():
         ),
 
         # 주차 및 유턴 라바콘 탐지
-        Node(
+        Node( # 주차
             package='perception',
             executable='rubber_detect',
             name='rubber_detect',
             output='screen',
             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         ),
-        Node(
+        Node( # 유턴
+            package='perception',
+            executable='rubber_uturn',
+            name='rubber_uturn',
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        ),
+        Node( # 주차
             package='perception',
             executable='sensor_fusion_rubber',
             name='sensor_fusion_rubber',
@@ -61,7 +68,15 @@ def generate_launch_description():
             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
             remappings=[('/markers', '/adaptive_clustering/markers')],
         ),
-        Node(
+        Node( # 유턴
+            package='perception',
+            executable='sensor_fusion_rubber_uturn',
+            name='sensor_fusion_rubber_uturn',
+            output='screen',
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+            remappings=[('/markers', '/adaptive_clustering/markers')],
+        ),
+        Node( # 주차
             package='perception',
             executable='bbox_tracker',
             name='bbox_tracker',

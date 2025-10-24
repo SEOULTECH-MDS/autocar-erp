@@ -90,7 +90,7 @@ class SensorFusion(Node):
         self.target_sign = None
     
         # ROS
-        super().__init__('sensor_fusion')
+        super().__init__('sensor_fusion_sign')
         
         # Lane Mission Controller에서 오는 enable 상태
         self.is_enabled = False

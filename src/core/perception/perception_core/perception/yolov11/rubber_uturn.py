@@ -41,27 +41,27 @@ AGNOSTIC_NMS = False
 
 class YOLO(Node):
     def __init__(self):
-        super().__init__('parking_rubber')
+        super().__init__('uturn_rubber')
         
         # 이미지 메시지를 구독할 서브스크라이버 생성
-        self.subscription = self.create_subscription(Image, '/camera_side/image_raw', self.image_callback, 10)
+        self.subscription = self.create_subscription(Image, '/camera_front/image_raw', self.image_callback, 10)
         # self.subscription = self.create_subscription(Image, '/usb_cam_1/image_raw', self.image_callback, 10)
         self.subscription  # 사용하지 않는 변수 경고 방지
 
         # PoseArray 메시지를 퍼블리시할 퍼블리셔 생성
         self.pose_array_pub = self.create_publisher(PoseArray, '/bounding_boxes/rubber', 10)
-        self.img_res_pub = self.create_publisher(Image, '/yolo/rubber', 10)
-        
+        self.img_res_pub = self.create_publisher(Image, '/yolo/rubber_uturn', 10)
+
         # CvBridge 초기화 (ROS 이미지와 OpenCV 이미지 간 변환)
         self.bridge = CvBridge()
         
         # Lane Mission Controller에서 오는 enable 상태
         self.is_enabled = False
         
-        # Enable 신호 구독 (주차 라바콘 미션)
+        # Enable 신호 구독 (유턴 라바콘 미션)
         self.enable_sub = self.create_subscription(
             Bool,
-            '/mission/rubber/enable',
+            '/mission/rubber_uturn/enable',
             self.callback_enable,
             10)
 
@@ -106,7 +106,7 @@ class YOLO(Node):
         
         if was_enabled != self.is_enabled:
             status = "활성화" if self.is_enabled else "비활성화"
-            self.get_logger().info(f'라바콘 탐지 {status}')
+            self.get_logger().info(f'라바콘(유턴) 탐지 {status}')
 
     def image_callback(self, image_msg):
         with torch.no_grad():

@@ -14,7 +14,8 @@ class RubberVisualizer(Node):
 
         self.bridge = CvBridge()
 
-        self.image_sub = message_filters.Subscriber(self, Image, '/camera_side/image_raw')
+        self.image_sub_side = message_filters.Subscriber(self, Image, '/camera_side/image_raw')
+        self.image_sub_front = message_filters.Subscriber(self, Image, '/camera_front/image_raw')
         # self.image_sub = message_filters.Subscriber(self, Image, '/usb_cam_1/image_raw')
         self.cluster_2d_sub = message_filters.Subscriber(self, PoseArray, '/clusters_2d')
         self.bbox_sub = message_filters.Subscriber(self, PoseArray, '/bounding_boxes/rubber')

@@ -22,7 +22,7 @@ from std_msgs.msg import Bool
 
 class SensorFusion(Node):
     def __init__(self):
-        super().__init__('sensor_fusion')
+        super().__init__('sensor_fusion_uturn')
         
         # Lane Mission Controller에서 오는 enable 상태
         self.is_enabled = False
@@ -30,7 +30,7 @@ class SensorFusion(Node):
         # Enable 신호 구독
         self.enable_sub = self.create_subscription(
             Bool,
-            '/mission/rubber/enable',
+            '/mission/rubber_uturn/enable',
             self.callback_enable,
             10)
 
@@ -101,7 +101,7 @@ class SensorFusion(Node):
         
         if was_enabled != self.is_enabled:
             status = "활성화" if self.is_enabled else "비활성화"
-            self.get_logger().info(f'라바콘 센서퓨전 {status}')
+            self.get_logger().info(f'라바콘(유턴) 센서퓨전 {status}')
 
     def callback_fusion(self, cluster_msg, bbox_msg):
         # Enable 상태 확인 - 비활성화 상태에서는 처리 건너뛰기

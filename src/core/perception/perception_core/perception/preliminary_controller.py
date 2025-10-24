@@ -17,7 +17,8 @@ class PreliminaryController(Node):
         # 미션별 enable 상태 초기화
         self.mission_states = {
             'obstacle': False,
-            'rubber': False
+            'rubber': False,
+            'rubber_uturn': False
         }
         
         # 현재 lane ID
@@ -37,7 +38,8 @@ class PreliminaryController(Node):
         # 발행자: 각 미션별 enable 토픽
         self.mission_publishers = {
             'obstacle': self.create_publisher(Bool, '/mission/obstacle/enable', 10),
-            'rubber': self.create_publisher(Bool, '/mission/rubber/enable', 10)
+            'rubber': self.create_publisher(Bool, '/mission/rubber/enable', 10),
+            'rubber_uturn': self.create_publisher(Bool, '/mission/rubber_uturn/enable', 10)
         }
 
         # 타이머: 주기적으로 enable 상태 발행
@@ -76,6 +78,8 @@ class PreliminaryController(Node):
             ],
             'rubber': [
                 {'start': 21, 'end': 21},  # 주차
+            ],
+            'rubber_uturn': [
                 {'start': 22, 'end': 22}   # 유턴
             ]
         }
