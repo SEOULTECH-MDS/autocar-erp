@@ -113,7 +113,7 @@ class Control(Node):
         # self.mode_description = "Parking"
     
         # self.is_reverse = True
-        self.is_reverse = False
+        # self.is_reverse = False
 
         self.person_detected = False
 
@@ -121,7 +121,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-4, 0.1, 4.0, 2.0, 1.0, 2.0, 0.1]), # DRIVE
+            0: np.array([1e-4, 0.1, 4.0, 2.0, 1.0, 2.0, 1.0]), # DRIVE
             1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.1]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
@@ -135,7 +135,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 1.0,  # DRIVE
+            0: 2.0,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
@@ -492,15 +492,17 @@ class Control(Node):
 
         if cubic_spline:
             current_s = self.s
+            s_end = cubic_spline.s[-1]
+            epsilon = 1e-6 # 1e-6m 만큼 안전 여유 확보 (매우 작은 값)
 
             for i in range(N):
                 # 다음 s 값을 먼저 계산
-                s = current_s + self.dt * abs(self.target_vel) # v가 음수일 때도 s는 증가해야 함
-                
-                # s가 끝점을 넘어갔는지 확인
-                if s > cubic_spline.s[-1]:
-                    # 끝점을 넘어갔으면 끝점으로 고정
-                    s = cubic_spline.s[-1] - 0.1
+                s = current_s + self.dt * abs(self.target_vel) 
+
+                # s가 끝점을 넘어갔거나 (부동 소수점 오차를 고려해) 같으면 클램핑
+                if s >= s_end:
+                    # 끝점을 넘어갔으면 끝점에 아주 가깝게 고정
+                    s = s_end - epsilon 
                     target_vel_current = 0.0
                 else:
                     # 장애물 감지 확인
@@ -599,8 +601,8 @@ class Control(Node):
             # wrap yaw reference around current yaw to avoid ±pi jump in cost
             yaw_ref_wrapped = xref[2, i]
             # if not np.isnan(self.yaw) & self.is_reverse==False:
-            if not np.isnan(self.yaw):
-                yaw_ref_wrapped = normalise_angle(yaw_ref_wrapped - self.yaw) + self.yaw
+            # if not np.isnan(self.yaw):
+            #     yaw_ref_wrapped = normalise_angle(yaw_ref_wrapped - self.yaw) + self.yaw
             params = np.hstack([
                 np.array([xref[0, i], xref[1, i], yaw_ref_wrapped, xref[3, i], xref[4, i]]),
                 u_opt[i, 0],
@@ -616,8 +618,8 @@ class Control(Node):
 
         yaw_ref_wrapped_last = xref[2, -1]
         # if not np.isnan(self.yaw) & self.is_reverse==False:
-        if not np.isnan(self.yaw):
-            yaw_ref_wrapped_last = normalise_angle(yaw_ref_wrapped_last - self.yaw) + self.yaw
+        # if not np.isnan(self.yaw):
+        #     yaw_ref_wrapped_last = normalise_angle(yaw_ref_wrapped_last - self.yaw) + self.yaw
         self.solver.set(N, "p", np.hstack([np.array([xref[0, -1], xref[1, -1], yaw_ref_wrapped_last, xref[3, -1], xref[4, -1]]), u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
         self.solver.constraints_set(N, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
         self.solver.constraints_set(N, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정   
