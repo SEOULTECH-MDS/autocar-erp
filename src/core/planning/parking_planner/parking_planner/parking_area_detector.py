@@ -43,7 +43,7 @@ class ParkingAreaDetector(Node):
         self.declare_parameter('open_lateral_tol_m', 0.5)
         self.declare_parameter('area2_length_m', 9.5)
         self.declare_parameter('max_area_length_m', 17.0)
-        self.declare_parameter('parking_pose_offset_y', 1.2)
+        self.declare_parameter('parking_pose_offset_y', -1.2)
         self.declare_parameter('parking_pose_offset_x', 1.3)
         self.declare_parameter('parking_pose_offset_estimated_x', 0.8)
 

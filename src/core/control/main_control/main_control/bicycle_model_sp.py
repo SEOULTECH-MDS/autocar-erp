@@ -3,7 +3,7 @@
 # Bicycle Model Spline version
 
 from acados_template import AcadosModel
-from casadi import SX, vertcat, sin, cos, tan
+from casadi import SX, vertcat, sin, cos, tan, fabs
 
 def export_spline_bicycle_model() -> AcadosModel:
 
@@ -12,7 +12,7 @@ def export_spline_bicycle_model() -> AcadosModel:
 
     # constants
     # WB = 1.566
-    WB = 1.0  # 휠베이스 [m]
+    WB = 1.000  # 휠베이스 [m]
     MASS = 1000.0  # 차량 질량 [kg]
     ROLLING_RESISTANCE = 0.015  # 굴림 저항 계수
 
@@ -50,7 +50,8 @@ def export_spline_bicycle_model() -> AcadosModel:
     rolling_resistance = ROLLING_RESISTANCE * MASS * 9.81  # 굴림 저항력
     
     # 실제 가속도 = 입력 가속도 - 저항력/질량
-    effective_a = a - rolling_resistance / MASS
+    # effective_a = a - rolling_resistance / MASS
+    effective_a = a
 
     # simplified bicycle model (가속도 입력 모델)
     f_expl = vertcat(
@@ -58,7 +59,7 @@ def export_spline_bicycle_model() -> AcadosModel:
         v * sin(yaw),         # y_dot
         v / WB * tan(delta),  # yaw_dot
         effective_a,  # v_dot (저항력 고려)
-        v  # s_dot (spline parameter changes with speed)
+        fabs(v)  # s_dot (spline parameter changes with speed)
     )
 
     # simplified bicycle model (속도 지연 모델 )

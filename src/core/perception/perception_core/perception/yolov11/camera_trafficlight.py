@@ -13,7 +13,7 @@ class CameraTrafficLight(Node):
         self.publisher_ = self.create_publisher(Image, '/camera_trafficlight/image_raw', 10)
         self.bridge = CvBridge()
 
-        self.cap = cv2.VideoCapture(4)
+        self.cap = cv2.VideoCapture(5)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
