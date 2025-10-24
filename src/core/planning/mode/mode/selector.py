@@ -137,6 +137,9 @@ class ModeSelector(Node):
         # 신호등 전환 타이머 파라미터
         self.declare_parameter('traffic_signal_confirm_duration', 0.1)          # 신호등 전환 확인 시간 (s)
         
+        # U턴 모드 제어 파라미터
+        self.declare_parameter('use_uturn_flags', True)                         # U턴 플래그 사용 여부 (True: 플래그 기반, False: 구역 기반)
+        
         # K-City 맵 구역 설정 (예선/본선 분리)
         self.declare_parameter('kcity_qualifying_parking_zones', [1])           # 예선 주차 구역
         self.declare_parameter('kcity_uturn_zones', [7])                        # 예선 유턴 구역
@@ -195,6 +198,12 @@ class ModeSelector(Node):
         self.delivery_completed_sub = self.create_subscription(
             Bool, '/delivery_complete_flag', self._delivery_completed_cb, 10)
         
+        # U턴 플래그 (U턴 플래너에서 발행)
+        self.uturn_start_sub = self.create_subscription(
+            Bool, '/uturn_start_flag', self._uturn_start_cb, 10)
+        self.uturn_complete_sub = self.create_subscription(
+            Bool, '/uturn_complete_flag', self._uturn_complete_cb, 10)
+        
         # 주차 포즈 계산 완료 플래그
         self.parking_pose_ready_sub = self.create_subscription(
             Bool, '/parking/pose_ready', self._parking_pose_ready_cb, 10)
@@ -213,6 +222,10 @@ class ModeSelector(Node):
         self.pickup_complete_flag: bool = False             # 상차 완료 플래그
         self.delivery_complete_flag: bool = False           # 하차 완료 플래그
         self.parking_pose_ready: bool = False               # 주차 포즈 계산 완료 플래그
+        
+        # U턴 플래그 (U턴 플래너에서 발행)
+        self.uturn_start_flag: bool = False                 # U턴 시작 플래그
+        self.uturn_complete_flag: bool = False              # U턴 완료 플래그
         
         # 정지선 관련 상태
         self.stopline_distance: float = float('inf')        # 정지선까지의 거리
@@ -283,6 +296,13 @@ class ModeSelector(Node):
         self.get_logger().info(f'Competition: {self.competition_type}, Map: {self.map_type}')
         self.get_logger().info(f'Parking zones ({self.competition_type}): {self.parking_zone_ids}')
         
+        # U턴 모드 제어 방식 표시
+        use_uturn_flags = bool(self.get_parameter('use_uturn_flags').value)
+        if use_uturn_flags:
+            self.get_logger().info('U턴 모드: 플래그 기반 (U턴 플래너 연동)')
+        else:
+            self.get_logger().info('U턴 모드: 구역 기반 (기존 방식)')
+        
         if self.competition_type == CompetitionType.QUALIFYING:
             self.get_logger().info(f'Uturn zones: {self.uturn_zone_ids}')
             self.get_logger().info(f'GPS-off zones: {self.gps_off_zone_ids}')
@@ -346,7 +366,7 @@ class ModeSelector(Node):
         """주차 미션 완료 플래그 수신"""
         if bool(msg.data):
             self.parking_complete_flag = True
-            self.get_logger().info('주차 미션 완료!')
+            self.get_logger().info(f'주차 미션 완료! 현재 모드: {self.current_mode}')
 
     def _pickup_completed_cb(self, msg: Bool) -> None:
         """상차 미션 완료 플래그 수신"""
@@ -365,6 +385,18 @@ class ModeSelector(Node):
         if bool(msg.data):
             self.parking_pose_ready = True
             self.get_logger().info('주차 포즈 계산 완료!')
+            
+    def _uturn_start_cb(self, msg: Bool) -> None:
+        """U턴 시작 플래그 수신"""
+        if bool(msg.data):
+            self.uturn_start_flag = True
+            self.get_logger().info(f'U턴 시작 플래그 수신! 현재 모드: {self.current_mode}')
+            
+    def _uturn_complete_cb(self, msg: Bool) -> None:
+        """U턴 완료 플래그 수신"""
+        if bool(msg.data):
+            self.uturn_complete_flag = True
+            self.get_logger().info(f'U턴 완료 플래그 수신! 현재 모드: {self.current_mode}')
 
     # ===========================================
     # 메인 로직
@@ -390,19 +422,20 @@ class ModeSelector(Node):
         # ===========================================
         # 1. 미션 완료 처리 (최우선)
         # ===========================================
-        # 예선 주차 완료
-        if (self.parking_complete_flag and 
-            self.current_mode == ModeType.QUALIFYING_PARKING):
-            self.parking_complete_flag = False
-            self.parking_mission_started = False
-            return ModeType.QUALIFYING_DRIVING
             
-        # 본선 주차 완료
-        if (self.parking_complete_flag and 
-            self.current_mode == ModeType.FINAL_PARKING):
+        # 본선 주차 완료 (강제 모드 전환)
+        if self.parking_complete_flag and self.competition_type == CompetitionType.FINAL:
+            self.get_logger().info(f'본선 주차 완료 - 강제 모드 전환: {self.current_mode} → FINAL_DRIVING')
             self.parking_complete_flag = False
             self.parking_mission_started = False
             return ModeType.FINAL_DRIVING
+            
+        # 예선 주차 완료 (강제 모드 전환)
+        if self.parking_complete_flag and self.competition_type == CompetitionType.QUALIFYING:
+            self.get_logger().info(f'예선 주차 완료 - 강제 모드 전환: {self.current_mode} → QUALIFYING_DRIVING')
+            self.parking_complete_flag = False
+            self.parking_mission_started = False
+            return ModeType.QUALIFYING_DRIVING
             
         # 예선/본선에 따른 모드 결정 분기
         if self.competition_type == CompetitionType.QUALIFYING:
@@ -426,18 +459,39 @@ class ModeSelector(Node):
             self.parking_mission_started = True
             return ModeType.QUALIFYING_PARKING
         
-        # 2. 유턴 구역 처리
-        if (self.current_lanelet_id is not None and 
-            self.current_lanelet_id in self.uturn_zone_ids):
+        # 2. U턴 모드 처리 (플래그 기반 또는 구역 기반)
+        use_uturn_flags = bool(self.get_parameter('use_uturn_flags').value)
+        
+        if use_uturn_flags:
+            # 플래그 기반 U턴 모드 처리
+            # U턴 완료 처리 (최우선)
+            if self.uturn_complete_flag and self.current_mode == ModeType.QUALIFYING_UTURN:
+                self.uturn_complete_flag = False
+                self.get_logger().info('U턴 완료 - DRIVING 모드로 복귀')
+                return ModeType.QUALIFYING_DRIVING
             
-            if self.current_mode == ModeType.QUALIFYING_DRIVING:
+            # U턴 시작 처리
+            if (self.uturn_start_flag and 
+                self.current_mode == ModeType.QUALIFYING_DRIVING and
+                self._is_in_uturn_zone()):
+                
+                self.uturn_start_flag = False
+                self.get_logger().info('U턴 시작 - UTURN 모드로 전환')
                 return ModeType.QUALIFYING_UTURN
+                
+        else:
+            # 기존 구역 기반 U턴 모드 처리
+            if (self.current_lanelet_id is not None and 
+                self.current_lanelet_id in self.uturn_zone_ids):
+                
+                if self.current_mode == ModeType.QUALIFYING_DRIVING:
+                    return ModeType.QUALIFYING_UTURN
+                elif self.current_mode == ModeType.QUALIFYING_UTURN:
+                    return ModeType.QUALIFYING_UTURN  # 구역 내에서 유턴 모드 유지
+                
+            # 유턴 구역을 벗어났을 때 DRIVING 모드로 복귀
             elif self.current_mode == ModeType.QUALIFYING_UTURN:
-                return ModeType.QUALIFYING_UTURN  # 구역 내에서 유턴 모드 유지
-            
-        # 유턴 구역을 벗어났을 때 DRIVING 모드로 복귀
-        elif self.current_mode == ModeType.QUALIFYING_UTURN:
-            return ModeType.QUALIFYING_DRIVING
+                return ModeType.QUALIFYING_DRIVING
             
         # 3. GPS 차단 구역 처리
         if (self.current_lanelet_id is not None and 
@@ -653,6 +707,8 @@ class ModeSelector(Node):
             'parking_completed': self.parking_complete_flag,
             'pickup_completed': self.pickup_complete_flag,
             'delivery_completed': self.delivery_complete_flag,
+            'uturn_start_flag': self.uturn_start_flag,
+            'uturn_complete_flag': self.uturn_complete_flag,
             'stopline_distance': self.stopline_distance,
             'stopline_type': self.stopline_type,
             'stopline_pause_active': self.stopline_pause_start_time is not None,

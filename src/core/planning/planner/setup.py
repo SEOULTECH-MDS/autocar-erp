@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             'planner_parking = planner.planner_parking:main',
             'planner_delivery = planner.planner_delivery:main',
+            'planner_uturn = planner.planner_uturn:main',
         ],
     },
 )
