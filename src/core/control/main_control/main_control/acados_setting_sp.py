@@ -96,10 +96,10 @@ def acados_solver():
     W_con = ocp.model.p[13]  # contour error 가중치 1.0
     W_yaw = ocp.model.p[14]  # heading error 가중치 (terminal cost)
 
-    We_v = W_v   # terminal cost에서 속도 error 가중치
-    We_lag = W_lag   # terminal cost에서 lag error 가중치
-    We_con = W_con  # terminal cost에서 contour error 가중치
-    We_yaw = W_yaw # heading error 가중치 (terminal cost)
+    We_v = W_v *1.0  # terminal cost에서 속도 error 가중치
+    We_lag = W_lag * 0.5  # terminal cost에서 lag error 가중치
+    We_con = W_con * 2.0 # terminal cost에서 contour error 가중치
+    We_yaw = W_yaw * 1.5  # heading error 가중치 (terminal cost)
 
     obs1_x = ocp.model.p[15]  # 장애물1 x 좌표
     obs1_y = ocp.model.p[16]  # 장애물1 y 좌표
@@ -125,8 +125,8 @@ def acados_solver():
                  W_steer_rate * (steering_angle - prev_steering_angle) ** 2 + \
                  W_v * ((vehicle_v - v_ref) ** 2) + \
                  W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
-                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
-                 W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
+                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 
+                #  W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
 
                 #  W_yaw * ((vehicle_yaw - yaw_ref) ** 2)
                 # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
@@ -138,7 +138,6 @@ def acados_solver():
                     We_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
                     We_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
 
-                    # We_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
 
                     # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
                 
