@@ -1,8 +1,5 @@
 /**:
   ros__parameters:
-    # Road marking line-string labels to extract from Lanelet2.
-    # kcity_v6 uses 'dashed_line', 'left_right_line', and 'crosswalk' tags.
-    road_marking_labels: [line_thin, line_thick, stop_line, road_border, zebra_marking, pedestrian_marking, dashed, dashed_solid, solid_dashed, dashed_line, left_right_line, crosswalk, cross_walk, boundary, edge, edge_line, boundary_line, Markings, markings, roadborder]
+    road_marking_labels: [cross_walk, zebra_marking, line_thin, line_thick, pedestrian_marking, stop_line, road_border]
     sign_board_labels: [sign-board]
-    # Area polygon labels. Enable 'road' and 'crosswalk' polygons for costmap.
-    bounding_box_labels: [road, crosswalk]
+    bounding_box_labels: [none]

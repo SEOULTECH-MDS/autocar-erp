@@ -135,7 +135,45 @@ std::optional<double> CameraPoseInitializer::estimate_pose(
   lanelet::ConstLanelets current_lanelets;
   std::optional<double> lane_angle_rad = std::nullopt;
   if (lanelet::utils::query::getCurrentLanelets(const_lanelets_, query_pose, &current_lanelets)) {
-    lane_angle_rad = lanelet::utils::getLaneletAngle(current_lanelets.front(), query_pose.position);
+    const auto & lane = current_lanelets.front();
+    const auto & cl = lane.centerline();
+    if (cl.size() >= 2) {
+      // Find nearest segment on centerline to query point
+      const double qx = query_pose.position.x;
+      const double qy = query_pose.position.y;
+      double best_dist2 = std::numeric_limits<double>::infinity();
+      double best_dx = 0.0;
+      double best_dy = 0.0;
+      for (size_t i = 0; i + 1 < cl.size(); ++i) {
+        const auto & p0 = cl[i];
+        const auto & p1 = cl[i + 1];
+        const double x0 = p0.x();
+        const double y0 = p0.y();
+        const double x1 = p1.x();
+        const double y1 = p1.y();
+        const double vx = x1 - x0;
+        const double vy = y1 - y0;
+        const double wx = qx - x0;
+        const double wy = qy - y0;
+        const double vv = vx * vx + vy * vy;
+        double t = vv > 0.0 ? (wx * vx + wy * vy) / vv : 0.0;
+        if (t < 0.0) t = 0.0;
+        if (t > 1.0) t = 1.0;
+        const double px = x0 + t * vx;
+        const double py = y0 + t * vy;
+        const double dx = qx - px;
+        const double dy = qy - py;
+        const double dist2 = dx * dx + dy * dy;
+        if (dist2 < best_dist2) {
+          best_dist2 = dist2;
+          best_dx = vx;
+          best_dy = vy;
+        }
+      }
+      if (std::isfinite(best_dist2)) {
+        lane_angle_rad = std::atan2(best_dy, best_dx);
+      }
+    }
   }
 
   cv::Mat projected_image = projector_module_->project_image(segmented_image);

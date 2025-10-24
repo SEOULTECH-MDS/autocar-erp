@@ -27,8 +27,8 @@ from geometry_msgs.msg import TransformStamped, PointStamped
 
 NX = 5  # 상태 변수 크기 (x, y, yaw, v, s)
 NU = 2 # 제어 입력 크기 (delta , a)
-T = 2.0  # 예측 시간 [s]
-N = 20  # 예측 구간 [s]
+T = 2.5  # 예측 시간 [s]
+N = 25  # 예측 구간 [s]
 
 class Control(Node):
     def __init__(self):
@@ -65,6 +65,9 @@ class Control(Node):
         self.v = None
         self.s = None
 
+        # [복구] Unwrapped Yaw 상태를 저장할 누적 변수 초기화
+        self.yaw_unwrapped = None
+
         self.xs_global = []
         self.ys_global = []
         self.cubic_spline_global = None  
@@ -93,14 +96,16 @@ class Control(Node):
         self.velocity = 0.0
         self.acc = 0.0
 
-        # 이전 제어 입력 저장용 변수 (solver 실패 시 fallback용)
+        # 이전 제어 입력 저장용 변수 (solver 실패 시 fallback용, 조향 변화율 비용용)
         self.prev_steering_angle = 0.0
         self.prev_velocity = 0.0
         self.fail_count = 0  # 실패 횟수 카운트
         
+        # [롤백] Hot-Start 관련 변수 제거 (acados 내부 Hot-Start에 의존)
+        
         # s 값 제약을 위한 변수들
         self.prev_s = 0.0  # 이전 s 값 저장
-        self.s_tolerance = 3.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
+        self.s_tolerance = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
         
         # map 원점
         self.map_origin_x = None
@@ -109,8 +114,6 @@ class Control(Node):
         # 모드 상태
         self.mode = 0 
         self.mode_description = "Drive"  
-        # self.mode = 5
-        # self.mode_description = "Parking"
     
         # self.is_reverse = True
         self.is_reverse = False
@@ -121,24 +124,25 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-5, 0.08, 4.0, 2.0, 1.0, 2.0, 0.4]), # DRIVE
-            1: np.array([1e-5, 0.1, 3.5, 2.0, 2.0, 2.0, 0.4]), # PAUSE
-            2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_STATIC (사용X)
-            3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # OBSTACLE_DYNAMIC (사용X)
-            4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4]), # DELIVERY 
-            5: np.array([0.01, 0.1, 1.2, 0.5, 0.5, 6.0, 2.5]), # PARKING
-            6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.4])  # RETURN (사용X)
-        }        
+            0: np.array([1e-4, 0.08, 5.0, 2.0, 0.7, 2.0, 10.0]), # DRIVE
+            1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.1]), # PAUSE
+            2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
+            3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
+            4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # DELIVERY 
+            5: np.array([0.1, 0.08, 5.0, 0.5, 0.7, 8.0, 10.0]), # PARKING
+            6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1])  # RETURN (사용X)
+        }       
         self.current_weights = self.mode_weights[self.mode]
+
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 1.0,  # DRIVE
+            0: 1.5,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
-            5: 1.0,  # PARKING
+            5: 2.0,  # PARKING
             6: 3.0   # RETURN (사용X)
         }
         self.target_vel = self.mode_target_vel[self.mode]
@@ -172,11 +176,31 @@ class Control(Node):
         self.y = msg.pose.pose.position.y - self.map_origin_y
 
         q = msg.pose.pose.orientation
-        self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+        self.yaw = euler_from_quaternion(q.x, q.y, q.z, q.w) # self.yaw는 [-pi, pi]로 정규화됨
 
+        # [복구] Unwrapped Yaw 업데이트 로직 추가: 연속적인 yaw 상태 유지
+        if self.yaw_unwrapped is not None:
+            # 현재 측정된 self.yaw를 [-pi, pi] 범위로 정규화
+            wrapped_current_yaw = normalise_angle(self.yaw)
+            
+            # 이전 unwrapped yaw를 [-pi, pi]로 래핑하여 차이 계산의 기준점을 찾음
+            yaw_diff = wrapped_current_yaw - normalise_angle(self.yaw_unwrapped)
+            
+            # 오차가 pi보다 크면 -2pi, -pi보다 작으면 +2pi를 더하여 보정 (가장 짧은 각도 차이)
+            if yaw_diff > np.pi:
+                yaw_diff -= 2 * np.pi
+            elif yaw_diff < -np.pi:
+                yaw_diff += 2 * np.pi
+                
+            # 누적된 yaw_unwrapped에 가장 짧은 각도 차이만큼 더하여 업데이트
+            self.yaw_unwrapped = self.yaw_unwrapped + yaw_diff
+        else:
+            self.yaw_unwrapped = self.yaw # 초기값은 첫 측정된 yaw와 동일
+
+        # Yaw가 None이면 unwrapped_yaw도 None이므로, 이 상태에서는 로그를 남기지 않음
 
         if self.is_reverse:
-            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state (solver의 state s가 v에 의해 업데이트되므로)
+            self.v = -np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 후진일 때 음수 속도 state 
         else:
             self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 정상 주행일 때 양수 속도 state
 
@@ -184,9 +208,6 @@ class Control(Node):
             self.v = 0.1
             
         self.yawrate = msg.twist.twist.angular.z
-
-        # if len(self.xs_global) > 0 or len(self.xs_local) > 0:
-        #     self.calc_current_s()
 
         self.lock.release()
 
@@ -304,6 +325,9 @@ class Control(Node):
         if best_s < self.prev_s - self.s_tolerance:
             best_s = self.prev_s - self.s_tolerance
             self.get_logger().warn(f"S 값 역행 제한: {best_s:.2f} (이전: {self.prev_s:.2f})")
+
+        if best_s < 0.0:
+            best_s = 0.0
         
         self.prev_s = best_s  # 이전 s 값 업데이트
         self.s = best_s # 인스턴스 변수 self.s에 물리적 투영 s 값을 저장
@@ -365,8 +389,16 @@ class Control(Node):
         최대 4개 장애물 지원 - 개수 변경 시 기존 정보 초기화
         """
         if len(msg.markers) == 0:
-            self.get_logger().warn("장애물 데이터가 없습니다.")
             # 장애물이 없을 때는 멀리 있는 가상 위치로 설정
+            self.obs1_x = 1e4
+            self.obs1_y = 1e4
+            self.obs2_x = 1e4
+            self.obs2_y = 1e4
+            self.obs3_x = 1e4
+            self.obs3_y = 1e4
+            self.obs4_x = 1e4
+            self.obs4_y = 1e4
+            self.get_logger().debug("유효한 장애물이 없습니다. 가상 위치로 설정")
             return
         
         if self.map_origin_x is None or self.map_origin_y is None:
@@ -467,8 +499,8 @@ class Control(Node):
             self.delivery_distance = 1e6
 
 
-    # calc_ref_trajectory 함수 수정: x0 인수를 추가하고 s 시작점을 x0[4]로 설정
-    def calc_ref_trajectory(self, _cubic_spline, x0):
+    # calc_ref_trajectory 
+    def calc_ref_trajectory(self, _cubic_spline):
         """
         MPC 예측 step에 대한 refrecne trajectory 계산
         """
@@ -477,58 +509,61 @@ class Control(Node):
         xref = np.zeros((NX, N)) # reference x, y, yaw, v, s
         tan_vec = np.zeros((2, N)) # 접선 벡터 tx, ty
 
-        if cubic_spline:
+        s_end = cubic_spline.s[-1] if cubic_spline else 0.0
+        epsilon = 1e-6 # Robust Clamping을 위한 안전 여유
 
-            # 수정 핵심: x0 상태 벡터의 5번째 요소인 s (Solver가 예측/제어하는 s)를 시작점으로 사용
-            current_s_start = x0[4]
-            current_s_ref = current_s_start
+        if cubic_spline:
+            current_s = self.s
+            current_yaw = self.yaw_unwrapped if self.yaw_unwrapped is not None else self.yaw
 
             for i in range(N):
-                # 다음 s 값을 현재의 참조 s 값(current_s_ref)에서 목표 속도로 전진하여 계산
-                s = current_s_ref + self.dt * self.target_vel
+                # 다음 s 값을 먼저 계산
+                s = current_s + self.dt * abs(self.target_vel) # v가 음수일 때도 s는 증가해야 함
                 
-                # s가 끝점을 넘어갔는지 확인
-                if s > cubic_spline.s[-1]:
-                    # 끝점을 넘어갔으면 끝점으로 고정
-                    s = cubic_spline.s[-1] - 0.1
-                    target_vel = 0.0
+                # [복구] s가 끝점을 넘어갔거나 같으면 클램핑
+                if s >= s_end:
+                    s = s_end - epsilon # 끝점에서 아주 작은 값만큼 뒤로 물림
+                    target_vel_current = 0.0
                 else:
                     # 장애물 감지 확인
                     obstacle_detected = (self.obs1_x < 1e3 or self.obs2_x < 1e3 or 
                                     self.obs3_x < 1e3 or self.obs4_x < 1e3)
                     
                     if obstacle_detected:
-                        target_vel = 2.0  # 장애물 감지 시 2.0 m/s로 제한
+                        target_vel_current = min(abs(self.target_vel), 1.0)  # 장애물 감지 시 1.0 m/s로 제한
                     else:
-                        target_vel = self.target_vel  # 정상 범위 내라면 원래 목표 속도 사용
+                        target_vel_current = abs(self.target_vel)  # 정상 범위 내라면 원래 목표 속도 사용
+                
+                # 다음 iteration을 위해 current_s 업데이트
+                current_s = s
 
-                # 다음 iteration을 위해 current_s_ref 업데이트
-                current_s_ref = s
-
-                # 곡률에 따라 target_vel 조정
-                curvature = abs(cubic_spline.calc_curvature(s))
-
-                if curvature < 0.01:  # 직선 구간 
-                    speed_factor = 1.0
-                elif curvature < 0.1:  # 완만한 커브 
-                    speed_factor = 0.8
-                elif curvature < 0.15:  # 중간 커브 
-                    speed_factor = 0.7
-                elif curvature < 0.2:  # 급커브
-                    speed_factor = 0.5
-                else:  # 매우 급한 커브 
-                    speed_factor = 0.2
-
-                curv_based_vel = target_vel * speed_factor
+                # 곡률에 따라 target_vel 조정 (주석 처리됨)
+                speed_factor = 1.0
+                curv_based_vel = target_vel_current * speed_factor
 
                 xref[0, i], xref[1, i] = cubic_spline.calc_position(s)
-                if self.is_reverse:
-                    xref[2, i] = normalise_angle(cubic_spline.calc_yaw(s) + math.pi)  # 후진 시 yaw에 180도 추가
+                
+                # Yaw Reference: 경로에서 얻은 yaw는 [-pi, pi] 범위임
+                path_yaw = cubic_spline.calc_yaw(s)
+                
+                # [복구] Path Yaw를 현재 Unwrapped Yaw 주변으로 래핑하여 연속적인 Reference Yaw를 생성
+                if current_yaw is not None:
+                    # current_yaw(unwrapped) 주변의 가장 가까운 2pi 배수로 path_yaw를 보정
+                    yaw_correction = round((current_yaw - path_yaw) / (2 * np.pi)) * 2 * np.pi
+                    ref_yaw_unwrapped = path_yaw + yaw_correction
                 else:
-                    xref[2, i] = cubic_spline.calc_yaw(s)  # 전진 시 원래 yaw 사용
-                xref[3, i] = curv_based_vel  # 곡률 기반으로 조정된 속도 사용
-                xref[4, i] = s
+                    ref_yaw_unwrapped = path_yaw
 
+                if self.is_reverse:
+                    # 후진 시 yaw에 180도(pi)를 더한 값의 unwrapped 버전을 사용
+                    xref[2, i] = ref_yaw_unwrapped + math.pi 
+                else:
+                    xref[2, i] = ref_yaw_unwrapped  # 전진 시 unwrapped yaw 사용
+
+                xref[4, i] = s
+                xref[3, i] = target_vel_current  # 항상 양수 속도의 reference 사용
+                
+                # 접선 벡터는 래핑된 yaw를 사용해도 됨 (방향만 필요)
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
                 tan_vec[1, i] = math.sin(cubic_spline.calc_yaw(s))
 
@@ -542,7 +577,7 @@ class Control(Node):
         """
 
         # 차량 상태 초기화 확인
-        if self.x is None or self.y is None or self.yaw is None or self.v is None:
+        if self.x is None or self.y is None or self.yaw_unwrapped is None or self.v is None: # [복구] self.yaw_unwrapped로 변경
             self.get_logger().warn("차량 상태가 초기화되지 않았습니다.")
             return
 
@@ -568,30 +603,22 @@ class Control(Node):
         # 현재 s 값 계산 (self.s 업데이트)
         self.calc_current_s(current_cubic_spline)
         
-        # 현재 상태 벡터 x0 설정 (s는 self.s로 초기화됨)
-        x0 = np.array([self.x, self.y, self.yaw, self.v, self.s])
+        # [복구] 현재 상태 벡터 x0 설정: self.yaw_unwrapped 사용
+        x0 = np.array([self.x, self.y, self.yaw_unwrapped, self.v, self.s])
+
+        # [롤백 유지] Hot-Start 로직 제거 (acados 내부 설정에 의존)
 
         # calc_ref_trajectory에 x0를 전달하여 동적 Reference Trajectory 계산
-        xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline, x0)
+        xref, tan_vec = self.calc_ref_trajectory(current_cubic_spline)
 
         # 초기 상태 및 장애물 정보 설정
-        # x0 = np.array([self.x, self.y, self.yaw, self.v, self.s]) # 이미 위에서 설정됨
         obs = np.array([self.obs1_x, self.obs1_y, self.obs2_x, self.obs2_y, self.obs3_x, self.obs3_y, self.obs4_x, self.obs4_y])
 
-        # obs = np.array([1e4, 1e4, self.obs2_x, self.obs2_y])
-
+        # [롤백 유지] 제어 입력 및 상태 변수는 0으로 초기화 (Cold-Start와 유사)
         u_opt = np.zeros((N, NU))  # 제어 입력 초기화 (delta, a)
         x_opt = np.zeros((N, NX))  # 상태 변수 초기화 (x, y, yaw, v, s)
 
-        # if self.fail_count > 0:
-        #     try:
-        #         self.solver.set(0, "x", x0)
-        #         self.solver.constraints_set(0, "lbx", x0)
-        #         self.solver.constraints_set(0, "ubx", x0)
-        #     except Exception as e:
-        #         self.get_logger().error(f"Solver 상태 재설정 중 오류: {str(e)}")
-
-        # Solver 초기 상태 변수 설정 
+        # Solver 초기 상태 변수 설정 (k=0의 상태는 현재 측정된 x0로 고정)
         self.solver.set(0, "x", x0)
         self.solver.constraints_set(0, "lbx", x0)
         self.solver.constraints_set(0, "ubx", x0)
@@ -600,21 +627,21 @@ class Control(Node):
         weights = self.current_weights
 
         if self.obs_type == 1: # 드럼
-            r_safe = 1.5
+            r_safe = 1.3
         elif self.obs_type == 2: # 차량
             r_safe = 2.0
         else:
             r_safe = 0.0
 
-        # MPC Solver에 파라미터 변수 전달 (yaw 오차는 wrap 적용)
+        # MPC Solver에 파라미터 변수 전달
         for i in range(N):
-            # wrap yaw reference around current yaw to avoid ±pi jump in cost
-            yaw_ref_wrapped = xref[2, i]
-            if not np.isnan(self.yaw):
-                yaw_ref_wrapped = normalise_angle(yaw_ref_wrapped - self.yaw) + self.yaw
+            # [복구] Yaw Reference 래핑 로직 제거: xref[2, i]는 이미 calc_ref_trajectory에서 unwrapped version으로 준비됨.
+            yaw_ref_unwrapped = xref[2, i]
+            
+            # 파라미터 설정
             params = np.hstack([
-                np.array([xref[0, i], xref[1, i], yaw_ref_wrapped, xref[3, i], xref[4, i]]),
-                u_opt[i, 0],
+                np.array([xref[0, i], xref[1, i], yaw_ref_unwrapped, xref[3, i], xref[4, i]]),
+                self.prev_steering_angle, # [롤백 유지] 이전 제어 입력(self.prev_steering_angle) 사용
                 tan_vec[:, i],
                 weights,
                 obs
@@ -622,13 +649,10 @@ class Control(Node):
             self.solver.set(i, "p", params)
             self.solver.constraints_set(i, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
             self.solver.constraints_set(i, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정
-            # self.solver.set(i, "p", np.hstack([xref[:5, i], u_opt[i, 0] ,tan_vec[:, i], obs]))
-        # self.solver.set(N, "p", np.hstack([xref[:5, -1], u_opt[-1, 0], tan_vec[:, -1], obs]))
-
-        yaw_ref_wrapped_last = xref[2, -1]
-        if not np.isnan(self.yaw):
-            yaw_ref_wrapped_last = normalise_angle(yaw_ref_wrapped_last - self.yaw) + self.yaw
-        self.solver.set(N, "p", np.hstack([np.array([xref[0, -1], xref[1, -1], yaw_ref_wrapped_last, xref[3, -1], xref[4, -1]]), u_opt[-1, 0], tan_vec[:, -1], weights, obs]))
+        
+        # Terminal Stage (N)
+        yaw_ref_unwrapped_last = xref[2, -1]
+        self.solver.set(N, "p", np.hstack([np.array([xref[0, -1], xref[1, -1], yaw_ref_unwrapped_last, xref[3, -1], xref[4, -1]]), self.prev_steering_angle, tan_vec[:, -1], weights, obs]))
         self.solver.constraints_set(N, "lh", np.array([r_safe**2, r_safe**2, r_safe**2, r_safe**2]) )  # 최소 거리 제약 조건 설정
         self.solver.constraints_set(N, "uh", np.array([1e10, 1e10, 1e10, 1e10]) )  # 최대 거리 제약 조건 설정   
 
@@ -644,13 +668,14 @@ class Control(Node):
         
         self.fail_count = 0  # 성공 시 fail count 초기화
 
-        # self.get_logger().info(f"tan_vec: {tan_vec}\
-        #                        \n xref: {xref[:, 0]}, {xref[:, 1]}, {xref[:, 2]}, {xref[:, 3]}, {xref[:, 4]}")
-        
         # Solver에서 최적화된 제어 입력, 상태 변수 추출
+        # x_opt는 k=0부터 N까지 N+1개의 상태를 가져오도록 수정
         u_opt = np.array([self.solver.get(i, "u") for i in range(N)])
-        x_opt = np.array([self.solver.get(i, "x") for i in range(N)])
-        self.visualize_predicted_trajectory(x_opt)
+        x_opt = np.array([self.solver.get(i, "x") for i in range(N+1)]) 
+        
+        # [롤백 유지] 새로운 최적 해를 다음 루프를 위해 저장하는 로직 제거
+
+        self.visualize_predicted_trajectory(x_opt[1:, :]) # k=1부터 N까지만 시각화
 
         # 제어 입력
         self.velocity = x_opt[1, 3]        # 속도 (v) -> 속도는 1step 뒤의 값을 사용
@@ -664,7 +689,8 @@ class Control(Node):
 
         # s 값이 목표 지점에 도달했는지 확인 -> local path 활용 시 s의 끝에 도달했을 떄 속도를 0으로 설정
         remaining_distance = current_cubic_spline.s[-1] - self.s
-        if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 0.8): # s의 20%(path가 4.0m보다 짧을 경우) or 0.8m 이내에 도달했으면 정지
+        # if remaining_distance <= min(current_cubic_spline.s[-1]*0.2, 2.5): # s의 20%(path가 4.0m보다 짧을 경우) or 2.5m 이내에 도달했으면 정지
+        if remaining_distance <= 1.7: # 1.7m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
         if self.mode == 1 and self.stopline_distance < 3.5: # PAUSE 모드이고 정지선 까지 거리가 3.5m 이내이면 정지
@@ -719,7 +745,8 @@ class Control(Node):
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \
             \n Reverse: {self.is_reverse} \
-            \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw:.2f}, {self.v:.2f}, {self.s:.2f}) \
+            \n State: ({self.x:.2f}, {self.y:.2f}, {self.yaw_unwrapped:.2f}, {self.v:.2f}, {self.s:.2f}) \
+            \n wrapped yaw: {self.yaw:.2f} \
             \n weights: {self.current_weights} \
             \n Obs1: ({self.obs1_x:.2f}, {self.obs1_y:.2f}), Obs2: ({self.obs2_x:.2f}, {self.obs2_y:.2f}), \
             Obs3: ({self.obs3_x:.2f}, {self.obs3_y:.2f}), Obs4: ({self.obs4_x:.2f}, {self.obs4_y:.2f}) \
@@ -749,8 +776,9 @@ class Control(Node):
             marker.pose.position.z = 0.0
 
             # 방향 설정 (yaw를 쿼터니언으로 변환)
-            yaw = x_opt[i, 2]  # yaw 값
-            quaternion = yaw_to_quaternion(yaw)
+            # [복구 유지] Unwrapped Yaw를 시각화할 때는 [-pi, pi]로 래핑해야 Rviz에서 올바른 방향을 표시함
+            yaw_wrapped = normalise_angle(x_opt[i, 2])
+            quaternion = yaw_to_quaternion(yaw_wrapped)
             marker.pose.orientation.x = quaternion.x
             marker.pose.orientation.y = quaternion.y
             marker.pose.orientation.z = quaternion.z
@@ -762,8 +790,8 @@ class Control(Node):
             marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = 0.0  
-            marker.color.g = 1.0
+            marker.color.r = 1.0  
+            marker.color.g = 0.0
             marker.color.b = 0.0
             marker.color.a = 1.0  # 불투명
 
@@ -776,45 +804,76 @@ class Control(Node):
 
     def visualize_ref_trajectory(self, xref):
         """
-        xref를 시각화
+        xref를 시각화 (화살표 + 번호 텍스트)
         """
         marker_array = MarkerArray()
 
         for i in range(xref.shape[1]):  # xref의 각 점에 대해 반복
-            marker = Marker()
-            marker.header.frame_id = "map"
-            marker.header.stamp = self.get_clock().now().to_msg()
-            marker.ns = "xref_points"
-            marker.id = i
-            marker.type = Marker.ARROW  # 화살표로 표시
-            marker.action = Marker.ADD
+            # 화살표 마커
+            arrow_marker = Marker()
+            arrow_marker.header.frame_id = "map"
+            arrow_marker.header.stamp = self.get_clock().now().to_msg()
+            arrow_marker.ns = "xref_arrows"
+            arrow_marker.id = i
+            arrow_marker.type = Marker.ARROW  # 화살표로 표시
+            arrow_marker.action = Marker.ADD
 
             # 위치 설정
-            marker.pose.position.x = xref[0, i]  # x 위치
-            marker.pose.position.y = xref[1, i]  # y 위치
-            marker.pose.position.z = 0.0
+            arrow_marker.pose.position.x = xref[0, i]  # x 위치
+            arrow_marker.pose.position.y = xref[1, i]  # y 위치
+            arrow_marker.pose.position.z = 0.0
 
             # 방향 설정 (yaw를 쿼터니언으로 변환)
-            yaw = xref[2, i]  # yaw 값
-            quaternion = yaw_to_quaternion(yaw)
-            marker.pose.orientation.x = quaternion.x
-            marker.pose.orientation.y = quaternion.y
-            marker.pose.orientation.z = quaternion.z
-            marker.pose.orientation.w = quaternion.w
+            # [복구 유지] Unwrapped Yaw를 시각화할 때는 [-pi, pi]로 래핑해야 Rviz에서 올바른 방향을 표시함
+            yaw_wrapped = normalise_angle(xref[2, i])
+            quaternion = yaw_to_quaternion(yaw_wrapped)
+            arrow_marker.pose.orientation.x = quaternion.x
+            arrow_marker.pose.orientation.y = quaternion.y
+            arrow_marker.pose.orientation.z = quaternion.z
+            arrow_marker.pose.orientation.w = quaternion.w
 
             # 크기 설정
-            marker.scale.x = 0.3  # 화살표 길이
-            marker.scale.y = 0.05  # 화살표 두께
-            marker.scale.z = 0.05  # 화살표 두께
+            arrow_marker.scale.x = 0.3  # 화살표 길이
+            arrow_marker.scale.y = 0.05  # 화살표 두께
+            arrow_marker.scale.z = 0.05  # 화살표 두께
 
             # 색상 설정
-            marker.color.r = xref[3, i] / 5.0  # 속도에 비례하여 빨간색 조절 (최대 10m/s 기준)
-            marker.color.g = 1.0  # 초록색
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # 불투명
+            arrow_marker.color.r = 0.0 
+            arrow_marker.color.g = 1.0 
+            arrow_marker.color.b = 0.0
+            arrow_marker.color.a = 1.0  # 불투명
 
             # MarkerArray에 추가
-            marker_array.markers.append(marker)
+            marker_array.markers.append(arrow_marker)
+
+            # 번호 텍스트 마커
+            text_marker = Marker()
+            text_marker.header.frame_id = "map"
+            text_marker.header.stamp = self.get_clock().now().to_msg()
+            text_marker.ns = "xref_numbers"
+            text_marker.id = i
+            text_marker.type = Marker.TEXT_VIEW_FACING  # 카메라를 향하는 텍스트
+            text_marker.action = Marker.ADD
+
+            # 텍스트 위치 (화살표보다 약간 위쪽에 표시)
+            text_marker.pose.position.x = xref[0, i]
+            text_marker.pose.position.y = xref[1, i]
+            text_marker.pose.position.z = 0.3  # 지면에서 30cm 위
+
+            # 텍스트 내용
+            text_marker.text = str(i)
+
+            # 텍스트 크기 설정
+            text_marker.scale.z = 0.1  # 텍스트 높이
+
+            # 텍스트 색상 설정 (흰색)
+            text_marker.color.r = 1.0
+            text_marker.color.g = 1.0
+            text_marker.color.b = 1.0
+            text_marker.color.a = 1.0
+
+            # MarkerArray에 추가
+            marker_array.markers.append(text_marker)
 
         # 퍼블리시
         self.mpc_ref_pub.publish(marker_array)

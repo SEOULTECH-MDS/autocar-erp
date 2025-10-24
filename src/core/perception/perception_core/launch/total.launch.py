@@ -25,27 +25,27 @@ def generate_launch_description():
             ]
         ),
 
-        # # 신호등 탐지
-        # Node(
-        #     package='perception',
-        #     executable='trafficlight',
-        #     name='trafficlight',
-        #     output='screen'
-        # ),
+        # 신호등 탐지
+        Node(
+            package='perception',
+            executable='trafficlight',
+            name='trafficlight',
+            output='screen'
+        ),
 
-        # # 배달 표지판 탐지
-        # Node(
-        #     package='perception',
-        #     executable='sign',
-        #     name='sign',
-        #     output='screen'
-        # ),
-        # Node(
-        #     package='perception',
-        #     executable='sensor_fusion_sign',
-        #     name='sensor_fusion_sign',
-        #     output='screen'
-        # ),
+        # 배달 표지판 탐지
+        Node(
+            package='perception',
+            executable='sign',
+            name='sign',
+            output='screen'
+        ),
+        Node(
+            package='perception',
+            executable='sensor_fusion_sign',
+            name='sensor_fusion_sign',
+            output='screen'
+        ),
 
         # 장애물 탐지
         Node( # 드럼통 인식

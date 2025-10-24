@@ -92,8 +92,8 @@ class PlannerNode(Node):
         # 차량 물리적 특성
         self.declare_parameter('vehicle_width', 1.16)           # 차량 폭 [m]
         self.declare_parameter('vehicle_length', 2.02)          # 차량 길이 [m]
-        self.declare_parameter('path_resolution', 0.3)         # 경로 점들 사이의 간격 [m]
-        
+        self.declare_parameter('path_resolution', 0.1)         # 경로 점들 사이의 간격 [m]
+
         # 주차 공간 기본 정보
         self.declare_parameter('default_slot_len', 5.0)         # 주차 공간 길이 기본값 [m]
         self.declare_parameter('default_slot_width', 2.5)       # 주차 공간 폭 기본값 [m]
@@ -115,14 +115,18 @@ class PlannerNode(Node):
         # === 1순위: 작년 로직 (Old-logic) - 3개 직선 구간 경로 ===
         self.declare_parameter('oldlogic_use', True)            # 작년 로직 사용 여부 (최우선)
         self.declare_parameter('oldlogic_pre_reverse', 3.5)     # Stage-1 골에서 반대방향 직진 거리 [m]
-        self.declare_parameter('oldlogic_pre_straight', 0.2)    # 초기 직선 step 크기 [m]
-        self.declare_parameter('oldlogic_center_offset', 2.5)   # 구역 중심 오프셋 (주차위치에서 앞으로) [m]
+        self.declare_parameter('oldlogic_pre_straight', 0.1)    # 초기 직선 step 크기 [m]
+        self.declare_parameter('oldlogic_center_offset', 2.0)   # 구역 중심 오프셋 (주차위치에서 앞으로) [m]
         
         # ==================== 스테이지 제어 파라미터 ====================
         self.declare_parameter('auto_advance', True)            # 오도메트리 기반 자동 스테이지 전환 여부
-        self.declare_parameter('stage_position_tolerance', 2.0)  # 스테이지 완료 위치 허용 오차 [m]
+        self.declare_parameter('stage_position_tolerance', 1.5)  # 스테이지 완료 위치 허용 오차 [m]
         self.declare_parameter('stage_yaw_tolerance_deg', 100.0)    # 스테이지 완료 방향 허용 오차 [도]
-        self.declare_parameter('publish_unified_waypoints', False)  # (삭제 예정)현재 스테이지만 /waypoints 퍼블리시 여부
+        self.declare_parameter('publish_unified_waypoints', False)  # (삭제 예정1023)현재 스테이지만 /waypoints 퍼블리시 여부
+        self.declare_parameter('lock_parking_pose', True)          # 주차 포즈 최초 1회만 고정할지 여부(T:1회)
+        self.declare_parameter('stage1_fix_path', True)             # Stage-1 경로를 1회만 생성하여 고정할지 여부
+        self.declare_parameter('stage2_fix_path', True)             # Stage-2 경로를 1회만 생성하여 고정할지 여부
+        self.declare_parameter('stage3_fix_path', True)             # Stage-3 경로를 1회만 생성하여 고정할지 여부
         
         # ==================== 주차 완료 파라미터 ====================
         self.declare_parameter('parking_complete_yaw_tolerance_deg', 100.0)  # 주차 완료 방향 임계치 [도]
@@ -149,6 +153,9 @@ class PlannerNode(Node):
         self._odom: Optional[Odometry] = None                 # 차량 현재 위치 (오도메트리)
         self._current_lanelet_id: Optional[int] = None        # 현재 차량이 위치한 Lanelet ID
         self._parking_zone_ids: List[int] = [1, 2, 3]             # 주차 구역 ID (K-City 본선 기준)
+        self._last_stage1_path: Optional[Path] = None          # Stage-1 경로 캐시
+        self._stage2_path_cached: Optional[Path] = None        # Stage-2 경로 캐시
+        self._stage3_path_cached: Optional[Path] = None        # Stage-3 경로 캐시
         
         # 각 스테이지별 목표 위치 저장
         self._last_stage1_goal: Optional[PoseStamped] = None  # Stage-1 목표 위치
@@ -167,6 +174,7 @@ class PlannerNode(Node):
         
         # 테스트 모드 상태
         self._test_mode_published: bool = False                # 테스트 모드 경로 발행 완료 플래그
+        self._parking_pose_locked: bool = False                # 주차 포즈 잠금 플래그
         
         # 로그 중복 방지용 상태 추적 (상태 변경 감지)
         self._last_logged_stage: int = -1                      # 마지막 로그 출력 시 스테이지
@@ -221,8 +229,22 @@ class PlannerNode(Node):
     # ==================== 콜백 함수들 ====================
     def _on_parking_pose(self, msg: PoseStamped) -> None:
         """주차 공간 위치 수신 콜백"""
+        lock_enabled = bool(self.get_parameter('lock_parking_pose').value)
+        if lock_enabled and self._parking_pose_locked:
+            self.get_logger().debug('주차 포즈 잠금 상태 - 새 메시지 무시')
+            return
+
         self._parking_pose = msg
-        self.get_logger().info(f'주차 공간 위치 수신: ({msg.pose.position.x:.2f}, {msg.pose.position.y:.2f})')
+        # 새 포즈 채택 시 모든 경로 캐시 초기화
+        self._last_stage1_path = None
+        self._stage2_path_cached = None
+        self._stage3_path_cached = None
+        if lock_enabled:
+            self._parking_pose_locked = True
+            self.get_logger().info(f'주차 포즈 수신(잠금): ({msg.pose.position.x:.2f}, {msg.pose.position.y:.2f})')
+        else:
+            self.get_logger().info(f'주차 포즈 업데이트: ({msg.pose.position.x:.2f}, {msg.pose.position.y:.2f})')
+
         self._maybe_publish_goal()
 
 
@@ -591,6 +613,10 @@ class PlannerNode(Node):
             )
             if distance < tolerance:
                 self._stage = 2
+                # Stage-1에서 Stage-2로 전환 시 Stage-1 경로 캐시 정리
+                self._last_stage1_path = None
+                # 다음 스테이지 캐시 초기화 (재진입 대비)
+                self._stage2_path_cached = None
                 self.get_logger().info(f"스테이지 전환: 1 → 2 (거리={distance:.2f}m < {tolerance}m)")
                 
                 # Stage-1 도착 시 후진 모드 활성화
@@ -704,6 +730,9 @@ class PlannerNode(Node):
                 self._parking_complete_state = 'normal'
                 self._parking_stop_timer = None
                 
+                # Stage-3 캐시 초기화 (재진입 대비)
+                self._stage3_path_cached = None
+                
                 # 전진 모드로 전환
                 self._publish_reverse_flag(False)
                 
@@ -771,54 +800,75 @@ class PlannerNode(Node):
             # Stage-1 경로 (전진 이동)
             show_stage1 = bool(self.get_parameter('show_stage1_path').value)
             if show_stage1:
-                # 반복 로그는 DEBUG로
-                self.get_logger().debug("Stage-1 경로 계산 중...")
+                fix_once = bool(self.get_parameter('stage1_fix_path').value)
                 try:
-                    current_path = self._compute_stage1_path(current_odom, stage1_goal)
+                    if fix_once:
+                        # 1회만 생성: 캐시에 없을 때 현재 위치로 생성
+                        if self._last_stage1_path is None:
+                            self.get_logger().debug("Stage-1 경로 1회 생성 중...")
+                            self._last_stage1_path = self._compute_stage1_path(current_odom, stage1_goal)
+                        current_path = self._last_stage1_path
+                    else:
+                        # 매 주기 재계산
+                        self.get_logger().debug("Stage-1 경로 매주기 재계산 중...")
+                        current_path = self._compute_stage1_path(current_odom, stage1_goal)
                     if current_path is not None:
-                        # 경로 생성 성공은 DEBUG (반복)
                         self.get_logger().debug(f"Stage-1 경로: {len(current_path.poses)}개 점")
                     else:
-                        # 실패는 항상 WARN
                         self.get_logger().warn("⚠️ Stage-1 경로 생성 실패")
                 except Exception as e:
-                    # 오류는 항상 ERROR
                     self.get_logger().error(f"❌ Stage-1 경로 계산 오류: {e}")
                     import traceback
                     self.get_logger().error(f"상세: {traceback.format_exc()}")
         
         elif self._stage == 2:
             # Stage-2 목표와 경로 (후진 주차)
+            fix_stage2 = bool(self.get_parameter('stage2_fix_path').value)
+            
             self.get_logger().info("=== Stage-2 디버그 시작 ===")
             self.get_logger().info(f"현재 차량 위치 (odom): ({current_odom.pose.pose.position.x:.2f}, {current_odom.pose.pose.position.y:.2f})")
             self.get_logger().info(f"주차 공간 위치: ({self._parking_pose.pose.position.x:.2f}, {self._parking_pose.pose.position.y:.2f})")
             
-            # Stage-2 목표 계산
+            # Stage-2 목표 계산 (매번 필요)
             self.get_logger().info("Stage-2 목표 계산 중...")
             stage2_goal = self._compute_stage2_goal(self._parking_pose)
             if stage2_goal is not None:
                 self._last_stage2_goal = stage2_goal
                 self.get_logger().info(f"Stage-2 목표 계산 성공: ({stage2_goal.pose.position.x:.2f}, {stage2_goal.pose.position.y:.2f})")
                 
-                # Stage-2 경로 계산 (작년 로직 사용)
-                current_path = None
-                
-                # 작년 로직 경로 생성
-                if bool(self.get_parameter('oldlogic_use').value):
-                    self.get_logger().info("🔄 Stage-2: using OLD-LOGIC arc+arc path between Stage1→Stage2")
-                    # Stage-1 goal은 self._last_stage1_goal 에 이미 저장/발행됨
-                    if self._last_stage1_goal is not None:
-                        current_path = self._compute_stage2_path_oldlogic(self._last_stage1_goal,
-                                                                          stage2_goal,
-                                                                          self._parking_pose)
-                        if current_path is not None:
-                            self.get_logger().info(f"Old-logic path OK: {len(current_path.poses)} pts")
-                        else:
-                            self.get_logger().warn("로직 경로 생성 실패")
-                    else:
-                        self.get_logger().warn("Stage-1 목표가 없음")
+                # 캐시 확인 및 경로 계산
+                if fix_stage2 and self._stage2_path_cached is not None:
+                    current_path = self._stage2_path_cached
+                    self.get_logger().debug("Stage-2 경로 캐시 사용")
                 else:
-                    self.get_logger().error("oldlogic_use가 비활성화됨 - Stage-2 경로 생성 불가")
+                    # Stage-2 경로 계산 (작년 로직 사용)
+                    current_path = None
+                    
+                    if fix_stage2:
+                        self.get_logger().debug("Stage-2 경로 1회 생성 중...")
+                    else:
+                        self.get_logger().debug("Stage-2 경로 매주기 재계산 중...")
+                    
+                    # 작년 로직 경로 생성
+                    if bool(self.get_parameter('oldlogic_use').value):
+                        self.get_logger().info("🔄 Stage-2: using OLD-LOGIC arc+arc path between Stage1→Stage2")
+                        # Stage-1 goal은 self._last_stage1_goal 에 이미 저장/발행됨
+                        if self._last_stage1_goal is not None:
+                            current_path = self._compute_stage2_path_oldlogic(self._last_stage1_goal,
+                                                                              stage2_goal,
+                                                                              self._parking_pose)
+                            if current_path is not None:
+                                self.get_logger().info(f"Old-logic path OK: {len(current_path.poses)} pts")
+                            else:
+                                self.get_logger().warn("로직 경로 생성 실패")
+                        else:
+                            self.get_logger().warn("Stage-1 목표가 없음")
+                    else:
+                        self.get_logger().error("oldlogic_use가 비활성화됨 - Stage-2 경로 생성 불가")
+                    
+                    # 캐시 저장
+                    if current_path is not None and fix_stage2:
+                        self._stage2_path_cached = current_path
                 
                 if current_path is not None:
                     # Stage-2 경로를 저장 (Stage-3 탈출용)
@@ -832,9 +882,23 @@ class PlannerNode(Node):
         
         elif self._stage == 3:
             # Stage-3 경로 (탈출)
+            fix_stage3 = bool(self.get_parameter('stage3_fix_path').value)
+            
             self.get_logger().info("=== Stage-3 탈출 경로 시작 ===")
             try:
-                current_path = self._compute_stage3_exit_path()
+                if fix_stage3 and self._stage3_path_cached is not None:
+                    current_path = self._stage3_path_cached
+                    self.get_logger().debug("Stage-3 경로 캐시 사용")
+                else:
+                    if fix_stage3:
+                        self.get_logger().debug("Stage-3 경로 1회 생성 중...")
+                    else:
+                        self.get_logger().debug("Stage-3 경로 매주기 재계산 중...")
+                    
+                    current_path = self._compute_stage3_exit_path()
+                    if current_path is not None and fix_stage3:
+                        self._stage3_path_cached = current_path
+                
                 if current_path is not None:
                     self.get_logger().info(f"Stage-3 탈출 경로 생성: {len(current_path.poses)}개 점")
                 else:

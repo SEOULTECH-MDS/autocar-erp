@@ -3,6 +3,9 @@
   <arg name="src_info" default="/sensing/camera/traffic_light/camera_info"/>
   <arg name="resized_image" default="/sensing/camera/undistorted/image_raw"/>
   <arg name="resized_info" default="/sensing/camera/undistorted/camera_info"/>
+  <arg name="undistort_param_path" default="$(find-pkg-share yabloc_image_processing)/config/undistort.param.yaml"/>
+  <arg name="graph_segment_param_path" default="$(find-pkg-share yabloc_image_processing)/config/graph_segment.param.yaml"/>
+  <arg name="segment_filter_param_path" default="$(find-pkg-share yabloc_image_processing)/config/segment_filter.param.yaml"/>
 
   <!-- undistort -->
   <node pkg="yabloc_image_processing" exec="yabloc_undistort_node" output="both">

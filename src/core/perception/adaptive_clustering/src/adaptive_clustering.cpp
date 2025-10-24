@@ -269,6 +269,10 @@ private:
         {
           marker_array.markers.push_back(marker);
         }
+        // else
+        // {
+        //   marker_array.markers.push_back(marker);
+        // }
 
         marker.header.stamp = this->get_clock()->now();
         marker.ns = "clustering_pose";
