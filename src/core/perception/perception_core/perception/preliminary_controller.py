@@ -83,7 +83,7 @@ class PreliminaryController(Node):
                 {'start': 22, 'end': 22}   # 유턴
             ]
         }
-        self.get_logger().info('본선 미션 매핑 사용')
+        self.get_logger().info('예선 미션 매핑 사용')
     
     def lane_id_callback(self, msg):
         """현재 lane ID 수신 콜백"""

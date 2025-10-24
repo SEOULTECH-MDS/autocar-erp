@@ -10,5 +10,8 @@ mission_mapping:
   rubber:
     - start: 21   # 사선 주차
       end: 21
-    - start: 23   # 유턴
-      end: 23
+
+  # U-turn 미션
+  rubber_uturn:
+    - start: 25   # 유턴
+      end: 25
