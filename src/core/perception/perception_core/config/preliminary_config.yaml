@@ -1,17 +1,15 @@
 mission_mapping:
   # 장애물 탐지 미션 (장애물 회피 구간)
   obstacle:
-    - start: 7    # 드럼통
-      end: 7      
-    - start: 19    # 사람
-      end: 19
-    
+    - start: 10   # 터널 구간(드럼통, 사람)
+      end: 10
+
   # 라바콘 탐지 미션
   rubber:
-    - start: 21   # 사선 주차
-      end: 21
+    - start: 2   # 사선 주차
+      end: 2
 
   # U-turn 미션
   rubber_uturn:
-    - start: 25   # 유턴
-      end: 25
+    - start: 5   # 유턴
+      end: 7

@@ -73,14 +73,13 @@ class PreliminaryController(Node):
         """기본 미션 매핑 설정 - 다중 구간 지원"""
         self.mission_mapping = {
             'obstacle': [
-                {'start': 7, 'end': 7},  # 드럼통
-                {'start': 19, 'end': 19}   # 사람
+                {'start': 10, 'end': 10},  # 터널 구간(드럼통, 사람)
             ],
             'rubber': [
-                {'start': 21, 'end': 21},  # 주차
+                {'start': 2, 'end': 2},  # 주차
             ],
             'rubber_uturn': [
-                {'start': 22, 'end': 22}   # 유턴
+                {'start': 5, 'end': 7}   # 유턴
             ]
         }
         self.get_logger().info('예선 미션 매핑 사용')
