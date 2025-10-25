@@ -33,7 +33,7 @@ mission_mapping:
   obstacle:
     - start: 9    # 대형 정적장애물
       end: 9      
-    - start: 25    # 소형 정적장애물
+    - start: 24    # 소형 정적장애물
       end: 25
     # - start: 1    # 소형 정적장애물 (아름관 우측 직선 구간)
     #   end: 1

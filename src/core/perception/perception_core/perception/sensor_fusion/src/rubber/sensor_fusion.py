@@ -78,6 +78,7 @@ class SensorFusion(Node):
                                         [0.769376401424830,	-0.638781483356562,	0.00426256394321395,	0.0788470712903576],
                                         [0,	0,	0,	1]])
 
+
         # ROS
         # Subscriber
         self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')

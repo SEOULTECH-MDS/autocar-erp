@@ -70,13 +70,13 @@ class SensorFusion(Node):
         # ])
 
         # 1002
-        self.intrinsic_right = np.array([[587.948744095411,   0., 314.5476, 0.],
-                                         [0., 588.336739734481, 224.2868, 0.],
-                                         [0., 0., 1., 0.]])
-        self.extrinsic_right = np.array([[-0.638771164943078,	-0.769271226942017,	0.0138988573770317,	-0.891555405478185],
-                                        [-0.00559926493774663,	-0.0134162558083088,	-0.999894320572051,	0.438251648438707],
-                                        [0.769376401424830,	-0.638781483356562,	0.00426256394321395,	0.0788470712903576],
-                                        [0,	0,	0,	1]])
+        self.intrinsic = np.array([[544.919521211672, 0.0, 306.352064813878, 0.0],
+                                   [0.0, 544.019688159067, 245.365671510212, 0.0],
+                                   [0.0, 0.0, 1.0, 0.0]])
+        self.extrinsic = np.array([[0.0506487743641060, -0.998484984623336, 0.0215043515863724, 0.0920721610972854],
+                                   [-0.0296475216862914, -0.0230256896413618, -0.999295172646401, 0.831791576567763],
+                                   [0.998276377619582, 0.0499755249925013, -0.0307688281942799, 0.0776848798477488],
+                                   [0, 0, 0, 1]])
 
         # ROS
         # Subscriber
@@ -119,7 +119,7 @@ class SensorFusion(Node):
         
         # 3D BBOX to Pixel Frame
         #clusters_2d_left, valid_left = projection_3d_to_2d(clusters, self.intrinsic_left, self.extrinsic_left)
-        clusters_2d_right, valid_right = projection_3d_to_2d(clusters, self.intrinsic_right, self.extrinsic_right)
+        clusters_2d_right, valid_right = projection_3d_to_2d(clusters, self.intrinsic, self.extrinsic)
         
         # 디버깅
         self.get_logger().info(f"[SF] valid_right: {np.count_nonzero(valid_right)}/{len(valid_right)}")

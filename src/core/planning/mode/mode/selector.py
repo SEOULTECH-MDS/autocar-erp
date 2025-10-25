@@ -131,7 +131,7 @@ class ModeSelector(Node):
         
         # 우회전 정지선 관련 파라미터
         self.declare_parameter('stopline_pause_distance', 5.0)                  # 정지선 감지 거리 (m)
-        self.declare_parameter('enable_distance_condition', False)              # 거리 조건 사용 여부 on/off
+        self.declare_parameter('enable_distance_condition', True)              # 거리 조건 사용 여부 on/off
         self.declare_parameter('stopline_pause_duration', 5.0)                  # 정지선 정지 시간 (s)
         self.declare_parameter('vehicle_stop_velocity_threshold', 0.01)         # 차량 정지 판단 속도 임계값 (m/s)
 
@@ -139,11 +139,11 @@ class ModeSelector(Node):
         self.declare_parameter('traffic_signal_confirm_duration', 0.1)          # 신호등 전환 확인 시간 (s)
         
         # U턴 모드 제어 파라미터
-        self.declare_parameter('use_uturn_flags', True)                         # U턴 플래그 사용 여부 (True: 플래그 기반, False: 구역 기반)
+        self.declare_parameter('use_uturn_flags', False)                         # U턴 플래그 사용 여부 (True: 플래그 기반, False: 구역 기반)
         
         # K-City 맵 구역 설정 (예선/본선 분리)
-        self.declare_parameter('kcity_qualifying_parking_zones', [1, 2])        # 예선 주차 구역
-        self.declare_parameter('kcity_uturn_zones', [7])                        # 예선 유턴 구역
+        self.declare_parameter('kcity_qualifying_parking_zones', [2])        # 예선 주차 구역
+        self.declare_parameter('kcity_uturn_zones', [5, 6, 7])                        # 예선 유턴 구역
         self.declare_parameter('kcity_gps_off_zones', [10])                     # 예선 GPS 차단 구역
         # 본선 배달 구역 (상차/하차 구분)
         self.declare_parameter('kcity_delivery_pickup_zones', [2])              # 본선 상차 구역 2번

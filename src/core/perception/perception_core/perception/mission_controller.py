@@ -113,7 +113,7 @@ class LaneMissionController(Node):
             ],
             'obstacle': [
                 {'start': 9, 'end': 9},  # 대형 정적장애물
-                {'start': 25, 'end': 25}   # 소형 정적장애물
+                {'start': 24, 'end': 25}   # 소형 정적장애물
             ],
             'rubber': [
                 {'start': 27, 'end': 27}   # 주차

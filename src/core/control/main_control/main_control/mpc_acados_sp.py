@@ -124,28 +124,38 @@ class Control(Node):
 
         self.obs_type = 0 #미분류
 
+            # 1025 kcity 실험
+            # 0: np.array([1e-5, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0]), # DRIVE
+            
+            # 아름관 실험
+            # 0: np.array([1e-4, 0.08, 5.0, 2.0, 0.7, 2.0, 10.0]), # DRIVE
+
         # 모드별 가중치 설정
-        self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-5, 0.1, 20.0, 6.0, 0.7, 1.5, 2.0]), # DRIVE
-            1: np.array([1e-5, 0.1, 20.0, 6.0, 0.7, 3.0, 2.0]), # PAUSE
+        self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
+            0: np.array([1e-4, 0.1, 30.0, 10.0, 0.7, 3.0, 10.0]), # DRIVE
+            1: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
             4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # DELIVERY 
             5: np.array([0.1, 0.08, 5.0, 0.5, 0.7, 8.0, 10.0]), # PARKING
-            6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1])  # RETURN (사용X)
+            6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]),  # RETURN (사용X)
+            7: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0]), # UTURN
+            8: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0])  # GPS_OFF
         }       
         self.current_weights = self.mode_weights[self.mode]
 
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 3.5,  # DRIVE
-            1: 3.5,  # PAUSE
+            0: 4.0,  # DRIVE
+            1: 3.0,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
             5: 2.0,  # PARKING
-            6: 3.0   # RETURN (사용X)
+            6: 3.0,  # RETURN (사용X)
+            7: 1.5,  # UTURN
+            8: 1.5   # GPS_OFF
         }
         self.target_vel = self.mode_target_vel[self.mode]
 
@@ -556,7 +566,8 @@ class Control(Node):
                 # [복구] s가 끝점을 넘어갔거나 같으면 클램핑
                 if s >= s_end:
                     s = s_end - epsilon # 끝점에서 아주 작은 값만큼 뒤로 물림
-                    target_vel_current = 0.0
+                    # target_vel_current = 0.0
+                    target_vel_current = abs(self.target_vel)
                 else:
                     # 장애물 감지 확인
                     obstacle_detected = (self.obs1_x < 1e3 or self.obs2_x < 1e3 or 
@@ -711,7 +722,7 @@ class Control(Node):
         self.visualize_predicted_trajectory(x_opt[1:, :]) # k=1부터 N까지만 시각화
 
         # 제어 입력
-        self.velocity = x_opt[1, 3]        # 속도 (v) -> 속도는 1step 뒤의 값을 사용
+        self.velocity = x_opt[1, 3]         # 속도 (v) -> 속도는 5step 뒤의 값을 사용
         self.steering_angle = u_opt[0, 0]   # 조향각 (delta) -> 조향각은 0step의 값을 사용
 
         self.acc = u_opt[0, 1] # 가속도 (a) (실제 cmd_vel로는 속도 값 이용, 디버그용)
@@ -726,10 +737,10 @@ class Control(Node):
         if remaining_distance <= 1.7: # 1.7m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
-        if self.mode == 1 and self.stopline_distance < 3.5: # PAUSE 모드이고 정지선 까지 거리가 3.5m 이내이면 정지
+        if self.mode == 1 and self.stopline_distance < 4.0: # PAUSE 모드이고 정지선 까지 거리가 4.0m 이내이면 정지
             self.velocity = 0.0
 
-        if self.mode == 4 and self.delivery_distance < 1.5: # Delivery 모드이고 배달 지점 까지 거리가 4.0m 이내이면 정지
+        if self.mode == 4 and self.delivery_distance < 1.5: # Delivery 모드이고 배달 지점 까지 거리가 1.5m 이내이면 정지
             self.velocity = 0.0
 
         if self.person_detected:
