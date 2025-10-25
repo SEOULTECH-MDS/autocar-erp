@@ -55,6 +55,8 @@ class Control(Node):
         self.obstacle_sub = self.create_subscription(MarkerArray, '/obstacle_map', self.obstacle_cb, 10) # map 좌표로 변환된 장애물 토픽
         self.stopline_sub = self.create_subscription(Float64, '/stopline_distance', self.stopline_cb, 10) # 정지선 까지 거리
         self.delivery_sub = self.create_subscription(Float64, '/delivery_distance', self.delivery_cb, 10) # 배달 지점 까지 거리
+        # self.delivery_sub = self.create_subscription(PoseArray, '/deliverysign_spot', self.delivery_cb, 10) # 배달 지점 PoseArray 토픽
+
         self.reverse_flag_sub = self.create_subscription(Bool, '/reverse_flag', self.reverse_flag_cb, 10) # 후진 플래그
         self.person_detected_sub = self.create_subscription(Bool, '/person/detected', self.person_detected_cb, 10) # 사람 감지 플래그
 
@@ -124,7 +126,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw 
-            0: np.array([1e-4, 0.08, 5.0, 2.0, 0.7, 2.0, 10.0]), # DRIVE
+            0: np.array([1e-4, 0.08, 5.0, 4.0, 0.7, 3.0, 10.0]), # DRIVE
             1: np.array([1e-4, 0.1, 3.5, 2.0, 2.0, 2.0, 0.1]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
@@ -137,7 +139,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 2.5,  # DRIVE
+            0: 3.5,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
@@ -497,6 +499,26 @@ class Control(Node):
             self.delivery_distance = msg.data
         else:
             self.delivery_distance = 1e6
+    # def delivery_cb(self, msg):
+    #         """ 
+    #         배달 지점 위치 업데이트 - PoseArray에서 첫 번째 포즈의 x,y 좌표를 사용하여 거리 계산
+    #         """
+    #         if len(msg.poses) == 0:
+    #             self.delivery_distance = 1e6
+    #             return
+                
+    #         if self.x is None or self.y is None:
+    #             self.delivery_distance = 1e6
+    #             return
+                
+    #         # 첫 번째 배달 지점 위치 추출
+    #         delivery_x = msg.poses[0].position.x
+    #         delivery_y = msg.poses[0].position.y
+            
+    #         # 현재 차량 위치와 배달 지점 사이의 유클리드 거리 계산
+    #         self.delivery_distance = np.sqrt((self.x - delivery_x)**2 + (self.y - delivery_y)**2)
+            
+    #         self.get_logger().debug(f"배달 지점: ({delivery_x:.2f}, {delivery_y:.2f}), 거리: {self.delivery_distance:.2f}m")
 
 
     # calc_ref_trajectory 
@@ -696,7 +718,7 @@ class Control(Node):
         if self.mode == 1 and self.stopline_distance < 3.5: # PAUSE 모드이고 정지선 까지 거리가 3.5m 이내이면 정지
             self.velocity = 0.0
 
-        if self.mode == 4 and self.delivery_distance < 4.0: # Delivery 모드이고 배달 지점 까지 거리가 4.0m 이내이면 정지
+        if self.mode == 4 and self.delivery_distance < 1.5: # Delivery 모드이고 배달 지점 까지 거리가 4.0m 이내이면 정지
             self.velocity = 0.0
 
         if self.person_detected:
