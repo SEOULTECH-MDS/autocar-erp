@@ -131,8 +131,8 @@ class ModeSelector(Node):
         
         # 우회전 정지선 관련 파라미터
         self.declare_parameter('stopline_pause_distance', 5.0)                  # 정지선 감지 거리 (m)
-        self.declare_parameter('stopline_pause_duration', 3.2)                  # 정지선 정지 시간 (s)
-        self.declare_parameter('enable_distance_condition', False)               # 거리 조건 사용 여부 on/off
+        self.declare_parameter('enable_distance_condition', False)              # 거리 조건 사용 여부 on/off
+        self.declare_parameter('stopline_pause_duration', 5.0)                  # 정지선 정지 시간 (s)
         self.declare_parameter('vehicle_stop_velocity_threshold', 0.01)         # 차량 정지 판단 속도 임계값 (m/s)
 
         # 신호등 전환 타이머 파라미터
@@ -142,22 +142,22 @@ class ModeSelector(Node):
         self.declare_parameter('use_uturn_flags', True)                         # U턴 플래그 사용 여부 (True: 플래그 기반, False: 구역 기반)
         
         # K-City 맵 구역 설정 (예선/본선 분리)
-        self.declare_parameter('kcity_qualifying_parking_zones', [1, 2])           # 예선 주차 구역
+        self.declare_parameter('kcity_qualifying_parking_zones', [1, 2])        # 예선 주차 구역
         self.declare_parameter('kcity_uturn_zones', [7])                        # 예선 유턴 구역
         self.declare_parameter('kcity_gps_off_zones', [10])                     # 예선 GPS 차단 구역
         # 본선 배달 구역 (상차/하차 구분)
         self.declare_parameter('kcity_delivery_pickup_zones', [2])              # 본선 상차 구역 2번
-        self.declare_parameter('kcity_delivery_dropoff_zones', [15])           # 본선 하차 구역
+        self.declare_parameter('kcity_delivery_dropoff_zones', [19])            # 본선 하차 구역
         self.declare_parameter('kcity_final_parking_zones', [21])               # 본선 주차 구역 21번
-        self.declare_parameter('kcity_right_pause_zones', [10])                 # 본선 우회전 정지선 구역
+        self.declare_parameter('kcity_right_pause_zones', [13])                 # 본선 우회전 정지선 구역
 
         # 미래관 맵 구역 설정 (예선/본선 구분 없이 통일)
         self.declare_parameter('mirae_parking_zones', [7])                      # 주차 구역 
         self.declare_parameter('mirae_uturn_zones', [39])                       # 유턴 구역
         self.declare_parameter('mirae_gps_off_zones', [23])                     # GPS 차단 구역
         # 배달 구역 (상차/하차 구분)
-        self.declare_parameter('mirae_delivery_pickup_zones', [28])            # 상차 구역
-        self.declare_parameter('mirae_delivery_dropoff_zones', [28])          # 하차 구역
+        self.declare_parameter('mirae_delivery_pickup_zones', [28])             # 상차 구역
+        self.declare_parameter('mirae_delivery_dropoff_zones', [28])            # 하차 구역
         self.declare_parameter('mirae_right_pause_zones', [55, 60])             # 우회전 정지선 구역
 
         # ===========================================
@@ -216,25 +216,25 @@ class ModeSelector(Node):
         self.previous_mode: str = self.current_mode
         
         # 입력 상태들
-        self.traffic_sign: Optional[str] = None             # "Green", "Red", "Left", "Straightleft"
-        self.current_lanelet_id: Optional[int] = None       # 현재 차량이 위치한 Lanelet ID
-        self.target_sign: Optional[int] = None              # 1,2,3=상차 | 4,5,6=하차
+        self.traffic_sign: Optional[str] = None                        # "Green", "Red", "Left", "Straightleft"
+        self.current_lanelet_id: Optional[int] = None                  # 현재 차량이 위치한 Lanelet ID
+        self.target_sign: Optional[int] = None                         # 1,2,3=상차 | 4,5,6=하차
         self.parking_complete_flag: bool = False
-        self.pickup_complete_flag: bool = False             # 상차 완료 플래그
-        self.delivery_complete_flag: bool = False           # 하차 완료 플래그
-        self.parking_pose_ready: bool = False               # 주차 포즈 계산 완료 플래그
+        self.pickup_complete_flag: bool = False                        # 상차 완료 플래그
+        self.delivery_complete_flag: bool = False                      # 하차 완료 플래그
+        self.parking_pose_ready: bool = False                          # 주차 포즈 계산 완료 플래그
         
         # U턴 플래그 (U턴 플래너에서 발행)
-        self.uturn_start_flag: bool = False                 # U턴 시작 플래그
-        self.uturn_complete_flag: bool = False              # U턴 완료 플래그
+        self.uturn_start_flag: bool = False                            # U턴 시작 플래그
+        self.uturn_complete_flag: bool = False                         # U턴 완료 플래그
         
         # 정지선 관련 상태
-        self.stopline_distance: float = float('inf')        # 정지선까지의 거리
-        self.stopline_type: Optional[str] = None            # 정지선 타입
-        self.stopline_pause_start_time: Optional[float] = None  # 정지선 정지 시작 시간
+        self.stopline_distance: float = float('inf')                   # 정지선까지의 거리
+        self.stopline_type: Optional[str] = None                       # 정지선 타입
+        self.stopline_pause_start_time: Optional[float] = None         # 정지선 정지 시작 시간
         
         # 차량 속도 상태
-        self.current_velocity: float = 0.0                  # 현재 차량 속도 (m/s)
+        self.current_velocity: float = 0.0                             # 현재 차량 속도 (m/s)
         
         # 신호등 전환 타이머 상태
         self.traffic_signal_change_start_time: Optional[float] = None  # 신호등 변경 시작 시간

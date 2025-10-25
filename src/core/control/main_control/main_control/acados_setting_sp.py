@@ -40,37 +40,6 @@ def acados_solver():
     ocp.cost.cost_type = 'EXTERNAL'
     ocp.cost.cost_type_e = 'EXTERNAL'
 
-    # cost function weights (TMPC weights)
-    # W_acc = 0.34  # 가속도 입력 크기 가중치 0.1
-    # W_steer = 0.85  # 조향각 입력 크기 가중치 0.2
-    # W_v = 0.55  # 속도 error 가중치 0.1
-    # W_lag = 0.75  # lag error 가중치 1.0
-    # W_con = 0.05  # contour error 가중치 1.0
-    # W_yaw = 0.5  # heading error 가중치 (terminal cost) 0.5
-    # m_term = -0.4  # terminal cost에서 lag, con error 비율 감소시키는 가중치
-
-    # cost function weights (0819 test)
-    # W_acc = 0.1  # 가속도 입력 크기 가중치 0.1
-    # W_steer = 0.85  # 조향각 입력 크기 가중치 0.2
-    # W_v = 0.1  # 속도 error 가중치 0.1
-    # W_lag = 1.0  # lag error 가중치 1.0
-    # W_con = 0.3  # contour error 가중치 1.0
-    # W_yaw = 0.3  # heading error 가중치 (terminal cost) 0.5
-    # m_term = -0.3 # terminal cost에서 lag, con error 비율 감소시키는 가중치
-
-    # cost function weights 
-    # W_acc = 0.1  # 가속도 입력 크기 가중치 (대폭 감소 - 빠른 가속 적극 허용)
-    # W_steer = 0.2  # 조향각 입력 크기 가중치 0.2
-    # W_steer_rate = 2.0  # 조향각 변화율 가중치
-    # W_v = 0.5  # 속도 error 가중치 
-    # W_lag = 1.0  # lag error 가중치 1.0
-    # W_con = 0.3  # contour error 가중치 1.0
-
-    # We_v = W_v   # terminal cost에서 속도 error 가중치
-    # We_lag = W_lag   # terminal cost에서 lag error 가중치
-    # We_con = W_con  # terminal cost에서 contour error 가중치
-    # We_yaw = 0.4  # heading error 가중치 (terminal cost)
-
     # parameter variables
     NP = NX + ND + NV + NW + NO    # NX: 참조 변수 크기, ND: 이전 조향각 입력 크기 NV: 접선 벡터 크기, O: 장애물 정보 크기
     p = SX.sym('p', NP) 
@@ -99,7 +68,7 @@ def acados_solver():
     We_v = W_v *2.0  # terminal cost에서 속도 error 가중치
     We_lag = W_lag * 0.5  # terminal cost에서 lag error 가중치
     We_con = W_con * 2.0 # terminal cost에서 contour error 가중치
-    We_yaw = W_yaw * 1.5  # heading error 가중치 (terminal cost)
+    We_yaw = W_yaw * 3.0  # heading error 가중치 (terminal cost)
 
     obs1_x = ocp.model.p[15]  # 장애물1 x 좌표
     obs1_y = ocp.model.p[16]  # 장애물1 y 좌표
@@ -125,8 +94,8 @@ def acados_solver():
                  W_steer_rate * (steering_angle - prev_steering_angle) ** 2 + \
                  W_v * ((vehicle_v - v_ref) ** 2) + \
                  W_lag * ((tx*(vehicle_x - x_ref) + ty*(vehicle_y - y_ref)))**2 + \
-                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 
-                #  W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
+                 W_con * ((ty*(vehicle_x - x_ref) - tx*(vehicle_y - y_ref)))**2 + \
+                 W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2
 
                 #  W_yaw * ((vehicle_yaw - yaw_ref) ** 2)
                 # W_yaw * (sin((vehicle_yaw - yaw_ref)/2))**2

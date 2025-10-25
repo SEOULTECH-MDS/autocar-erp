@@ -24,8 +24,8 @@ class CameraFront(Node):
         
         # Camera info 초기화
         self.camera_info_msg = self.create_camera_info()
-        
-        self.timer = self.create_timer(1.0/30.0, self.timer_callback)  # 30Hz로 프레임 퍼블리시
+
+        self.timer = self.create_timer(1.0/20.0, self.timer_callback)  # 20Hz로 프레임 퍼블리시
         self.get_logger().info("camera_front 노드가 시작되었습니다.")
 
     def create_camera_info(self):
