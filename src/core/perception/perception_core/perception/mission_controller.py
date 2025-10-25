@@ -101,7 +101,7 @@ class LaneMissionController(Node):
                 {'start': 5, 'end': 5},
                 {'start': 7, 'end': 7},
                 {'start': 10, 'end': 10},
-                {'start': 12, 'end': 12},
+                # {'start': 12, 'end': 12},
                 {'start': 15, 'end': 15},
                 {'start': 16, 'end': 16},
                 {'start': 20, 'end': 20},
@@ -140,16 +140,6 @@ class LaneMissionController(Node):
                 lane_range['start'] <= self.current_lane_id <= lane_range['end']
                 for lane_range in lane_ranges
             )
-
-            # # 장애물 미션의 경우 사전 활성화 적용 (1개 lane 전부터 활성화)
-            # if mission == 'obstacle':
-            #     is_active = self._check_obstacle_activation(lane_ranges)
-            # else:
-            #     # 다른 미션들은 기존 방식 유지 (정확한 위치에서 활성화)
-            #     is_active = any(
-            #         lane_range['start'] <= self.current_lane_id <= lane_range['end']
-            #         for lane_range in lane_ranges
-            #     )
             
             # 상태가 변경된 경우에만 로그 출력
             if self.mission_states[mission] != is_active:
@@ -167,37 +157,8 @@ class LaneMissionController(Node):
                         f'{mission} 미션 {status} (Lane {self.current_lane_id}, 구간: {", ".join(active_ranges)})'
                     )
 
-                    # if mission == 'obstacle':
-                    #     # 장애물 미션의 경우 사전 활성화 정보 표시
-                    #     upcoming_ranges = [
-                    #         f"[{r['start']}-{r['end']}]" 
-                    #         for r in lane_ranges 
-                    #         if (r['start'] - 1) <= self.current_lane_id <= r['end']
-                    #     ]
-                    #     self.get_logger().info(
-                    #         f'{mission} 미션 {status} (Lane {self.current_lane_id}, 예정구간: {", ".join(upcoming_ranges)}) - 사전활성화'
-                    #     )
-                    # else:
-                    #     active_ranges = [
-                    #         f"[{r['start']}-{r['end']}]" 
-                    #         for r in lane_ranges 
-                    #         if r['start'] <= self.current_lane_id <= r['end']
-                    #     ]
-                    #     self.get_logger().info(
-                    #         f'{mission} 미션 {status} (Lane {self.current_lane_id}, 구간: {", ".join(active_ranges)})'
-                    #     )
                 else:
                     self.get_logger().info(f'{mission} 미션 {status} (Lane {self.current_lane_id})')
-    
-    # def _check_obstacle_activation(self, lane_ranges):
-    #     """장애물 미션 활성화 확인 - 사전 활성화 로직 적용"""
-    #     # 현재 구간에 있거나, 1개 lane 전부터 미리 활성화
-    #     for lane_range in lane_ranges:
-    #         # 사전 활성화: 목표 구간 1개 lane 전부터 활성화
-    #         pre_activation_start = max(0, lane_range['start'] - 1)
-    #         if pre_activation_start <= self.current_lane_id <= lane_range['end']:
-    #             return True
-    #     return False
 
     def publish_mission_states(self):
         """미션별 enable 상태 발행"""
