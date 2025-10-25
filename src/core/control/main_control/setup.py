@@ -27,6 +27,7 @@ setup(
             'mpc_acados_control_sp = main_control.mpc_acados_sp:main',
             'mpc_acados_control_sp_traffic = main_control.mpc_acados_sp_traffic:main',
             'obstacle_map_node = main_control.obstacle_map_node:main',
+            'deliverysign_map_node = main_control.deliverysign_map_node:main'
 
         ],
     },
