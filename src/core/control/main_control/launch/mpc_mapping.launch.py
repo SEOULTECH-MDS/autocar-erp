@@ -46,5 +46,16 @@ def generate_launch_description():
             }],
             arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 
+        ),
+        # Delivery Sign Map Node - 배달 표지판 위치를 map 좌표계로 변환
+        Node(
+            package='main_control',
+            executable='deliverysign_map_node',
+            name='deliverysign_map_node',
+            output='screen',
+            parameters=[{
+                'use_sim_time': LaunchConfiguration('use_sim_time'),
+            }],
+            arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
         )
     ])
