@@ -41,10 +41,15 @@ class DeliverySignMap(Node):
         self.cached_tf_time = None
         self.tf_cache_duration = 0.1  # 100ms 캐시
 
+        # 활성화 플래그 (obstacle 노드와 동일)
+        self.is_enabled = False  # 기본적으로 활성화
+
         # 구독자/퍼블리셔 설정
         self.deliverysign_sub = self.create_subscription(
             PoseArray, '/deliverysign_spot', self.deliverysign_cb, 10
         )
+        # 활성화/비활성화 제어 (필요시)
+        self.enable_sub = self.create_subscription(Bool, '/mission/sign/enable', self.enable_cb, 10)
 
         # 변환된 map 좌표 표지판 위치 퍼블리시
         self.deliverysign_map_pub = self.create_publisher(PoseArray, '/deliverysign_map', 10)
@@ -61,8 +66,24 @@ class DeliverySignMap(Node):
 
         self.get_logger().info('배달 표지판 맵 변환 노드 시작됨')
 
+    def enable_cb(self, msg: Bool):
+        """배달 표지판 처리 활성화/비활성화"""
+        was_enabled = self.is_enabled
+        self.is_enabled = msg.data
+        
+        if was_enabled != self.is_enabled:
+            status = "활성화" if self.is_enabled else "비활성화"
+            self.get_logger().info(f'배달 표지판 map 변환 {status}')
+            
+            # 비활성화 시 기존 데이터 정리
+            if not self.is_enabled:
+                self.tracked_signs.clear()
+
     def deliverysign_cb(self, msg: PoseArray):
         """라이다 좌표계의 표지판 위치를 받아서 map 좌표계로 변환"""
+        if not self.is_enabled:
+            return
+            
         start_time = self.get_clock().now()
         now = start_time
 
@@ -221,7 +242,32 @@ class DeliverySignMap(Node):
 
     def publish_deliverysigns(self):
         """최적화된 표지판 퍼블리시 (PoseArray + 빨간색 마커)"""
-        current_time = self.get_clock().now().to_msg()
+        # 비활성화 상태면 빈 데이터 퍼블리시
+        if not self.is_enabled:
+            current_time = self.get_clock().now().to_msg()
+            
+            # 빈 MarkerArray 퍼블리시 (이전 마커들 정리)
+            ma = MarkerArray()
+            delete_marker = Marker()
+            delete_marker.header.frame_id = 'map'
+            delete_marker.header.stamp = current_time
+            delete_marker.ns = 'deliverysign_map'
+            delete_marker.action = Marker.DELETEALL
+            ma.markers.append(delete_marker)
+            self.deliverysign_marker_pub.publish(ma)
+            
+            # 빈 PoseArray도 퍼블리시
+            pose_array = PoseArray()
+            pose_array.header.frame_id = 'map'
+            pose_array.header.stamp = current_time
+            self.deliverysign_map_pub.publish(pose_array)
+            return
+        
+        # 주기적으로 오래된 표지판 제거 (obstacle 노드와 동일한 패턴)
+        current_time_obj = self.get_clock().now()
+        self._remove_old_signs(current_time_obj)
+        
+        current_time = current_time_obj.to_msg()
         
         if not self.tracked_signs:
             # 빈 MarkerArray 퍼블리시 (이전 마커들 정리)
