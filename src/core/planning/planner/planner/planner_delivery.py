@@ -120,17 +120,20 @@ class DeliveryPlanner(Node):
 
     def _start_completion_timer(self) -> None:
         """
-        4초 후에 완료 처리를 수행하는 타이머 시작
+        4초 후에 완료 처리를 수행하는 타이머 시작 (one-shot)
         """
         if self._completion_timer is None:
-            self._completion_timer = self.create_timer(4.0, self._handle_completion, oneshot=True)
+            self._completion_timer = self.create_timer(4.0, self._handle_completion)
             self.get_logger().info('완료 타이머 시작 (4초)')
 
     def _handle_completion(self) -> None:
         """
         완료 플래그 발행 처리 (상차/하차 각각 한 번만 발행)
         """
-        self._completion_timer = None  # 타이머 초기화
+        # 타이머를 one-shot으로 만들기 위해 콜백 시작에서 취소
+        if self._completion_timer is not None:
+            self._completion_timer.cancel()
+            self._completion_timer = None
         
         # 완료 메시지 생성
         complete_msg = Bool()
@@ -180,6 +183,26 @@ class DeliveryPlanner(Node):
             self._target_sign_id = sign_id
             self.get_logger().info(f'표지판 ID 수신: {sign_id} ({"상차" if sign_id <= 3 else "하차"})')
             self._update_delivery_target()
+    
+    def _update_delivery_target(self) -> None:
+        # 새로운 표지판 수신 시 진행 중 타이머는 취소
+        if self._completion_timer is not None:
+            self._completion_timer.cancel()
+            self._completion_timer = None
+
+        # 현재 모드가 배달 모드일 때만 활성화 상태 갱신
+        if self._current_mode == ModeState.DELIVERY:
+            if self._target_sign_id and 1 <= self._target_sign_id <= 3:
+                # 상차 표지판: 상차 미완료면 활성화
+                self._is_active = not self._pickup_completed
+            elif self._target_sign_id and 4 <= self._target_sign_id <= 6:
+                # 하차 표지판: 하차 미완료면 활성화
+                self._is_active = not self._dropoff_completed
+            else:
+                # 유효한 표지판을 아직 못받았으면 대기/활성화 정책
+                self._is_active = True
+        else:
+            self._is_active = False
         
     def _on_mode_state(self, msg: ModeState) -> None:
         """

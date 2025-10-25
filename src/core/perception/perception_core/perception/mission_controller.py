@@ -98,24 +98,25 @@ class LaneMissionController(Node):
         """기본 미션 매핑 설정 - 다중 구간 지원"""
         self.mission_mapping = {
             'trafficlight': [
-                {'start': 3, 'end': 3},
                 {'start': 5, 'end': 5},
                 {'start': 7, 'end': 7},
-                # {'start': 9, 'end': 9},
-                {'start': 13, 'end': 13},
+                {'start': 10, 'end': 10},
+                {'start': 12, 'end': 12},
                 {'start': 15, 'end': 15},
-                {'start': 17, 'end': 17}
+                {'start': 16, 'end': 16},
+                {'start': 20, 'end': 20},
+                {'start': 22, 'end': 22}
             ],
             'sign': [
-                {'start': 1, 'end': 1},   # 배달A
-                {'start': 15, 'end': 15},   # 배달B
+                {'start': 1, 'end': 2},   # 배달A
+                {'start': 19, 'end': 19},   # 배달B
             ],
             'obstacle': [
-                {'start': 7, 'end': 7},  # 대형 정적장애물
-                {'start': 19, 'end': 19}   # 소형 정적장애물
+                {'start': 9, 'end': 9},  # 대형 정적장애물
+                {'start': 25, 'end': 25}   # 소형 정적장애물
             ],
             'rubber': [
-                {'start': 21, 'end': 21}   # 주차
+                {'start': 27, 'end': 27}   # 주차
             ]
         }
         self.get_logger().info('본선 미션 매핑 사용')
