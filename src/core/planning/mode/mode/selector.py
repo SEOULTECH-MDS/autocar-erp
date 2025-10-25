@@ -118,7 +118,7 @@ class ModeSelector(Node):
         self.declare_parameter('publish_rate', 10.0)
         
         # 대회 및 맵 구분 (먼저 선언)
-        self.declare_parameter('competition_type', CompetitionType.FINAL)  # "qualifying" | "final" 예선 / 본선
+        self.declare_parameter('competition_type', CompetitionType.QUALIFYING)  # "qualifying" | "final" 예선 / 본선
         self.declare_parameter('map_type', MapType.KCITY)                       # "kcity" | "mirae"
 
         # 대회 타입에 따른 기본 모드 설정

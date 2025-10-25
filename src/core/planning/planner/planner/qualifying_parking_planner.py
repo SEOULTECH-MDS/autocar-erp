@@ -53,7 +53,7 @@ class QualifyingParkingPlanner(Node):
             'map_osm_path',
             'src/core/localization/localization_core/data/kcity_qualifying/lanelet2_map.osm',
         )
-        self.declare_parameter('path_id', '1')
+        self.declare_parameter('path_id', 1)
         self.declare_parameter('activation_lanelet_id', 2)
         self.declare_parameter('stop_duration_sec', 3.0)
         self.declare_parameter('reverse_distance_m', 5.0)
