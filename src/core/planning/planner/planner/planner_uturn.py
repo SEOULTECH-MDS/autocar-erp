@@ -11,7 +11,7 @@ import tf2_ros
 from tf2_ros import TransformException
 import numpy as np
 from std_msgs.msg import Bool, Int64
-from geometry_msgs.msg import PoseArray, Pose, PoseStamped
+from geometry_msgs.msg import PoseArray, Pose, PoseStamped, Point
 from nav_msgs.msg import Odometry, Path
 from planning_msgs.msg import ModeState
 from visualization_msgs.msg import MarkerArray, Marker
@@ -69,10 +69,11 @@ class UturnPlanner(Node):
 
         # 파라미터 선언
         self.declare_parameter('path_resolution', 0.3)  # 경로 해상도 [m]
-        self.declare_parameter('arc_radius', 2.0)  # 원호 반지름 [m] (지름 4m)
+        self.declare_parameter('arc_radius', 4.0)  # 원호 반지름 [m] (지름 8m)
         self.declare_parameter('completion_distance', 2.0)  # 완료 거리 [m]
         self.declare_parameter('min_cone_count', 3)  # 최소 라바콘 개수
-        self.declare_parameter('distance_threshold', 8.0)  # 라바콘 평균 거리 임계치 [m]
+        self.declare_parameter('min_distance_threshold', 2.5)  # 라바콘 최소 거리 임계치 [m]
+        self.declare_parameter('pre_straight_distance', 2.0)  # 원호 전 직진 거리 [m]
         self.declare_parameter('enable_debug_visualization', False)  # 디버그 시각화 활성화
         self.declare_parameter('frame_id', 'map')  # 기본 좌표계
         
@@ -248,7 +249,7 @@ class UturnPlanner(Node):
         if self._vehicle_location is None:
             return  # 차량 위치 정보 없음
         
-        # 라바콘과 차량 간 평균 거리 계산
+        # 라바콘과 차량 간 최소 거리 계산
         if len(self._tracked_cones) == 0:
             return  # 변환된 라바콘 위치 없음
         
@@ -256,7 +257,6 @@ class UturnPlanner(Node):
         if current_pose is None:
             return  # 차량 위치 변환 실패
         
-        total_distance = 0.0
         self._cone_distances = []
         
         for cone_pose in self._tracked_cones:
@@ -264,19 +264,19 @@ class UturnPlanner(Node):
                 (current_pose.pose.position.x - cone_pose.pose.position.x)**2 +
                 (current_pose.pose.position.y - cone_pose.pose.position.y)**2
             )
-            total_distance += distance
             self._cone_distances.append(distance)
         
-        average_distance = total_distance / len(self._tracked_cones)
-        distance_threshold = float(self.get_parameter('distance_threshold').value)
+        # 최소 거리 계산
+        min_distance = min(self._cone_distances)
+        min_distance_threshold = float(self.get_parameter('min_distance_threshold').value)
         
         # 디버그 로그 (debug 레벨)
         self.get_logger().debug(
-            f'라바콘 평균 거리: {average_distance:.2f}m (임계치: {distance_threshold:.2f}m)'
+            f'라바콘 최소 거리: {min_distance:.2f}m (임계치: {min_distance_threshold:.2f}m)'
         )
         
-        if average_distance > distance_threshold:
-            return  # 평균 거리가 임계치보다 멀면 시작하지 않음
+        if min_distance > min_distance_threshold:
+            return  # 가장 가까운 라바콘도 임계치보다 멀면 시작하지 않음
         
         # 디버그 시각화 발행
         if bool(self.get_parameter('enable_debug_visualization').value):
@@ -350,36 +350,56 @@ class UturnPlanner(Node):
             return None
     
     def _generate_uturn_path(self) -> None:
-        """U턴 경로 생성 (지름 4m 원호)"""
+        """U턴 경로 생성 (직진 + 지름 8m 원호)"""
         if self._start_location is None:
             return
         
         # 파라미터 가져오기
-        radius = float(self.get_parameter('arc_radius').value)  # 2.0m
+        radius = float(self.get_parameter('arc_radius').value)  # 4.0m
         resolution = float(self.get_parameter('path_resolution').value)  # 0.3m
+        straight_distance = float(self.get_parameter('pre_straight_distance').value)  # 2.0m
         
         # 차량의 현재 위치와 방향
         start_x = self._start_location.pose.position.x
         start_y = self._start_location.pose.position.y
         start_yaw = quaternion_to_yaw(self._start_location.pose.orientation)
         
-        # 원호 중심점 계산 (차량 위치에서 오른쪽으로 radius만큼)
-        # base_link 기준 y < 0이 오른쪽이므로, map 프레임에서는 +sin(yaw) 방향
-        center_x = start_x + radius * math.sin(start_yaw)
-        center_y = start_y - radius * math.cos(start_yaw)
+        # 직진 끝점 계산
+        straight_end_x = start_x + straight_distance * math.cos(start_yaw)
+        straight_end_y = start_y + straight_distance * math.sin(start_yaw)
         
-        # 원호 경로 생성 (180도)
+        # 원호 중심점 계산 (직진 끝점에서 오른쪽으로 radius만큼)
+        # base_link 기준 y < 0이 오른쪽이므로, map 프레임에서는 +sin(yaw) 방향
+        center_x = straight_end_x + radius * math.sin(start_yaw)
+        center_y = straight_end_y - radius * math.cos(start_yaw)
+        
+        # 경로 생성
         path = Path()
         path.header.frame_id = 'map'
         path.header.stamp = self.get_clock().now().to_msg()
         
-        # 원호 각도 범위: -90도에서 90도까지 (차량 위치에서 시작)
-        arc_length = math.pi * radius  # 반원 둘레
-        num_points = max(1, int(arc_length / resolution))
+        # 1. 직진 구간 웨이포인트 생성
+        num_straight_points = max(1, int(straight_distance / resolution))
+        for i in range(num_straight_points + 1):
+            t = i / num_straight_points
+            px = start_x + t * (straight_end_x - start_x)
+            py = start_y + t * (straight_end_y - start_y)
+            
+            pose = PoseStamped()
+            pose.header = path.header
+            pose.pose.position.x = px
+            pose.pose.position.y = py
+            pose.pose.position.z = 0.0
+            pose.pose.orientation = yaw_to_quaternion(start_yaw)
+            path.poses.append(pose)
         
-        for i in range(num_points + 1):
-            # 각도 계산 (-π/2에서 π/2까지, 차량 위치에서 시작)
-            angle = -math.pi/2 + math.pi * i / num_points
+        # 2. 원호 구간 웨이포인트 생성 (180도)
+        arc_length = math.pi * radius  # 반원 둘레
+        num_arc_points = max(1, int(arc_length / resolution))
+        
+        for i in range(num_arc_points + 1):
+            # 각도 계산 (-π/2에서 π/2까지, 직진 끝점에서 시작)
+            angle = -math.pi/2 + math.pi * i / num_arc_points
             
             # 원호 위의 점 계산
             point_x = center_x + radius * math.cos(start_yaw + angle)
@@ -405,7 +425,8 @@ class UturnPlanner(Node):
         self._publish_waypoints_points(path)
         
         self._path_published = True
-        self.get_logger().info(f'U턴 경로 생성 완료: {len(path.poses)}개 점')
+        self.get_logger().info(f'U턴 경로 생성: 직진 {straight_distance:.1f}m + 원호 반지름 {radius:.1f}m')
+        self.get_logger().info(f'U턴 경로 생성 완료: {len(path.poses)}개 점 (직진: {num_straight_points+1}개, 원호: {num_arc_points+1}개)')
     
     def _publish_waypoints_points(self, path: Path) -> None:
         """Path를 PoseArray로 변환하여 발행"""
@@ -623,11 +644,19 @@ class UturnPlanner(Node):
         self.get_logger().info(f"[TEST] 시작점: ({start_pose.pose.position.x:.2f}, {start_pose.pose.position.y:.2f})")
         self.get_logger().info(f"[TEST] 끝점: ({end_pose.pose.position.x:.2f}, {end_pose.pose.position.y:.2f})")
         
+        # 직진 구간 정보
+        straight_distance = float(self.get_parameter('pre_straight_distance').value)
+        start_yaw = quaternion_to_yaw(start_pose.pose.orientation)
+        straight_end_x = start_pose.pose.position.x + straight_distance * math.cos(start_yaw)
+        straight_end_y = start_pose.pose.position.y + straight_distance * math.sin(start_yaw)
+        
+        self.get_logger().info(f"[TEST] 직진 구간: {straight_distance:.1f}m")
+        self.get_logger().info(f"[TEST] 직진 끝점: ({straight_end_x:.2f}, {straight_end_y:.2f})")
+        
         # 원호 중심점 계산
         radius = float(self.get_parameter('arc_radius').value)
-        start_yaw = quaternion_to_yaw(start_pose.pose.orientation)
-        center_x = start_pose.pose.position.x + radius * math.sin(start_yaw)
-        center_y = start_pose.pose.position.y - radius * math.cos(start_yaw)
+        center_x = straight_end_x + radius * math.sin(start_yaw)
+        center_y = straight_end_y - radius * math.cos(start_yaw)
         
         self.get_logger().info(f"[TEST] 원호 중심: ({center_x:.2f}, {center_y:.2f})")
         self.get_logger().info(f"[TEST] 원호 반지름: {radius:.2f}m (지름: {radius*2:.2f}m)")

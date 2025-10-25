@@ -27,9 +27,9 @@ class DeliveryPlanner(Node):
     - /mode_state (ModeState): 현재 모드 상태
     
     출력 토픽:
-    - /delivery_distance (Float64): 표지판까지의 거리 (velodyne 좌표계 기준)
-    - /pickup_fin (Bool): 상차 완료 플래그
-    - /dropoff_fin (Bool): 하차 완료 플래그
+    - /delivery_distance (Float64): 표지판까지의 2D 거리
+    - /pickup_complete_flag (Bool): 상차 완료 플래그
+    - /delivery_complete_flag (Bool): 하차 완료 플래그
     
     동작 설명:
     1. 표지판 인식 및 거리 계산
@@ -83,6 +83,7 @@ class DeliveryPlanner(Node):
         self._target_sign_id = None
         self._sign_position = None  # velodyne 프레임 기준 위치
         self._completion_timer = None  # 완료 처리 타이머
+        self._timer_active = False  # 타이머 활성화 여부
         self._current_velocity = 0.0  # 현재 차량 속도
         self._pickup_completed = False    # 상차 완료 플래그 발행 여부
         self._dropoff_completed = False   # 하차 완료 플래그 발행 여부
@@ -92,18 +93,49 @@ class DeliveryPlanner(Node):
     
     def _calculate_distance(self, pose: Pose) -> float:
         """
-        velodyne 좌표계 기준 원점으로부터의 거리 계산
+        velodyne 좌표계 기준 2D 거리 계산 (z축 제외)
+        차량이 velodyne 원점에 있다고 가정
         """
         return math.sqrt(
             pose.position.x**2 + 
-            pose.position.y**2 + 
-            pose.position.z**2
+            pose.position.y**2
         )
+
+    def _check_completion_conditions(self) -> bool:
+        """완료 조건 체크 (거리 + 속도)"""
+        # 거리 조건
+        distance_ok = False
+        if self._sign_position:
+            distance = self._calculate_distance(self._sign_position)
+            distance_ok = distance <= 2.0
+        
+        # 속도 조건
+        velocity_ok = False
+        if self.get_parameter('use_velocity_check').value:
+            velocity_ok = self._current_velocity <= self.get_parameter('velocity_threshold').value
+        else:
+            velocity_ok = True  # 속도 체크 비활성화 시 항상 만족
+        
+        return distance_ok or velocity_ok
+
+    def _start_completion_timer(self) -> None:
+        """조건 만족 시에만 타이머 시작"""
+        if not self._timer_active and self._check_completion_conditions():
+            self._timer_active = True
+            self._completion_timer = self.create_timer(4.0, self._handle_completion, oneshot=True)
+            self.get_logger().info('완료 타이머 시작 (4초)')
+
+    def _cancel_completion_timer(self) -> None:
+        """타이머 취소"""
+        if self._timer_active and self._completion_timer:
+            self._completion_timer.cancel()
+            self._completion_timer = None
+            self._timer_active = False
+            self.get_logger().info('완료 타이머 취소')
 
     def _on_vehicle_pose(self, msg: Odometry) -> None:
         """
-        차량 위치 메시지 콜백 함수
-        속도가 임계값 이하이고 파라미터가 활성화되어 있으면 완료 처리 시작
+        차량 속도 메시지 콜백 함수
         """
         if not self._is_active:
             return
@@ -111,29 +143,24 @@ class DeliveryPlanner(Node):
         # 속도 업데이트
         self._current_velocity = abs(msg.twist.twist.linear.x)
         
-        # 속도 체크가 활성화되어 있고 속도가 임계값 이하인 경우
-        use_velocity_check = self.get_parameter('use_velocity_check').value
-        if use_velocity_check:
-            velocity_threshold = self.get_parameter('velocity_threshold').value
-            if self._current_velocity <= velocity_threshold:
+        # 완료 조건 체크 (표지판 위치가 있을 때만)
+        if self._sign_position:
+            if self._check_completion_conditions():
                 self._start_completion_timer()
-
-    def _start_completion_timer(self) -> None:
-        """
-        4초 후에 완료 처리를 수행하는 타이머 시작 (one-shot)
-        """
-        if self._completion_timer is None:
-            self._completion_timer = self.create_timer(4.0, self._handle_completion)
-            self.get_logger().info('완료 타이머 시작 (4초)')
+            else:
+                self._cancel_completion_timer()
 
     def _handle_completion(self) -> None:
         """
         완료 플래그 발행 처리 (상차/하차 각각 한 번만 발행)
         """
-        # 타이머를 one-shot으로 만들기 위해 콜백 시작에서 취소
-        if self._completion_timer is not None:
-            self._completion_timer.cancel()
-            self._completion_timer = None
+        self._timer_active = False
+        self._completion_timer = None
+        
+        # # 완료 조건 재확인
+        # if not self._check_completion_conditions():
+        #     self.get_logger().warn('완료 조건 불만족 - 플래그 발행 취소')
+        #     return
         
         # 완료 메시지 생성
         complete_msg = Bool()
@@ -158,21 +185,25 @@ class DeliveryPlanner(Node):
         """
         표지판 위치 메시지 콜백 함수
         """
-        if not msg.poses or not self._is_active:
+        if not msg.poses:
             return
             
         # 첫 번째 표지판 위치만 사용 (현재는 단일 표지판만 처리)
         self._sign_position = msg.poses[0]
         
-        # 거리 계산 및 발행
-        distance = self._calculate_distance(self._sign_position)
-        distance_msg = Float64()
-        distance_msg.data = distance
-        self.distance_pub.publish(distance_msg)
+        # 거리 계산은 배달 모드일 때 항상 수행
+        if self._current_mode == ModeState.DELIVERY:
+            distance = self._calculate_distance(self._sign_position)
+            distance_msg = Float64()
+            distance_msg.data = distance
+            self.distance_pub.publish(distance_msg)
         
-        # 거리가 2.0m 이하이면 완료 타이머 시작
-        if distance <= 2.0:
-            self._start_completion_timer()
+        # 완료 조건 체크는 활성화 상태일 때만
+        if self._is_active:
+            if self._check_completion_conditions():
+                self._start_completion_timer()
+            else:
+                self._cancel_completion_timer()
         
     def _on_target_sign(self, msg: Int32) -> None:
         """
@@ -182,27 +213,6 @@ class DeliveryPlanner(Node):
         if 1 <= sign_id <= 6:
             self._target_sign_id = sign_id
             self.get_logger().info(f'표지판 ID 수신: {sign_id} ({"상차" if sign_id <= 3 else "하차"})')
-            self._update_delivery_target()
-    
-    def _update_delivery_target(self) -> None:
-        # 새로운 표지판 수신 시 진행 중 타이머는 취소
-        if self._completion_timer is not None:
-            self._completion_timer.cancel()
-            self._completion_timer = None
-
-        # 현재 모드가 배달 모드일 때만 활성화 상태 갱신
-        if self._current_mode == ModeState.DELIVERY:
-            if self._target_sign_id and 1 <= self._target_sign_id <= 3:
-                # 상차 표지판: 상차 미완료면 활성화
-                self._is_active = not self._pickup_completed
-            elif self._target_sign_id and 4 <= self._target_sign_id <= 6:
-                # 하차 표지판: 하차 미완료면 활성화
-                self._is_active = not self._dropoff_completed
-            else:
-                # 유효한 표지판을 아직 못받았으면 대기/활성화 정책
-                self._is_active = True
-        else:
-            self._is_active = False
         
     def _on_mode_state(self, msg: ModeState) -> None:
         """
@@ -210,17 +220,24 @@ class DeliveryPlanner(Node):
         """
         self._current_mode = msg.current_mode
         
-        # 배달 모드가 켜질 때만 활성화 (해당 동작이 아직 완료되지 않은 경우)
-        if msg.current_mode == ModeState.DELIVERY:
-            if self._target_sign_id and 1 <= self._target_sign_id <= 3:
-                # 상차 표지판이고 상차가 아직 안된 경우
-                self._is_active = not self._pickup_completed
-            elif self._target_sign_id and 4 <= self._target_sign_id <= 6:
-                # 하차 표지판이고 하차가 아직 안된 경우
-                self._is_active = not self._dropoff_completed
-            else:
-                # 표지판이 아직 인식되지 않은 경우
-                self._is_active = True
+        # 배달 모드가 아니면 비활성화
+        if msg.current_mode != ModeState.DELIVERY:
+            self._is_active = False
+            self._cancel_completion_timer()
+            return
+        
+        # 배달 모드일 때 표지판 ID에 따라 완료 처리 활성화 여부 결정
+        if not self._target_sign_id:
+            # 표지판이 인식되지 않았으면 완료 처리만 비활성화
+            self._is_active = False
+            return
+        
+        if 1 <= self._target_sign_id <= 3:
+            # 상차 표지판이고 상차가 아직 안된 경우만 활성화
+            self._is_active = not self._pickup_completed
+        elif 4 <= self._target_sign_id <= 6:
+            # 하차 표지판이고 하차가 아직 안된 경우만 활성화
+            self._is_active = not self._dropoff_completed
         else:
             self._is_active = False
         
