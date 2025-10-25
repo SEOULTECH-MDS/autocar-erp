@@ -42,7 +42,7 @@ class YoloPersonNode(Node):
         # ROS I/O
         self.img_sub = self.create_subscription(Image, '/camera_front/image_raw', self.callback_img, 10)
         # self.img_sub = self.create_subscription(Image, '/usb_cam_1/image_raw', self.callback_img, 10)
-        # self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/person', 10)
+        self.pose_pub = self.create_publisher(PoseArray, '/bounding_boxes/person', 10)
         self.img_pub = self.create_publisher(Image, '/image_result/person', 10)
         self.person_detected_pub = self.create_publisher(Bool, '/person/detected', 10)
 

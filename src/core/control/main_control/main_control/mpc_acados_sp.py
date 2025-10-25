@@ -137,7 +137,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 1.5,  # DRIVE
+            0: 2.5,  # DRIVE
             1: 3.5,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
@@ -582,7 +582,7 @@ class Control(Node):
             return
 
         # 현재 모드에 따라 사용할 스플라인 결정
-        if self.mode == 0 or self.mode == 1 or self.mode == 4:  # DRIVE 모드 | PAUSE 모드 | DELIVERY 모드 (0, 1, 4)
+        if self.mode == 0 or self.mode == 1 or self.mode == 4 or self.mode == 8:  # DRIVE 모드 | PAUSE 모드 | DELIVERY 모드 / GPS off(0, 1, 4, 8)
             current_cubic_spline = self.cubic_spline_global
             if self.xs_global == [] or self.ys_global == []:
                 self.get_logger().warn("Global waypoints 데이터가 없습니다.")
