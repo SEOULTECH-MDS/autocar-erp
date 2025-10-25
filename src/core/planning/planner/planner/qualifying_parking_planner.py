@@ -14,6 +14,11 @@ from nav_msgs.msg import Odometry
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
+try:
+    from pyproj import Transformer
+    _HAS_PYPROJ = True
+except Exception:
+    _HAS_PYPROJ = False
 
 def _normalize_angle(angle_rad: float) -> float:
     while angle_rad > math.pi:
@@ -61,6 +66,9 @@ class QualifyingParkingPlanner(Node):
         self.declare_parameter('reach_speed_thresh_mps', 0.3)
         self.declare_parameter('reach_yaw_thresh_deg', 30.0)
         self.declare_parameter('publish_rate_hz', 10.0)
+        # Map origin for lat/lon → local map conversion (align with map.launch.py defaults)
+        self.declare_parameter('map_origin_lat', 37.239205)
+        self.declare_parameter('map_origin_lon', 126.773193)
 
         qos = QoSProfile(depth=10)
 
@@ -203,8 +211,10 @@ class QualifyingParkingPlanner(Node):
         tree = ET.parse(osm_path)
         root = tree.getroot()
 
-        # Parse nodes -> (local_x, local_y)
+        # Parse nodes -> prefer (local_x, local_y); fallback to (lat, lon)→map(x,y) using UTM
         node_xy: Dict[str, Tuple[float, float]] = {}
+        lat0 = float(self.get_parameter('map_origin_lat').value)
+        lon0 = float(self.get_parameter('map_origin_lon').value)
         for node in root.findall('node'):
             node_id = node.get('id')
             if node_id is None:
@@ -227,6 +237,19 @@ class QualifyingParkingPlanner(Node):
                         pass
             if local_x is not None and local_y is not None:
                 node_xy[node_id] = (local_x, local_y)
+                continue
+
+            # Fallback: lat/lon attributes present
+            lat_attr = node.get('lat')
+            lon_attr = node.get('lon')
+            if lat_attr is not None and lon_attr is not None:
+                try:
+                    lat = float(lat_attr)
+                    lon = float(lon_attr)
+                    dx, dy = self._latlon_to_xy(lat, lon, lat0, lon0)
+                    node_xy[node_id] = (dx, dy)
+                except Exception:
+                    pass
 
         # Find way by tags
         way_nodes: List[str] = []
@@ -243,7 +266,7 @@ class QualifyingParkingPlanner(Node):
         poses: List[PoseStamped] = []
         for ref in way_nodes:
             if ref not in node_xy:
-                self.get_logger().error(f'노드 {ref}에 local_x/local_y 태그가 필요합니다. (lat/lon만 있는 경우 현재 미지원)')
+                self.get_logger().error(f'노드 {ref} 좌표 변환 실패(local_x/local_y 또는 lat/lon 필요).')
                 return None, None
             x, y = node_xy[ref]
             pose = PoseStamped()
@@ -268,6 +291,26 @@ class QualifyingParkingPlanner(Node):
         path.header.frame_id = 'map'
         path.poses = poses
         return path, last_yaw
+
+    def _latlon_to_xy(self, lat: float, lon: float, lat0: float, lon0: float) -> Tuple[float, float]:
+        """Convert WGS84 lat/lon to local map (x,y) meters using UTM aligned to map.launch origin.
+        If pyproj is unavailable, fallback to meters-per-degree approximation.
+        """
+        if _HAS_PYPROJ:
+            # Determine UTM zone from origin lon (consistent with loader using UTM)
+            zone = int(math.floor((lon0 + 180.0) / 6.0) + 1)
+            is_north = lat0 >= 0.0
+            epsg = 32600 + zone if is_north else 32700 + zone  # 326xx: north, 327xx: south
+            transformer = Transformer.from_crs("EPSG:4326", f"EPSG:{epsg}", always_xy=True)
+            e, n = transformer.transform(lon, lat)
+            e0, n0 = transformer.transform(lon0, lat0)
+            return e - e0, n - n0
+        # Fallback approximation (less accurate)
+        meters_per_deg_lat = 111320.0
+        meters_per_deg_lon = 111320.0 * math.cos(math.radians(lat0))
+        dx = (lon - lon0) * meters_per_deg_lon
+        dy = (lat - lat0) * meters_per_deg_lat
+        return dx, dy
 
     def _has_reached_path_end(self, path: Path) -> bool:
         if self._odom is None or not path.poses:
