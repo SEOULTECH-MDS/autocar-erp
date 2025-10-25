@@ -650,7 +650,7 @@ class Control(Node):
         weights = self.current_weights
 
         if self.obs_type == 1: # 드럼
-            r_safe = 1.3
+            r_safe = 1.2
         elif self.obs_type == 2: # 차량
             r_safe = 2.0
         else:
