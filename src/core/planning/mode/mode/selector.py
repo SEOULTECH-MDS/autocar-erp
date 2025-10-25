@@ -142,8 +142,8 @@ class ModeSelector(Node):
         self.declare_parameter('use_uturn_flags', True)                         # U턴 플래그 사용 여부 (True: 플래그 기반, False: 구역 기반)
         
         # K-City 맵 구역 설정 (예선/본선 분리)
-        self.declare_parameter('kcity_qualifying_parking_zones', [1, 2])        # 예선 주차 구역
-        self.declare_parameter('kcity_uturn_zones', [7])                        # 예선 유턴 구역
+        self.declare_parameter('kcity_qualifying_parking_zones', [2])        # 예선 주차 구역
+        self.declare_parameter('kcity_uturn_zones', [5, 6, 7])                        # 예선 유턴 구역
         self.declare_parameter('kcity_gps_off_zones', [10])                     # 예선 GPS 차단 구역
         # 본선 배달 구역 (상차/하차 구분)
         self.declare_parameter('kcity_delivery_pickup_zones', [2])              # 본선 상차 구역 2번
@@ -474,18 +474,15 @@ class ModeSelector(Node):
         use_uturn_flags = bool(self.get_parameter('use_uturn_flags').value)
         
         if use_uturn_flags:
-            # 플래그 기반 U턴 모드 처리
+            # 플래그 기반 U턴 모드 처리 (간소화)
             # U턴 완료 처리 (최우선)
-            if self.uturn_complete_flag and self.current_mode == ModeType.QUALIFYING_UTURN:
+            if self.uturn_complete_flag:
                 self.uturn_complete_flag = False
                 self.get_logger().info('U턴 완료 - DRIVING 모드로 복귀')
                 return ModeType.QUALIFYING_DRIVING
             
             # U턴 시작 처리
-            if (self.uturn_start_flag and 
-                self.current_mode == ModeType.QUALIFYING_DRIVING and
-                self._is_in_uturn_zone()):
-                
+            if self.uturn_start_flag:
                 self.uturn_start_flag = False
                 self.get_logger().info('U턴 시작 - UTURN 모드로 전환')
                 return ModeType.QUALIFYING_UTURN
