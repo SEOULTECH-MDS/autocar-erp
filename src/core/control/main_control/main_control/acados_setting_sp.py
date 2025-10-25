@@ -96,7 +96,7 @@ def acados_solver():
     W_con = ocp.model.p[13]  # contour error 가중치 1.0
     W_yaw = ocp.model.p[14]  # heading error 가중치 (terminal cost)
 
-    We_v = W_v *1.0  # terminal cost에서 속도 error 가중치
+    We_v = W_v *2.0  # terminal cost에서 속도 error 가중치
     We_lag = W_lag * 0.5  # terminal cost에서 lag error 가중치
     We_con = W_con * 2.0 # terminal cost에서 contour error 가중치
     We_yaw = W_yaw * 1.5  # heading error 가중치 (terminal cost)
