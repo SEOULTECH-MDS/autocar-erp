@@ -105,7 +105,7 @@ class SensorFusion(Node):
         self.cluster_sub = message_filters.Subscriber(self, MarkerArray, '/adaptive_clustering/markers')
         self.bbox_sub = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/deliver")
 
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.cluster_sub, self.bbox_sub], queue_size=10, slop=0.5, allow_headerless=True)
+        self.sync = message_filters.ApproximateTimeSynchronizer([self.cluster_sub, self.bbox_sub], queue_size=25, slop=0.15, allow_headerless=True)
         self.sync.registerCallback(self.callback_fusion)
         
         self.image_sub = self.create_subscription(Image, '/yolo/sign', self.callback_img, 10)
