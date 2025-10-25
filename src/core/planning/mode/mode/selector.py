@@ -474,18 +474,15 @@ class ModeSelector(Node):
         use_uturn_flags = bool(self.get_parameter('use_uturn_flags').value)
         
         if use_uturn_flags:
-            # 플래그 기반 U턴 모드 처리
+            # 플래그 기반 U턴 모드 처리 (간소화)
             # U턴 완료 처리 (최우선)
-            if self.uturn_complete_flag and self.current_mode == ModeType.QUALIFYING_UTURN:
+            if self.uturn_complete_flag:
                 self.uturn_complete_flag = False
                 self.get_logger().info('U턴 완료 - DRIVING 모드로 복귀')
                 return ModeType.QUALIFYING_DRIVING
             
             # U턴 시작 처리
-            if (self.uturn_start_flag and 
-                self.current_mode == ModeType.QUALIFYING_DRIVING and
-                self._is_in_uturn_zone()):
-                
+            if self.uturn_start_flag:
                 self.uturn_start_flag = False
                 self.get_logger().info('U턴 시작 - UTURN 모드로 전환')
                 return ModeType.QUALIFYING_UTURN
