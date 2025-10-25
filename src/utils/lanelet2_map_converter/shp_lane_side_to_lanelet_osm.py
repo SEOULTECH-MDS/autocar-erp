@@ -499,6 +499,53 @@ def build_kcity_extras(osm_path: str, extras_dir: str, crs_out: Optional[str]) -
                 cnt += 1
         return cnt
 
+    def add_parking_paths(shp_name: str) -> int:
+        """Add parking paths twice: (1) viz line_thin/subtype=parking_path, (2) planner tag type=parking_path with path_id.
+        - Robust to missing shapefile (returns 0)
+        - path_id source preference: 'path_id' | 'id' | 'name' | sequential index starting at 1
+        """
+        shp_path = os.path.join(extras_dir, shp_name)
+        gdf = _read_shp(shp_path, crs_out)
+        if gdf is None or gdf.empty:
+            return 0
+
+        # normalize columns
+        cols = {c.lower(): c for c in gdf.columns}
+        path_id_col = None
+        for c in ('path_id', 'id', 'name'):
+            if c in cols:
+                path_id_col = cols[c]
+                break
+
+        cnt = 0
+        seq = 1
+        for _, row in gdf.iterrows():
+            geom = row.geometry
+            line_list = _extract_lines(geom)
+            for ls in line_list:
+                if ls.is_empty:
+                    continue
+                coords = list(ls.coords)
+                # 1) Visualization way
+                viz_tags = {'type': 'line_thin', 'subtype': 'parking_path'}
+                append_way(coords, viz_tags)
+                # 2) Planner way with path_id
+                pid_val = None
+                if path_id_col is not None:
+                    try:
+                        v = row[path_id_col]
+                        if v is not None and str(v) != '':
+                            pid_val = str(v)
+                    except Exception:
+                        pid_val = None
+                if pid_val is None:
+                    pid_val = str(seq)
+                    seq += 1
+                plan_tags = {'type': 'parking_path', 'path_id': pid_val}
+                append_way(coords, plan_tags)
+                cnt += 1
+        return cnt
+
     # Map known layers → lanelet2 types used by yabloc ll2_decomposer
     added = 0
     # 시각화 호환(viz_line=True)로 넣으면 visualizer에서도 보이고, ll2_decomposer는 line_thin도 수집
@@ -506,7 +553,8 @@ def build_kcity_extras(osm_path: str, extras_dir: str, crs_out: Optional[str]) -
     added += add_lines_from_file('left_right_line.shp', 'left_right_line', viz_line=True)
     added += add_lines_from_file('roadborder.shp', 'road_border', viz_line=True)
     # 주차 사전 경로 시각화를 위한 parking_path 레이어 추가
-    added += add_lines_from_file('parking_path.shp', 'parking_path', viz_line=True)
+    # 주차 경로: 시각화(line_thin/subtype)와 플래너용(type=parking_path,path_id) 모두 추가
+    added += add_parking_paths('parking_path.shp')
     added += add_stoplines_from_file('stopline.shp')
     added += add_lines_from_file('Markings.shp', 'Markings', viz_line=True)
     # dashed_markings: 선 또는 폴리곤 모두 지원

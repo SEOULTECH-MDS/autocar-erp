@@ -37,6 +37,15 @@ def generate_launch_description():
         description='Stop duration at final forward pose'
     )
 
+    map_origin_lat_arg = DeclareLaunchArgument(
+        'map_origin_lat', default_value='37.239205',
+        description='Map origin latitude for local projection'
+    )
+    map_origin_lon_arg = DeclareLaunchArgument(
+        'map_origin_lon', default_value='126.773193',
+        description='Map origin longitude for local projection'
+    )
+
     return LaunchDescription([
         use_sim_time_arg,
         map_osm_arg,
@@ -44,6 +53,8 @@ def generate_launch_description():
         activation_lanelet_id_arg,
         reverse_distance_arg,
         stop_duration_arg,
+        map_origin_lat_arg,
+        map_origin_lon_arg,
 
         Node(
             package='planner',
@@ -57,6 +68,8 @@ def generate_launch_description():
                 'activation_lanelet_id': LaunchConfiguration('activation_lanelet_id'),
                 'reverse_distance_m': LaunchConfiguration('reverse_distance_m'),
                 'stop_duration_sec': LaunchConfiguration('stop_duration_sec'),
+                'map_origin_lat': LaunchConfiguration('map_origin_lat'),
+                'map_origin_lon': LaunchConfiguration('map_origin_lon'),
             }]
         ),
     ])
