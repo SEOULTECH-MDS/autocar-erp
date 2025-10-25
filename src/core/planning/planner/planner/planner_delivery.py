@@ -192,18 +192,10 @@ class DeliveryPlanner(Node):
         self._sign_position = msg.poses[0]
         
         # 거리 계산은 배달 모드일 때 항상 수행
-        if self._current_mode == ModeState.DELIVERY:
-            distance = self._calculate_distance(self._sign_position)
-            distance_msg = Float64()
-            distance_msg.data = distance
-            self.distance_pub.publish(distance_msg)
-        
-        # 완료 조건 체크는 활성화 상태일 때만
-        if self._is_active:
-            if self._check_completion_conditions():
-                self._start_completion_timer()
-            else:
-                self._cancel_completion_timer()
+        distance = self._calculate_distance(self._sign_position)
+        distance_msg = Float64()
+        distance_msg.data = distance
+        self.distance_pub.publish(distance_msg)
         
     def _on_target_sign(self, msg: Int32) -> None:
         """
