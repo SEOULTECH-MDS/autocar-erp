@@ -106,7 +106,7 @@ class Control(Node):
         # [롤백] Hot-Start 관련 변수 제거 (acados 내부 Hot-Start에 의존)
         
         # s 값 제약을 위한 변수들
-        self.prev_s = 0.0  # 이전 s 값 저장
+        self.prev_s = -10.0  # 이전 s 값 저장
         self.s_tolerance = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
         
         # map 원점
@@ -265,8 +265,8 @@ class Control(Node):
 
     def calc_current_s(self, _cubic_spline):
         """
-        이진 탐색과 gradient descent를 사용한 s 값 탐색
-        최근 s값 기준으로 일정 범위 안에서만 탐색
+        이진 탐색과 gradient descent를 사용한 s 값 탐색.
+        MPC 재시작 시 (self.prev_s < 0.0) 전체 경로를 탐색하고, 정상 주행 시 이전 s 값 기준으로 제한.
         """
         cubic_spline = _cubic_spline
 
@@ -280,19 +280,28 @@ class Control(Node):
         
         total_length = cubic_spline.s[-1]
         
-        # s 탐색 범위를 이전 s 값 기준으로 제한
-        search_start = max(0, self.prev_s - self.s_tolerance)
-        search_end = min(total_length, self.prev_s + 50.0)  # 앞으로 최대 50m까지만 탐색
+        # *********** [수정된 탐색 범위 로직] ***********
+        # self.prev_s가 초기값(-1.0)이거나 경로 총 길이를 초과하는 등 유효하지 않은 값일 경우 전체 경로 탐색
+        if self.prev_s < 0.0 or self.prev_s > total_length + 10.0:
+            search_start = 0.0
+            search_end = total_length
+            best_s = 0.0 # 초기 best_s는 0.0으로 시작
+            self.get_logger().warn(f"S 값 초기 탐색: 전체 경로 ({total_length:.2f}m) 탐색")
+        else:
+            # 정상 주행 시 이전 s 값 기준으로 제한
+            # 역행 허용 범위 (self.s_tolerance)와 전방 탐색 범위(50.0m)를 적용
+            search_start = max(0, self.prev_s - self.s_tolerance)
+            search_end = min(total_length, self.prev_s + 50.0)
+            best_s = self.prev_s # 탐색 시작 전 기본값을 이전 s로 설정
+        # **********************************************
         
-        # 1단계: 제한된 범위에서 거친 탐색
-        coarse_resolution = 1.0  # 1m 간격
+        # 1단계: 제한된 범위에서 거친 탐색 (1m 간격)
+        coarse_resolution = 1.0 
         s_coarse = np.arange(search_start, search_end + coarse_resolution, coarse_resolution)
         
         min_distance = float('inf')
-        best_s = self.prev_s  # 기본값을 이전 s로 설정
         
         for s_val in s_coarse:
-            # s 값이 유효한 범위 내에 있는지 확인
             if s_val < 0 or s_val > total_length:
                 continue
             sx, sy = cubic_spline.calc_position(s_val)
@@ -303,16 +312,15 @@ class Control(Node):
                 min_distance = distance
                 best_s = s_val
         
-        # 2단계: 최적 지점 주변을 세밀하게 탐색
+        # 2단계: 최적 지점 주변을 세밀하게 탐색 (0.05m 간격)
         search_range = 2.0  # 최적점 주변 ±2m 범위
-        s_start = max(search_start, best_s - search_range)
-        s_end = min(search_end, best_s + search_range)
+        s_start_fine = max(search_start, best_s - search_range)
+        s_end_fine = min(search_end, best_s + search_range)
         
-        fine_resolution = 0.05  # 0.05m 간격으로 세밀 탐색
-        s_fine = np.arange(s_start, s_end + fine_resolution, fine_resolution)
+        fine_resolution = 0.05  
+        s_fine = np.arange(s_start_fine, s_end_fine + fine_resolution, fine_resolution)
         
         for s_val in s_fine:
-            # s 값이 유효한 범위 내에 있는지 확인
             if s_val < 0 or s_val > total_length:
                 continue
             sx, sy = cubic_spline.calc_position(s_val)
@@ -323,10 +331,12 @@ class Control(Node):
                 min_distance = distance
                 best_s = s_val
         
-        # s 값이 너무 크게 역행하는 것을 방지 
-        if best_s < self.prev_s - self.s_tolerance:
+        # *********** [수정된 역행 제한 로직] ***********
+        # s 값이 너무 크게 역행하는 것을 방지 (self.prev_s가 유효할 때만 적용)
+        if self.prev_s >= 0.0 and best_s < self.prev_s - self.s_tolerance:
             best_s = self.prev_s - self.s_tolerance
             self.get_logger().warn(f"S 값 역행 제한: {best_s:.2f} (이전: {self.prev_s:.2f})")
+        # **********************************************
 
         if best_s < 0.0:
             best_s = 0.0
