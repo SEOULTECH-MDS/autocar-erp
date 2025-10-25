@@ -2,127 +2,83 @@
 # -*- coding: utf-8 -*-
 
 import math
-from typing import Optional, Tuple
+from typing import Optional
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy
-import tf2_ros
-from tf2_ros import TransformException
-import numpy as np
-from std_msgs.msg import Bool
 
-from std_msgs.msg import Int32, Bool, Float64
-from geometry_msgs.msg import PoseArray, Pose
+from std_msgs.msg import Int32, Bool
 from nav_msgs.msg import Odometry
 from planning_msgs.msg import ModeState
 
+
 class DeliveryPlanner(Node):
     """
-    배달 미션을 위한 플래너 클래스
-    
+    배달 미션 플래너 (표지판 좌표 입력 제거 버전)
+
     입력 토픽:
-    - /deliverysign_spot (PoseArray): 표지판 3D 위치 (velodyne 좌표계)
     - /target_sign (Int32): 표지판 ID (1-6)
     - /mode_state (ModeState): 현재 모드 상태
-    
+    - /autocar/location (Odometry): 차량 속도
+
     출력 토픽:
-    - /delivery_distance (Float64): 표지판까지의 2D 거리
     - /pickup_complete_flag (Bool): 상차 완료 플래그
     - /delivery_complete_flag (Bool): 하차 완료 플래그
-    
-    동작 설명:
-    1. 표지판 인식 및 거리 계산
-       - 표지판 3D 위치로부터 거리 계산 (velodyne 좌표계 기준)
-       - 표지판 ID에 따라 상차(1-3)/하차(4-6) 모드 결정
-    
-    2. 완료 조건 확인
-       - 거리가 2.0m 이하이거나
-       - 차량 속도가 임계값(0.01 m/s) 이하일 때 (옵션)
-    
-    3. 완료 처리
-       - 조건 만족 시 4초 타이머 시작
-       - 타이머 완료 후 상차/하차 완료 플래그 발행
+
+    완료 조건:
+    - (옵션) 차량 속도 <= velocity_threshold
+    - 일정 시간(4초) 유지 시 상차/하차 완료 플래그 발행
     """
-    
+
     def __init__(self):
         super().__init__('delivery_planner')
 
-        # 파라미터 선언
-        self.declare_parameter('use_velocity_check', True)  # 속도 체크 사용 여부
-        self.declare_parameter('velocity_threshold', 0.01)   # 정지 판단 속도 임계값 (m/s)
-        
-        # QoS 프로파일 설정
+        # ---------------- 파라미터 ----------------
+        self.declare_parameter('use_velocity_check', True)   # 속도 체크 사용 여부
+        self.declare_parameter('velocity_threshold', 0.05)   # 정지 판단 속도 임계값 (m/s)
+
+        # ---------------- QoS ----------------
         qos_transient_local = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        
-        # Publishers
-        self.distance_pub = self.create_publisher(
-            Float64, '/delivery_distance', qos_transient_local)
-        self.pickup_complete_pub = self.create_publisher(
-            Bool, '/pickup_complete_flag', qos_transient_local)
-        self.delivery_complete_pub = self.create_publisher(
-            Bool, '/delivery_complete_flag', qos_transient_local)
-            
-        # Subscribers
-        self.sign_spot_sub = self.create_subscription(
-            PoseArray, '/deliverysign_spot', self._on_sign_spot, 10)
-        self.target_sign_sub = self.create_subscription(
-            Int32, '/target_sign', self._on_target_sign, 10)
-        self.mode_state_sub = self.create_subscription(
-            ModeState, '/mode_state', self._on_mode_state, 10)
-        self.vehicle_pose_sub = self.create_subscription(
-            Odometry, '/autocar/location', self._on_vehicle_pose, 10)
-            
-        # TF 설정
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-        
-        # 플래너 상태
-        self._is_active = False
-        self._current_mode = None
-        self._target_sign_id = None
-        self._sign_position = None  # velodyne 프레임 기준 위치
-        self._completion_timer = None  # 완료 처리 타이머
-        self._timer_active = False  # 타이머 활성화 여부
-        self._current_velocity = 0.0  # 현재 차량 속도
-        self._pickup_completed = False    # 상차 완료 플래그 발행 여부
-        self._dropoff_completed = False   # 하차 완료 플래그 발행 여부
-        
-        # 로거 설정
-        self.get_logger().info('배달 플래너가 초기화되었습니다.')
-    
-    def _calculate_distance(self, pose: Pose) -> float:
-        """
-        velodyne 좌표계 기준 2D 거리 계산 (z축 제외)
-        차량이 velodyne 원점에 있다고 가정
-        """
-        return math.sqrt(
-            pose.position.x**2 + 
-            pose.position.y**2
-        )
+
+        # ---------------- Publishers ----------------
+        self.pickup_complete_pub = self.create_publisher(Bool, '/pickup_complete_flag', qos_transient_local)
+        self.delivery_complete_pub = self.create_publisher(Bool, '/delivery_complete_flag', qos_transient_local)
+
+        # ---------------- Subscribers ----------------
+        self.target_sign_sub = self.create_subscription(Int32, '/target_sign', self._on_target_sign, 10)
+        self.mode_state_sub = self.create_subscription(ModeState, '/mode_state', self._on_mode_state, 10)
+        self.vehicle_pose_sub = self.create_subscription(Odometry, '/autocar/location', self._on_vehicle_pose, 10)
+
+        # ---------------- 상태 ----------------
+        self._is_active: bool = False
+        self._current_mode: Optional[int] = None
+        self._target_sign_id: Optional[int] = None
+
+        self._current_velocity: float = 0.0  # 평면 속도 크기
+
+        self._completion_timer = None
+        self._timer_active: bool = False
+
+        self._pickup_completed: bool = False
+        self._dropoff_completed: bool = False
+
+        self.get_logger().info('배달 플래너 초기화 완료 (No /deliverysign_spot input)')
+
+    # ---------------- 완료 조건/타이머 ----------------
 
     def _check_completion_conditions(self) -> bool:
-        """완료 조건 체크 (거리 + 속도)"""
-        # 거리 조건
-        distance_ok = False
-        if self._sign_position:
-            distance = self._calculate_distance(self._sign_position)
-            distance_ok = distance <= 2.0
-        
-        # 속도 조건
-        velocity_ok = False
+        """완료 조건: (옵션) 속도 조건"""
         if self.get_parameter('use_velocity_check').value:
-            velocity_ok = self._current_velocity <= self.get_parameter('velocity_threshold').value
-        else:
-            velocity_ok = True  # 속도 체크 비활성화 시 항상 만족
-        
-        return distance_ok or velocity_ok
+            v_th = float(self.get_parameter('velocity_threshold').value)
+            return self._current_velocity <= v_th
+        return True
 
     def _start_completion_timer(self) -> None:
-        """조건 만족 시에만 타이머 시작"""
+        """조건 만족 시 타이머 시작 (4초 유지 시 완료 처리)"""
         if not self._timer_active and self._check_completion_conditions():
             self._timer_active = True
-            self._completion_timer = self.create_timer(4.0, self._handle_completion, oneshot=True)
+            self._completion_timer = self.create_timer(4.0, self._completion_timer_cb)
             self.get_logger().info('완료 타이머 시작 (4초)')
 
     def _cancel_completion_timer(self) -> None:
@@ -133,115 +89,90 @@ class DeliveryPlanner(Node):
             self._timer_active = False
             self.get_logger().info('완료 타이머 취소')
 
-    def _on_vehicle_pose(self, msg: Odometry) -> None:
-        """
-        차량 속도 메시지 콜백 함수
-        """
-        if not self._is_active:
-            return
-            
-        # 속도 업데이트
-        self._current_velocity = abs(msg.twist.twist.linear.x)
-        
-        # 완료 조건 체크 (표지판 위치가 있을 때만)
-        if self._sign_position:
-            if self._check_completion_conditions():
-                self._start_completion_timer()
-            else:
-                self._cancel_completion_timer()
+    def _completion_timer_cb(self):
+        """타이머 만료 → 조건 재확인 후 완료 플래그 발행"""
+        if self._completion_timer:
+            self._completion_timer.cancel()
+            self._completion_timer = None
+        self._timer_active = False
+
+        if self._check_completion_conditions():
+            self._handle_completion()
+        else:
+            self.get_logger().warn('타이머 만료 시 조건 불만족 - 완료 취소')
 
     def _handle_completion(self) -> None:
-        """
-        완료 플래그 발행 처리 (상차/하차 각각 한 번만 발행)
-        """
-        self._timer_active = False
-        self._completion_timer = None
-        
-        # # 완료 조건 재확인
-        # if not self._check_completion_conditions():
-        #     self.get_logger().warn('완료 조건 불만족 - 플래그 발행 취소')
-        #     return
-        
-        # 완료 메시지 생성
-        complete_msg = Bool()
-        complete_msg.data = True
-        
-        # 상차/하차 상태에 따라 적절한 플래그 발행
+        """상차/하차 완료 플래그 발행"""
+        complete_msg = Bool(data=True)
+
         if self._target_sign_id and 1 <= self._target_sign_id <= 3:
-            if not self._pickup_completed:  # 상차 완료가 아직 안된 경우만
+            if not self._pickup_completed:
                 self.pickup_complete_pub.publish(complete_msg)
                 self.get_logger().info('상차 완료!')
                 self._pickup_completed = True
         elif self._target_sign_id and 4 <= self._target_sign_id <= 6:
-            if not self._dropoff_completed:  # 하차 완료가 아직 안된 경우만
+            if not self._dropoff_completed:
                 self.delivery_complete_pub.publish(complete_msg)
                 self.get_logger().info('하차 완료!')
                 self._dropoff_completed = True
-        
-        # 플래너 비활성화 (현재 동작 완료)
+
+        # 플래너 비활성화
         self._is_active = False
 
-    def _on_sign_spot(self, msg: PoseArray) -> None:
-        """
-        표지판 위치 메시지 콜백 함수
-        """
-        if not msg.poses:
+    # ---------------- 콜백 ----------------
+
+    def _on_vehicle_pose(self, msg: Odometry) -> None:
+        """차량 속도 갱신 및 조건 평가(타이머 제어)"""
+        if not self._is_active:
             return
-            
-        # 첫 번째 표지판 위치만 사용 (현재는 단일 표지판만 처리)
-        self._sign_position = msg.poses[0]
-        
-        # 거리 계산은 배달 모드일 때 항상 수행
-        distance = self._calculate_distance(self._sign_position)
-        distance_msg = Float64()
-        distance_msg.data = distance
-        self.distance_pub.publish(distance_msg)
-        
+
+        vx = float(msg.twist.twist.linear.x)
+        vy = float(msg.twist.twist.linear.y)
+        self._current_velocity = math.hypot(vx, vy)
+
+        if self._check_completion_conditions():
+            self._start_completion_timer()
+        else:
+            self._cancel_completion_timer()
+
     def _on_target_sign(self, msg: Int32) -> None:
-        """
-        표지판 ID 메시지 콜백 함수
-        """
-        sign_id = msg.data
+        """타깃 표지판 ID 갱신. 임무 전환 시 상태 리셋."""
+        sign_id = int(msg.data)
         if 1 <= sign_id <= 6:
+            if self._target_sign_id != sign_id:
+                self._cancel_completion_timer()
+                self._is_active = False
+                self._pickup_completed = False
+                self._dropoff_completed = False
             self._target_sign_id = sign_id
             self.get_logger().info(f'표지판 ID 수신: {sign_id} ({"상차" if sign_id <= 3 else "하차"})')
-        
+
     def _on_mode_state(self, msg: ModeState) -> None:
-        """
-        모드 상태 메시지 콜백 함수
-        """
+        """모드 상태에 따른 활성화 제어"""
         self._current_mode = msg.current_mode
-        
+
         # 배달 모드가 아니면 비활성화
         if msg.current_mode != ModeState.DELIVERY:
             self._is_active = False
             self._cancel_completion_timer()
             return
-        
-        # 배달 모드일 때 표지판 ID에 따라 완료 처리 활성화 여부 결정
+
+        # 배달 모드일 때만 동작
         if not self._target_sign_id:
-            # 표지판이 인식되지 않았으면 완료 처리만 비활성화
             self._is_active = False
             return
-        
+
+        # 상차/하차 완료 여부에 따라 활성화
         if 1 <= self._target_sign_id <= 3:
-            # 상차 표지판이고 상차가 아직 안된 경우만 활성화
             self._is_active = not self._pickup_completed
         elif 4 <= self._target_sign_id <= 6:
-            # 하차 표지판이고 하차가 아직 안된 경우만 활성화
             self._is_active = not self._dropoff_completed
         else:
             self._is_active = False
-        
-            
-        
-        
 
 
 def main(args=None):
-    """배달 플래너 노드의 메인 함수"""
     rclpy.init(args=args)
-    
     try:
         node = DeliveryPlanner()
         rclpy.spin(node)
