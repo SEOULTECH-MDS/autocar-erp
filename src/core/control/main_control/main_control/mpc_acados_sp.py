@@ -132,7 +132,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([1e-4, 0.1, 30.0, 10.0, 0.7, 3.0, 10.0]), # DRIVE
+            0: np.array([1e-4, 0.08, 30.0, 2.0, 0.7, 2.0, 10.0]), # DRIVE
             1: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
@@ -147,7 +147,7 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 4.0,  # DRIVE
+            0: 3.0,  # DRIVE
             1: 3.0,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
@@ -192,16 +192,13 @@ class Control(Node):
 
         # [복구] Unwrapped Yaw 업데이트 로직 추가: 연속적인 yaw 상태 유지
         if self.yaw_unwrapped is not None:
-            # 현재 측정된 self.yaw를 [-pi, pi] 범위로 정규화
-            wrapped_current_yaw = normalise_angle(self.yaw)
+            # 현재 측정된 self.yaw와 이전 unwrapped yaw 사이의 가장 짧은 각도 차이 계산
+            yaw_diff = self.yaw - (self.yaw_unwrapped % (2 * np.pi))
             
-            # 이전 unwrapped yaw를 [-pi, pi]로 래핑하여 차이 계산의 기준점을 찾음
-            yaw_diff = wrapped_current_yaw - normalise_angle(self.yaw_unwrapped)
-            
-            # 오차가 pi보다 크면 -2pi, -pi보다 작으면 +2pi를 더하여 보정 (가장 짧은 각도 차이)
-            if yaw_diff > np.pi:
+            # 각도 차이가 π보다 크면 -2π, -π보다 작으면 +2π를 더하여 보정
+            while yaw_diff > np.pi:
                 yaw_diff -= 2 * np.pi
-            elif yaw_diff < -np.pi:
+            while yaw_diff < -np.pi:
                 yaw_diff += 2 * np.pi
                 
             # 누적된 yaw_unwrapped에 가장 짧은 각도 차이만큼 더하여 업데이트
@@ -601,11 +598,12 @@ class Control(Node):
                 if self.is_reverse:
                     # 후진 시 yaw에 180도(pi)를 더한 값의 unwrapped 버전을 사용
                     xref[2, i] = ref_yaw_unwrapped + math.pi 
+                    xref[3, i] = -target_vel_current
                 else:
                     xref[2, i] = ref_yaw_unwrapped  # 전진 시 unwrapped yaw 사용
+                    xref[3, i] = target_vel_current
 
                 xref[4, i] = s
-                xref[3, i] = target_vel_current  # 항상 양수 속도의 reference 사용
                 
                 # 접선 벡터는 래핑된 yaw를 사용해도 됨 (방향만 필요)
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))

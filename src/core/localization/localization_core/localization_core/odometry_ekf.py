@@ -30,6 +30,9 @@ class ExtendedKalmanFilter:
         self.state[0] += self.state[3] * np.cos(self.state[2]) * dt
         self.state[1] += self.state[3] * np.sin(self.state[2]) * dt
         self.state[2] += self.state[4] * dt
+        
+        # yaw 각도 정규화 (중요!)
+        self.state[2] = normalise_angle(self.state[2])
 
         # 자코비안 계산
         F = np.eye(5)
@@ -56,10 +59,17 @@ class ExtendedKalmanFilter:
         H = np.zeros((2, 5))
         H[0, 2] = H[1, 4] = 1
 
-        y = np.array([yaw, yaw_rate]) - self.state[[2, 4]]
+        # 각도 차이를 올바르게 계산 (wrapped angle difference)
+        yaw_diff = normalise_angle(yaw - self.state[2])
+        y = np.array([yaw_diff, yaw_rate - self.state[4]])
+        
         S = H @ self.P @ H.T + self.R_imu
         K = self.P @ H.T @ np.linalg.inv(S)
         self.state += K @ y
+        
+        # 업데이트 후 yaw 정규화
+        self.state[2] = normalise_angle(self.state[2])
+        
         self.P = (np.eye(5) - K @ H) @ self.P
     
     def update_speed(self, measured_speed):
@@ -172,7 +182,11 @@ class OdometryNode(Node):
         self.gps_pose.header.stamp = current_time.to_msg()
         self.gps_pose.pose.pose.position.x = self.ekf.state[0]
         self.gps_pose.pose.pose.position.y = self.ekf.state[1]
-        self.gps_pose.pose.pose.orientation = yaw_to_quaternion(self.ekf.state[2])
+        
+        # yaw를 정규화하여 quaternion으로 변환 (중요!)
+        normalized_yaw = normalise_angle(self.ekf.state[2])
+        self.gps_pose.pose.pose.orientation = yaw_to_quaternion(normalized_yaw)
+        
         self.gps_pose.twist.twist.linear.x = self.ekf.state[3]
         self.gps_pose.twist.twist.angular.z = self.ekf.state[4]
 
@@ -192,7 +206,7 @@ class OdometryNode(Node):
         self.get_logger().info(
             f"\nx: {self.gps_pose.pose.pose.position.x},\n"
             f"y: {self.gps_pose.pose.pose.position.y},\n"
-            f"yaw: {self.ekf.state[2] / np.pi * 180.0} degree,\n"
+            f"yaw: {normalized_yaw / np.pi * 180.0} degree,\n"
             f"speed: {self.ekf.state[3]},\n"
             f"yaw_rate: {self.ekf.state[4]}\n"
         )
