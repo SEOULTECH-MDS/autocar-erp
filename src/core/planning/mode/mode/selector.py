@@ -71,8 +71,8 @@ class ModeSelector(Node):
        - Green/Left/Straightleft: 0.3초 확인 후 DRIVING 모드
     
     4. 우회전 정지선 특수 처리 (본선):
-       - 지정 구역(10)에서 virtual 정지선 감지 시 정지
-       - 신호등 무시하고 차량 완전 정지(0.01 m/s) 후 3.2초 대기
+       - 지정 구역(13)에서 virtual 정지선 감지 시 정지
+       - 신호등 무시하고 차량 완전 정지(0.01 m/s) 후 5.0초 대기
        - 구역 이탈 시 타이머 자동 초기화
        - nonstop 정지선은 무시 (정지하지 않음)
     
@@ -105,7 +105,7 @@ class ModeSelector(Node):
     - competition_type: "qualifying" | "final" (기본: final)
     - map_type: "kcity" | "mirae" (기본: kcity)
     - traffic_signal_confirm_duration: 신호등 확인 시간 (기본: 0.1초)
-    - stopline_pause_duration: 우회전 정지 시간 (기본: 3.2초)
+    - stopline_pause_duration: 우회전 정지 시간 (기본: 5.0초)
     - vehicle_stop_velocity_threshold: 정지 판단 속도 (기본: 0.01 m/s)
     """
 
@@ -118,9 +118,9 @@ class ModeSelector(Node):
         self.declare_parameter('publish_rate', 10.0)
         
         # 대회 및 맵 구분 (먼저 선언)
-        # self.declare_parameter('competition_type', CompetitionType.QUALIFYING)  # "qualifying" | "final" 예선 / 본선
-        self.declare_parameter('competition_type', CompetitionType.FINAL)  # "qualifying" | "final" 예선 / 본선
-        self.declare_parameter('map_type', MapType.KCITY)                       # "kcity" | "mirae"
+        self.declare_parameter('competition_type', CompetitionType.QUALIFYING)  # "qualifying" | "final" 예선 / 본선
+        #self.declare_parameter('competition_type', CompetitionType.FINAL)         # "qualifying" | "final" 예선 / 본선
+        self.declare_parameter('map_type', MapType.KCITY)                         # "kcity" | "mirae"
 
         # 대회 타입에 따른 기본 모드 설정
         competition_type = str(self.get_parameter('competition_type').value)
@@ -131,19 +131,19 @@ class ModeSelector(Node):
         
         # 우회전 정지선 관련 파라미터
         self.declare_parameter('stopline_pause_distance', 5.0)                  # 정지선 감지 거리 (m)
-        self.declare_parameter('enable_distance_condition', True)              # 거리 조건 사용 여부 on/off
+        self.declare_parameter('enable_distance_condition', True)               # 거리 조건 사용 여부 on/off
         self.declare_parameter('stopline_pause_duration', 5.0)                  # 정지선 정지 시간 (s)
         self.declare_parameter('vehicle_stop_velocity_threshold', 0.01)         # 차량 정지 판단 속도 임계값 (m/s)
 
         # 신호등 전환 타이머 파라미터
         self.declare_parameter('traffic_signal_confirm_duration', 0.1)          # 신호등 전환 확인 시간 (s)
         
-        # U턴 모드 제어 파라미터
-        self.declare_parameter('use_uturn_flags', False)                         # U턴 플래그 사용 여부 (True: 플래그 기반, False: 구역 기반)
+        # U턴 모드 제어 파라미터 (플래그 기반만 사용)
+        self.declare_parameter('use_uturn_flags', True)  # U턴 모드 제어 방식 (플래그 기반 여부)
         
         # K-City 맵 구역 설정 (예선/본선 분리)
-        self.declare_parameter('kcity_qualifying_parking_zones', [2])        # 예선 주차 구역
-        self.declare_parameter('kcity_uturn_zones', [5, 6, 7])                        # 예선 유턴 구역
+        self.declare_parameter('kcity_qualifying_parking_zones', [2])           # 예선 주차 구역
+        self.declare_parameter('kcity_uturn_zones', [5, 6, 7])                  # 예선 유턴 구역
         self.declare_parameter('kcity_gps_off_zones', [10])                     # 예선 GPS 차단 구역
         # 본선 배달 구역 (상차/하차 구분)
         self.declare_parameter('kcity_delivery_pickup_zones', [2])              # 본선 상차 구역 2번
@@ -274,17 +274,17 @@ class ModeSelector(Node):
         # 모드 매핑 (String → ModeState 상수)
         self.mode_mapping = {
             # 예선 모드들
-            ModeType.QUALIFYING_DRIVING: ModeState.DRIVE,
-            ModeType.QUALIFYING_PARKING: ModeState.PARKING,
-            ModeType.QUALIFYING_UTURN: ModeState.UTURN,        
-            ModeType.QUALIFYING_GPS_OFF: ModeState.GPS_OFF,    
+            ModeType.QUALIFYING_DRIVING: 0,
+            ModeType.QUALIFYING_PARKING: 5,
+            ModeType.QUALIFYING_UTURN: 7,
+            ModeType.QUALIFYING_GPS_OFF: 8,      
             
             # 본선 모드들
-            ModeType.FINAL_DRIVING: ModeState.DRIVE,
-            ModeType.FINAL_PARKING: ModeState.PARKING,
-            ModeType.FINAL_PAUSE: ModeState.PAUSE,
-            ModeType.FINAL_DELIVERY_PICKUP: ModeState.DELIVERY,
-            ModeType.FINAL_DELIVERY_DROPOFF: ModeState.DELIVERY,
+            ModeType.FINAL_DRIVING: 0,
+            ModeType.FINAL_PARKING: 5,
+            ModeType.FINAL_PAUSE: 1,
+            ModeType.FINAL_DELIVERY_PICKUP: 4,
+            ModeType.FINAL_DELIVERY_DROPOFF: 4,
         }
 
         # ===========================================
@@ -419,25 +419,6 @@ class ModeSelector(Node):
 
     def _determine_mode(self) -> str:
         """현재 상황을 종합하여 모드 결정 (예선/본선 구분)"""
-        
-        # ===========================================
-        # 1. 미션 완료 처리 (최우선)
-        # ===========================================
-            
-        # 본선 주차 완료 (강제 모드 전환)
-        if self.parking_complete_flag and self.competition_type == CompetitionType.FINAL:
-            self.get_logger().info(f'본선 주차 완료 - 강제 모드 전환: {self.current_mode} → FINAL_DRIVING')
-            self.parking_complete_flag = False
-            self.parking_mission_started = False
-            return ModeType.FINAL_DRIVING
-            
-        # 예선 주차 완료 (강제 모드 전환)
-        if self.parking_complete_flag and self.competition_type == CompetitionType.QUALIFYING:
-            self.get_logger().info(f'예선 주차 완료 - 강제 모드 전환: {self.current_mode} → QUALIFYING_DRIVING')
-            self.parking_complete_flag = False
-            self.parking_mission_started = False
-            return ModeType.QUALIFYING_DRIVING
-            
         # 예선/본선에 따른 모드 결정 분기
         if self.competition_type == CompetitionType.QUALIFYING:
             return self._determine_qualifying_mode()
@@ -456,50 +437,35 @@ class ModeSelector(Node):
         if (self.parking_pose_ready and
             not self.parking_mission_started and
             self.current_mode == ModeType.QUALIFYING_DRIVING):
+
             self.parking_mission_started = True
             self.parking_pose_ready = False
             self.get_logger().info('예선 주차 포즈 준비 완료 - QUALIFYING_PARKING 모드로 전환')
             return ModeType.QUALIFYING_PARKING
 
-        #    (b) 구역 기반 전환: 지정된 예선 주차 구역에 진입했을 때 시작
-        if (self.current_lanelet_id is not None and 
-            self.current_lanelet_id in self.parking_zone_ids and 
-            not self.parking_mission_started and
+        #    (b) 주차 완료 처리 (PARKING 모드에서만)
+        if (self.parking_complete_flag and 
+            self.current_mode == ModeType.QUALIFYING_PARKING):
+            
+            self.parking_complete_flag = False
+            self.parking_mission_started = False
+            self.get_logger().info(f'예선 주차 완료 - 모드 전환: {self.current_mode} → QUALIFYING_DRIVING')
+            return ModeType.QUALIFYING_DRIVING
+        
+        # 2. U턴 모드 처리 (플래그 기반만 사용)
+        # (a) U턴 시작 처리 (DRIVING 모드에서만)
+        if (self.uturn_start_flag and 
             self.current_mode == ModeType.QUALIFYING_DRIVING):
-            
-            self.parking_mission_started = True
-            return ModeType.QUALIFYING_PARKING
+            self.uturn_start_flag = False
+            self.get_logger().info('U턴 시작 - UTURN 모드로 전환')
+            return ModeType.QUALIFYING_UTURN
         
-        # 2. U턴 모드 처리 (플래그 기반 또는 구역 기반)
-        use_uturn_flags = bool(self.get_parameter('use_uturn_flags').value)
-        
-        if use_uturn_flags:
-            # 플래그 기반 U턴 모드 처리 (간소화)
-            # U턴 완료 처리 (최우선)
-            if self.uturn_complete_flag:
-                self.uturn_complete_flag = False
-                self.get_logger().info('U턴 완료 - DRIVING 모드로 복귀')
-                return ModeType.QUALIFYING_DRIVING
-            
-            # U턴 시작 처리
-            if self.uturn_start_flag:
-                self.uturn_start_flag = False
-                self.get_logger().info('U턴 시작 - UTURN 모드로 전환')
-                return ModeType.QUALIFYING_UTURN
-                
-        else:
-            # 기존 구역 기반 U턴 모드 처리
-            if (self.current_lanelet_id is not None and 
-                self.current_lanelet_id in self.uturn_zone_ids):
-                
-                if self.current_mode == ModeType.QUALIFYING_DRIVING:
-                    return ModeType.QUALIFYING_UTURN
-                elif self.current_mode == ModeType.QUALIFYING_UTURN:
-                    return ModeType.QUALIFYING_UTURN  # 구역 내에서 유턴 모드 유지
-                
-            # 유턴 구역을 벗어났을 때 DRIVING 모드로 복귀
-            elif self.current_mode == ModeType.QUALIFYING_UTURN:
-                return ModeType.QUALIFYING_DRIVING
+        # (b) U턴 완료 처리 (UTURN 모드에서만)
+        if (self.uturn_complete_flag and 
+            self.current_mode == ModeType.QUALIFYING_UTURN):
+            self.uturn_complete_flag = False
+            self.get_logger().info('U턴 완료 - DRIVING 모드로 복귀')
+            return ModeType.QUALIFYING_DRIVING
             
         # 3. GPS 차단 구역 처리
         if (self.current_lanelet_id is not None and 
@@ -526,11 +492,14 @@ class ModeSelector(Node):
         
         # 1. 우회전 정지선 처리 (최우선 - 신호등보다 상위)
         # 우회전 정지 구역을 벗어났는지 확인하여 타이머 초기화
-        if not self._is_in_right_pause_zone():
-            # 우회전 정지 구역을 벗어남 - 타이머 초기화
+        if not self._is_in_right_pause_zone(): # 우회전 정지 구역을 벗어남 - 타이머 초기화
             if self.stopline_pause_start_time is not None:
                 self.get_logger().info(f'우회전 정지 구역 이탈 - 타이머 초기화')
                 self.stopline_pause_start_time = None
+                
+            if self.current_mode == ModeType.FINAL_PAUSE: # 구역 이탈 시 모드 자동 복귀 추가
+                self.get_logger().info('우회전 정지 구역 이탈 - DRIVING 모드 복귀')
+                return ModeType.FINAL_DRIVING
         
         # 우회전 정지선 조건 체크
         if self._should_pause_for_right_stopline():
@@ -550,17 +519,18 @@ class ModeSelector(Node):
             if self.current_velocity <= velocity_threshold:
                 # 실제 정지 확인 - 타이머 시작
                 self.stopline_pause_start_time = self.get_clock().now().nanoseconds * 1e-9
-                self.get_logger().info(f'차량 정지 확인 (속도: {self.current_velocity:.2f} m/s) - 3.2초 타이머 시작')
+                self.get_logger().info(f'차량 정지 확인 (속도: {self.current_velocity:.2f} m/s) - 5.0초 타이머 시작')
         
         # 우회전 정지선 정지 시간 완료 확인
         if (self.current_mode == ModeType.FINAL_PAUSE and 
-            self.stopline_pause_start_time is not None):
+            self.stopline_pause_start_time is not None and
+            self._should_pause_for_right_stopline()):
             
             current_time = self.get_clock().now().nanoseconds * 1e-9
             pause_duration = float(self.get_parameter('stopline_pause_duration').value)
             
             if current_time - self.stopline_pause_start_time >= pause_duration:
-                # 3.2초 대기 완료 - 자동 출발
+                # 5.0초 대기 완료 - 자동 출발
                 self.stopline_pause_start_time = None
                 self.get_logger().info('우회전 정지선 대기 완료 - DRIVING 모드 복귀')
                 return ModeType.FINAL_DRIVING
@@ -597,10 +567,20 @@ class ModeSelector(Node):
                         self.get_logger().info(f'신호등 확인 완료 ({self.traffic_sign}) - DRIVING 모드 전환')
                         return ModeType.FINAL_DRIVING
 
-        # 2. 주차 미션 처리 (주차 포즈 계산 완료 시 시작)
+        # 2. 주차 미션 처리
+        #    (a) 주차 완료 처리 (PARKING 모드에서만)
+        if (self.parking_complete_flag and 
+            self.current_mode == ModeType.FINAL_PARKING):
+            self.parking_complete_flag = False
+            self.parking_mission_started = False
+            self.get_logger().info(f'본선 주차 완료 - 강제 모드 전환: {self.current_mode} → FINAL_DRIVING')
+            return ModeType.FINAL_DRIVING
+        
+        #    (b) 주차 시작 (주차 포즈 계산 완료 시)
         if (self.parking_pose_ready and 
             not self.parking_mission_started and
-            self.current_mode == ModeType.FINAL_DRIVING):
+            self.current_mode == ModeType.FINAL_DRIVING and
+            not self._is_in_right_pause_zone()):
             
             self.parking_mission_started = True
             self.parking_pose_ready = False  # 플래그 리셋
@@ -610,14 +590,14 @@ class ModeSelector(Node):
         # 3. 배달 미션 처리
         # 상차 모드 시작 조건 (target_sign 1,2,3 + 상차 구역)
         if (self.target_sign is not None and 
-            1 <= self.target_sign <= 3 and                  # 상차 표지판
-            not self.delivery_mission_started and           # 미션 시작 전
-            self.current_mode == ModeType.FINAL_DRIVING and # 주행 중
-            self._is_in_delivery_pickup_zone()):           # 상차 구역 내
+            1 <= self.target_sign <= 3 and                    # 상차 표지판
+            not self.delivery_mission_started and             # 미션 시작 전
+            self.current_mode == ModeType.FINAL_DRIVING and   # 주행 중
+            self._is_in_delivery_pickup_zone()):              # 상차 구역 내
             
             self.delivery_mission_started = True
-            self.target_sign = None  # 플래그 리셋
             self.get_logger().info(f'상차 구역 {self.current_lanelet_id}에서 상차 표지판 {self.target_sign} 인식 - 상차 모드 시작')
+            self.target_sign = None  # 플래그 리셋 (로그 출력 후 초기화)
             return ModeType.FINAL_DELIVERY_PICKUP
 
         # 상차 완료 조건 (PICKUP 모드에서 상차 완료 플래그 수신 시)
@@ -631,10 +611,11 @@ class ModeSelector(Node):
             self.delivery_mission_started and                    # 상차 완료 상태
             self._is_in_delivery_dropoff_zone() and             # 하차 구역 내
             self.target_sign is not None and
-            4 <= self.target_sign <= 6):                        # 하차 표지판
+            4 <= self.target_sign <= 6 and
+            not (self._is_in_right_pause_zone() and self.stopline_pause_start_time is not None)):                        # 하차 표지판
             
-            self.target_sign = None  # 플래그 리셋
             self.get_logger().info(f'하차 구역 {self.current_lanelet_id}에서 하차 표지판 {self.target_sign} 인식 - 하차 모드 시작')
+            self.target_sign = None  # 플래그 리셋 (로그 출력 후 초기화)
             return ModeType.FINAL_DELIVERY_DROPOFF
             
         # 하차 완료 조건 (DROPOFF 모드에서 하차 완료 플래그 수신 시)
@@ -737,7 +718,7 @@ class ModeSelector(Node):
 
 
 def main(args=None):
-    """엔트리 포인트: 모드 셀렉터 v2.0 노드 실행"""
+    """엔트리 포인트: 모드 셀렉터 노드 실행"""
     rclpy.init(args=args)
     node = ModeSelector()
     try:

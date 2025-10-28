@@ -71,8 +71,8 @@ class UturnPlanner(Node):
         self.declare_parameter('path_resolution', 0.3)  # 경로 해상도 [m]
         self.declare_parameter('arc_radius', 4.0)  # 원호 반지름 [m] (지름 8m)
         self.declare_parameter('completion_distance', 2.0)  # 완료 거리 [m]
-        self.declare_parameter('min_cone_count', 3)  # 최소 라바콘 개수
-        self.declare_parameter('min_distance_threshold', 3.0)  # 라바콘 최소 거리 임계치 [m]
+        self.declare_parameter('min_cone_count', 7)  # 최소 라바콘 개수
+        self.declare_parameter('min_distance_threshold', 4.1)  # 라바콘 최소 거리 임계치 [m]
         self.declare_parameter('pre_straight_distance', 2.0)  # 원호 전 직진 거리 [m]
         self.declare_parameter('enable_debug_visualization', False)  # 디버그 시각화 활성화
         self.declare_parameter('frame_id', 'map')  # 기본 좌표계
@@ -122,7 +122,7 @@ class UturnPlanner(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         
         # 플래너 상태
-        self._is_active = False
+        self._is_active = True
         self._current_mode = None
         self._current_lanelet_id = None
         self._cone_count = 0
@@ -147,6 +147,9 @@ class UturnPlanner(Node):
         # 타이머 설정 (테스트 모드 체크용)
         self.create_timer(0.1, self._on_timer)  # 0.1초마다 테스트 모드 체크
         
+        # 디버그 정보 출력 타이머
+        self.create_timer(0.5, self._on_debug_timer)
+        
         # 로거 설정
         self.get_logger().info('U턴 플래너가 초기화되었습니다.')
         self.get_logger().info(f'U턴 구역 ID: {self._uturn_zone_ids}')
@@ -165,19 +168,22 @@ class UturnPlanner(Node):
         if not self._is_active:
             return
             
-        # 라바콘 개수 계산 (velodyne 프레임에서 직접)
+        # 라바콘 개수 및 위치 저장
         cone_count = 0
         self._cone_distances = []  # 거리 리스트 초기화
         
-        for marker in msg.markers:
-            if marker.type == Marker.CYLINDER or marker.type == Marker.SPHERE:
-                cone_count += 1
-                # velodyne 프레임에서 상대좌표로 거리 계산
-                distance = math.sqrt(
-                    marker.pose.position.x**2 + 
-                    marker.pose.position.y**2
-                )
-                self._cone_distances.append(distance)
+        # ID 무관하게 모든 마커 처리
+        for m in msg.markers:
+            # points 배열이 비어있지 않은 경우만 처리
+            if len(m.points) > 0:
+                for p in m.points:
+                    # velodyne 프레임에서 상대좌표로 거리 계산
+                    distance = math.sqrt(p.x**2 + p.y**2)
+                    
+                    # 거리 필터링 (너무 먼 콘 제외)
+                    if distance < 10.0:
+                        self._cone_distances.append(distance)
+                        cone_count += 1
         
         self._cone_count = cone_count
         self.get_logger().debug(f'감지된 라바콘 개수: {cone_count}')
@@ -208,14 +214,14 @@ class UturnPlanner(Node):
         if bool(self.get_parameter('test_mode_enabled').value):
             return
         
-        # DRIVING 모드 활성화 체크
-        if msg.current_mode == ModeState.DRIVING:
+        # DRIVE 모드 활성화 체크
+        if msg.current_mode == ModeState.DRIVE:
             self._is_active = True
-            self.get_logger().info('U턴 모드 활성화')
+            self.get_logger().info('U턴 모드 준비')
         else:
             self._is_active = False
             if self._uturn_started:
-                self.get_logger().info('U턴 모드 비활성화')
+                self.get_logger().info('U턴 모드 실행')
     
     
     def _check_uturn_start_condition(self) -> None:
@@ -224,7 +230,7 @@ class UturnPlanner(Node):
             return  # 이미 시작됨
             
         if not self._is_active:
-            return  # U턴 모드가 아님
+            return  # DRIVE 모드가 아님
             
         if not self._is_in_uturn_zone():
             return  # U턴 구역이 아님
@@ -620,6 +626,60 @@ class UturnPlanner(Node):
             # 테스트 모드에서 차량 마커 시각화
             if self._test_vehicle_pose is not None:
                 self._publish_test_vehicle_marker()
+    
+    def _on_debug_timer(self) -> None:
+        """1초마다 디버그 정보 출력"""
+        # 테스트 모드는 스킵
+        if bool(self.get_parameter('test_mode_enabled').value):
+            return
+        
+        # 현재 Lanelet ID
+        lanelet_str = f'{self._current_lanelet_id}' if self._current_lanelet_id is not None else 'None'
+        
+        # U턴 구역 여부
+        in_zone = self._is_in_uturn_zone()
+        zone_str = '✓' if in_zone else '✗'
+        
+        # 라바콘 정보
+        cone_count = self._cone_count
+        if len(self._cone_distances) > 0:
+            min_dist = min(self._cone_distances)
+            avg_dist = sum(self._cone_distances) / len(self._cone_distances)
+            max_dist = max(self._cone_distances)
+            min_dist_str = f'{min_dist:.2f}'
+            avg_dist_str = f'{avg_dist:.2f}'
+        else:
+            min_dist_str = 'N/A'
+            avg_dist_str = 'N/A'
+        
+        # 모드 상태
+        mode_str = f'{self._current_mode}' if self._current_mode is not None else 'None'
+        active_str = '✓' if self._is_active else '✗'
+        
+        # 현재 차량 위치 (map 프레임)
+        if self._vehicle_location is not None:
+            try:
+                map_pose = self._transform_utm_to_map(self._vehicle_location)
+                if map_pose is not None:
+                    position_str = f'({map_pose.pose.position.x:.2f}, {map_pose.pose.position.y:.2f})'
+                else:
+                    position_str = 'N/A (TF fail)'
+            except Exception as e:
+                position_str = f'N/A ({str(e)[:20]})'
+        else:
+            position_str = 'N/A (no location)'
+        
+        # 디버그 정보 출력
+        self.get_logger().info(
+            f"[DEBUG] Lane:{lanelet_str} | "
+            f"Zone:{zone_str} | "
+            f"Cone:{cone_count}개 | "
+            f"MinDist:{min_dist_str}m | "
+            f"AvgDist:{avg_dist_str}m | "
+            f"Mode:{mode_str} | "
+            f"Active:{active_str} | "
+            f"MapPos:{position_str}"
+        )
 
 
 def main(args=None):
@@ -632,9 +692,9 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
-
+        if rclpy.ok():
+            node.destroy_node()
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

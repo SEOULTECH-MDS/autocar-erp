@@ -78,7 +78,7 @@ class DeliveryPlanner(Node):
         """조건 만족 시 타이머 시작 (4초 유지 시 완료 처리)"""
         if not self._timer_active and self._check_completion_conditions():
             self._timer_active = True
-            self._completion_timer = self.create_timer(4.0, self._completion_timer_cb)
+            self._completion_timer = self.create_timer(4.0, self._completion_timer_cb, oneshot=True)
             self.get_logger().info('완료 타이머 시작 (4초)')
 
     def _cancel_completion_timer(self) -> None:
