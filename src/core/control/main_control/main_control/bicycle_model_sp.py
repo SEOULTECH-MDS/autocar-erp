@@ -50,8 +50,8 @@ def export_spline_bicycle_model() -> AcadosModel:
     rolling_resistance = ROLLING_RESISTANCE * MASS * 9.81  # 굴림 저항력
     
     # 실제 가속도 = 입력 가속도 - 저항력/질량
-    # effective_a = a - rolling_resistance / MASS
-    effective_a = a
+    effective_a = a - rolling_resistance / MASS
+    # effective_a = a
 
     # simplified bicycle model (가속도 입력 모델)
     f_expl = vertcat(

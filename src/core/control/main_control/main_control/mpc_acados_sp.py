@@ -27,8 +27,8 @@ from geometry_msgs.msg import TransformStamped, PointStamped
 
 NX = 5  # 상태 변수 크기 (x, y, yaw, v, s)
 NU = 2 # 제어 입력 크기 (delta , a)
-T = 2.5  # 예측 시간 [s]
-N = 25  # 예측 구간 [s]
+T = 2.0  # 예측 시간 [s]
+N = 20  # 예측 구간 [s]
 
 class Control(Node):
     def __init__(self):
@@ -132,7 +132,7 @@ class Control(Node):
 
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
-            0: np.array([1e-4, 0.08, 30.0, 2.0, 0.7, 2.0, 10.0]), # DRIVE
+            0: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # DRIVE
             1: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
@@ -147,12 +147,12 @@ class Control(Node):
 
         # 모드별 목표 속도 설정
         self.mode_target_vel = {
-            0: 3.0,  # DRIVE
-            1: 3.0,  # PAUSE
+            0: 2.0,  # DRIVE
+            1: 2.0,  # PAUSE
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
-            5: 2.0,  # PARKING
+            5: 1.5,  # PARKING
             6: 3.0,  # RETURN (사용X)
             7: 1.5,  # UTURN
             8: 1.5   # GPS_OFF
@@ -192,13 +192,16 @@ class Control(Node):
 
         # [복구] Unwrapped Yaw 업데이트 로직 추가: 연속적인 yaw 상태 유지
         if self.yaw_unwrapped is not None:
-            # 현재 측정된 self.yaw와 이전 unwrapped yaw 사이의 가장 짧은 각도 차이 계산
-            yaw_diff = self.yaw - (self.yaw_unwrapped % (2 * np.pi))
+            # 현재 측정된 self.yaw를 [-pi, pi] 범위로 정규화
+            wrapped_current_yaw = normalise_angle(self.yaw)
             
-            # 각도 차이가 π보다 크면 -2π, -π보다 작으면 +2π를 더하여 보정
-            while yaw_diff > np.pi:
+            # 이전 unwrapped yaw를 [-pi, pi]로 래핑하여 차이 계산의 기준점을 찾음
+            yaw_diff = wrapped_current_yaw - normalise_angle(self.yaw_unwrapped)
+            
+            # 오차가 pi보다 크면 -2pi, -pi보다 작으면 +2pi를 더하여 보정 (가장 짧은 각도 차이)
+            if yaw_diff > np.pi:
                 yaw_diff -= 2 * np.pi
-            while yaw_diff < -np.pi:
+            elif yaw_diff < -np.pi:
                 yaw_diff += 2 * np.pi
                 
             # 누적된 yaw_unwrapped에 가장 짧은 각도 차이만큼 더하여 업데이트
@@ -213,8 +216,8 @@ class Control(Node):
         else:
             self.v = np.sqrt((msg.twist.twist.linear.x ** 2.0) + (msg.twist.twist.linear.y ** 2.0)) # 정상 주행일 때 양수 속도 state
 
-        if abs(self.v) < 0.001:
-            self.v = 0.1
+        # if abs(self.v) < 0.001:
+        #     self.v = 0.1
             
         self.yawrate = msg.twist.twist.angular.z
 
@@ -598,12 +601,15 @@ class Control(Node):
                 if self.is_reverse:
                     # 후진 시 yaw에 180도(pi)를 더한 값의 unwrapped 버전을 사용
                     xref[2, i] = ref_yaw_unwrapped + math.pi 
-                    xref[3, i] = -target_vel_current
+                    xref[3, i] = - target_vel_current  # 항상 양수 속도의 reference 사용
+
                 else:
                     xref[2, i] = ref_yaw_unwrapped  # 전진 시 unwrapped yaw 사용
-                    xref[3, i] = target_vel_current
+                    xref[3, i] = target_vel_current  # 항상 양수 속도의 reference 사용
+
 
                 xref[4, i] = s
+                # xref[3, i] = target_vel_current  # 항상 양수 속도의 reference 사용
                 
                 # 접선 벡터는 래핑된 yaw를 사용해도 됨 (방향만 필요)
                 tan_vec[0, i] = math.cos(cubic_spline.calc_yaw(s))
@@ -720,7 +726,7 @@ class Control(Node):
         self.visualize_predicted_trajectory(x_opt[1:, :]) # k=1부터 N까지만 시각화
 
         # 제어 입력
-        self.velocity = x_opt[1, 3]         # 속도 (v) -> 속도는 5step 뒤의 값을 사용
+        self.velocity = x_opt[3, 3]         # 속도 (v) -> 2step의 값을 사용
         self.steering_angle = u_opt[0, 0]   # 조향각 (delta) -> 조향각은 0step의 값을 사용
 
         self.acc = u_opt[0, 1] # 가속도 (a) (실제 cmd_vel로는 속도 값 이용, 디버그용)
@@ -782,7 +788,7 @@ class Control(Node):
 
         # 표시할 텍스트 설정
         text_msg.text = f"cmd_vel: {self.velocity:.2f}m/s \n cmd_steer: {self.steering_angle * 180.0 / np.pi:.2f}deg\
-            \n Acc: {self.acc:.2f}m/s² , v_err: {self.velocity - self.v:.2f}m/s\
+            \n Acc: {self.acc:.2f}m/s² , cmd-state_err: {self.velocity - self.v:.2f}m/s\
             \n Fail Count: {self.fail_count}\
             \n Prev input: {self.prev_steering_angle * 180.0 / np.pi:.2f} deg, {self.prev_velocity:.2f} m/s \
             \n Mode: {self.mode} ({self.mode_description}) \
