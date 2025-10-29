@@ -69,16 +69,16 @@ class UturnPlanner(Node):
 
         # 파라미터 선언
         self.declare_parameter('path_resolution', 0.3)  # 경로 해상도 [m]
-        self.declare_parameter('arc_radius', 4.0)  # 원호 반지름 [m] (지름 8m)
+        self.declare_parameter('arc_radius', 7.0)  # 원호 반지름 [m] (지름 14m)
         self.declare_parameter('completion_distance', 2.0)  # 완료 거리 [m]
         self.declare_parameter('min_cone_count', 7)  # 최소 라바콘 개수
         self.declare_parameter('min_distance_threshold', 4.1)  # 라바콘 최소 거리 임계치 [m]
-        self.declare_parameter('pre_straight_distance', 2.0)  # 원호 전 직진 거리 [m]
+        self.declare_parameter('pre_straight_distance', 9.0)  # 원호 전 직진 거리 [m]
         self.declare_parameter('enable_debug_visualization', False)  # 디버그 시각화 활성화
         self.declare_parameter('frame_id', 'map')  # 기본 좌표계
         
         # U턴 구역 ID (selector.py와 동일)
-        self.declare_parameter('kcity_uturn_zones', [5, 6, 7])  # K-City U턴 구역
+        self.declare_parameter('kcity_uturn_zones', [5, 6])  # K-City U턴 구역
         self.declare_parameter('mirae_uturn_zones', [39])  # 미래관 U턴 구역
         self.declare_parameter('map_type', 'kcity')  # 맵 타입
         
@@ -205,6 +205,10 @@ class UturnPlanner(Node):
             self.get_logger().info(f'U턴 구역 진입: {self._current_lanelet_id}')
         elif self._uturn_started and not self._is_in_uturn_zone():
             self.get_logger().info('U턴 구역 이탈')
+        
+        # Lane ID 7 진입 시 즉시 완료 조건 평가 (U턴 진행 중일 때만)
+        if self._uturn_started and self._current_lanelet_id == 7:
+            self._check_uturn_completion()
     
     def _on_mode_state(self, msg: ModeState) -> None:
         """모드 상태 메시지 콜백 함수"""
@@ -317,6 +321,12 @@ class UturnPlanner(Node):
         if self._uturn_path is None or len(self._uturn_path.poses) == 0:
             return
         
+        # Lane ID 기반 우선 종료 조건: 7 진입 시 즉시 완료 처리
+        if self._uturn_started and self._current_lanelet_id == 7:
+            self.get_logger().info('Lane ID 7 진입 - U턴 완료')
+            self._complete_uturn()
+            return
+        
         # 현재 차량 위치를 map 프레임으로 변환
         current_pose = self._transform_utm_to_map(self._vehicle_location)
         if current_pose is None:
@@ -385,7 +395,7 @@ class UturnPlanner(Node):
         
         for i in range(num_arc_points + 1):
             # 각도 계산 (-π/2에서 π/2까지, 직진 끝점에서 시작)
-            angle = -math.pi/2 + math.pi * i / num_arc_points
+            angle = math.pi/2 - math.pi * i / num_arc_points
             
             # 원호 위의 점 계산 (map 프레임 기준)
             point_x = center_x + radius * math.cos(start_yaw + angle)

@@ -466,6 +466,10 @@ class ModeSelector(Node):
             self.uturn_complete_flag = False
             self.get_logger().info('U턴 완료 - DRIVING 모드로 복귀')
             return ModeType.QUALIFYING_DRIVING
+
+        # (c) U턴 모드 유지
+        if self.current_mode == ModeType.QUALIFYING_UTURN:
+            return ModeType.QUALIFYING_UTURN
             
         # 3. GPS 차단 구역 처리
         if (self.current_lanelet_id is not None and 
@@ -481,7 +485,7 @@ class ModeSelector(Node):
             return ModeType.QUALIFYING_DRIVING
         
         # 4. 기본 주행 모드
-        return ModeType.QUALIFYING_DRIVING
+        return self.current_mode
     
     def _determine_final_mode(self) -> str:
         """본선 모드 결정 로직"""
