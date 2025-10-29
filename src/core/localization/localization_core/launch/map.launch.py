@@ -21,6 +21,9 @@ def generate_launch_description():
         # default_value='mirae_v2',
         # default_value='aerum_map',
         default_value='testing',
+        # default_value='testing_uturn',
+        # default_value='testing_parking',
+
         description='Name of the map folder in localization_core/data'
     )
     map_osm_file_arg = DeclareLaunchArgument(
