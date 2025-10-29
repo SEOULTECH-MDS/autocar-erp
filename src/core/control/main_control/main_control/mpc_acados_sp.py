@@ -107,7 +107,8 @@ class Control(Node):
         
         # s 값 제약을 위한 변수들
         self.prev_s = -10.0  # 이전 s 값 저장
-        self.s_tolerance = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
+        self.s_back = 30.0  # s 값이 역행할 수 있는 최대 허용 범위 (m)
+        self.s_front = 50.0  # s 값이 최대 전진할 수 있는 범위 (m)
         
         # map 원점
         self.map_origin_x = None
@@ -115,7 +116,8 @@ class Control(Node):
 
         # 모드 상태
         self.mode = 0 
-        self.mode_description = "Drive"  
+        self.mode_description = "Drive"
+        self.prev_mode = 0  # 이전 모드 추적용  
     
         # self.is_reverse = True
         self.is_reverse = False
@@ -133,14 +135,14 @@ class Control(Node):
         # 모드별 가중치 설정
         self.mode_weights = { # W_acc, W_steer, W_steer_rate, W_v, W_lag, W_con, W_yaw
             0: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # DRIVE
-            1: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0]), # PAUSE
+            1: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
             4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # DELIVERY 
             5: np.array([0.1, 0.08, 5.0, 0.5, 0.7, 8.0, 10.0]), # PARKING
             6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]),  # RETURN (사용X)
-            7: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0]), # UTURN
-            8: np.array([1e-4, 0.1, 30.0, 50.0, 1.0, 2.0, 5.0])  # GPS_OFF
+            7: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # UTURN
+            8: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0])  # GPS_OFF
         }       
         self.current_weights = self.mode_weights[self.mode]
 
@@ -154,8 +156,8 @@ class Control(Node):
             4: 1.0,  # DELIVERY
             5: 1.5,  # PARKING
             6: 3.0,  # RETURN (사용X)
-            7: 1.5,  # UTURN
-            8: 1.5   # GPS_OFF
+            7: 2.0,  # UTURN
+            8: 2.0   # GPS_OFF
         }
         self.target_vel = self.mode_target_vel[self.mode]
 
@@ -259,6 +261,12 @@ class Control(Node):
             else:
                 self.get_logger().warn(f"정의되지 않은 모드: {self.mode}, 기존 목표 속도 사용")
 
+            # UTURN 모드 진입 시 s_front 증가 및 prev_s 초기화
+            if self.mode == 7:  # UTURN 모드 진입
+                self.s_front = 450.0  # UTURN에서 DRIVE로 돌아올 때를 대비하여 미리 증가
+                self.prev_s = -10.0  # UTURN 모드 진입 시 s 값 초기화하여 전체 경로 탐색
+                self.get_logger().info(f"UTURN 모드 진입: s_front를 {self.s_front}m로 증가, prev_s 초기화")
+
     def reverse_flag_cb(self, msg):
         self.is_reverse = msg.data
 
@@ -299,9 +307,9 @@ class Control(Node):
             self.get_logger().warn(f"S 값 초기 탐색: 전체 경로 ({total_length:.2f}m) 탐색")
         else:
             # 정상 주행 시 이전 s 값 기준으로 제한
-            # 역행 허용 범위 (self.s_tolerance)와 전방 탐색 범위(50.0m)를 적용
-            search_start = max(0, self.prev_s - self.s_tolerance)
-            search_end = min(total_length, self.prev_s + 50.0)
+            # 역행 허용 범위 (self.s_back)와 전방 탐색 범위(50.0m)를 적용
+            search_start = max(0, self.prev_s - self.s_back)
+            search_end = min(total_length, self.prev_s + self.s_front)
             best_s = self.prev_s # 탐색 시작 전 기본값을 이전 s로 설정
         # **********************************************
         
@@ -343,8 +351,8 @@ class Control(Node):
         
         # *********** [수정된 역행 제한 로직] ***********
         # s 값이 너무 크게 역행하는 것을 방지 (self.prev_s가 유효할 때만 적용)
-        if self.prev_s >= 0.0 and best_s < self.prev_s - self.s_tolerance:
-            best_s = self.prev_s - self.s_tolerance
+        if self.prev_s >= 0.0 and best_s < self.prev_s - self.s_back:
+            best_s = self.prev_s - self.s_back
             self.get_logger().warn(f"S 값 역행 제한: {best_s:.2f} (이전: {self.prev_s:.2f})")
         # **********************************************
 

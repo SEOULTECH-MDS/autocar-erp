@@ -16,11 +16,11 @@ def generate_launch_description():
     map_name_arg = DeclareLaunchArgument(
         'map_name',
         # default_value='kcity_v7',
-        # default_value='kcity_qualifying',
+        default_value='kcity_qualifying',
         # default_value='mirae_map',
         # default_value='mirae_v2',
         # default_value='aerum_map',
-        default_value='testing',
+        # default_value='testing',
         # default_value='testing_uturn',
         # default_value='testing_parking',
 
@@ -33,18 +33,18 @@ def generate_launch_description():
     )
     map_origin_lat_arg = DeclareLaunchArgument(
         'map_origin_lat',
-        # default_value='37.239205', # kcity 37.239205 37.24172412883958
+        default_value='37.239205', # kcity 37.239205 37.24172412883958
         # default_value='37.6301124677', # mirae 
         # default_value='37.63003568893', # aerum
-        default_value='37.62972829', # testing
+        # default_value='37.62972829', # testing
         description='Latitude of map origin for UTM projection'
     )
     map_origin_lon_arg = DeclareLaunchArgument(
         'map_origin_lon',
-        #default_value='126.773193', # kcity 126.773193  126.7740569641074
+        default_value='126.773193', # kcity 126.773193  126.7740569641074
         #default_value='127.08146372752', # mirae
         # default_value='127.08055492835', # aerum
-        default_value='127.077597458', # testing
+        # default_value='127.077597458', # testing
         description='Longitude of map origin for UTM projection'
     )
 
