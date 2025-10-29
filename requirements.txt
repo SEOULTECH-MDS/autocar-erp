@@ -4,3 +4,5 @@ numpy >= 1.17.4
 catkin-pkg >= 0.4.23
 empy>=3.3.4
 lark>=0.11.3
+hidapi>=0.14.0
+pyusb>=1.2.1

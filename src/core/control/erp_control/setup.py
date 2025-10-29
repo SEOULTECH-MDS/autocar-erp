@@ -25,6 +25,7 @@ setup(
         'simul_plot = erp_control.simul_plot:main',
         'delay = erp_control.delay_test:main',
         'erp_test = erp_control.erp42_ros2_test:main',
+        'tower_lamp_test = erp_control.tower_lamp_test_node:main',
         ],
     },
 )
