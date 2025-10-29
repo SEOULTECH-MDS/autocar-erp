@@ -63,9 +63,65 @@ class DeliveryPlanner(Node):
         self._pickup_completed: bool = False
         self._dropoff_completed: bool = False
 
-        self.get_logger().info('배달 플래너 초기화 완료 (No /deliverysign_spot input)')
+        self.get_logger().info('배달 플래너 초기화 완료')
 
-    # ---------------- 완료 조건/타이머 ----------------
+    # ============================================================================
+    # 콜백 함수들 (이벤트 수신 순서)
+    # ============================================================================
+
+    def _on_mode_state(self, msg: ModeState) -> None:
+        """모드 상태에 따른 활성화 제어"""
+        self._current_mode = msg.current_mode
+
+        # 배달 모드가 아니면 비활성화
+        if msg.current_mode != ModeState.DELIVERY:
+            self._is_active = False
+            self._cancel_completion_timer()
+            return
+
+        # 배달 모드일 때만 동작
+        if not self._target_sign_id:
+            self._is_active = False
+            return
+
+        # 상차/하차 완료 여부에 따라 활성화
+        if 1 <= self._target_sign_id <= 3:
+            self._is_active = not self._pickup_completed
+        elif 4 <= self._target_sign_id <= 6:
+            self._is_active = not self._dropoff_completed
+        else:
+            self._is_active = False
+
+    def _on_target_sign(self, msg: Int32) -> None:
+        """타깃 표지판 ID 갱신. 임무 전환 시 상태 리셋."""
+        sign_id = int(msg.data)
+        if 1 <= sign_id <= 6:
+            if self._target_sign_id != sign_id:
+                self._cancel_completion_timer()
+                self._is_active = False
+                self._pickup_completed = False
+                self._dropoff_completed = False
+            self._target_sign_id = sign_id
+            self.get_logger().info(f'표지판 ID 수신: {sign_id} ({"상차" if sign_id <= 3 else "하차"})')
+
+    def _on_vehicle_pose(self, msg: Odometry) -> None:
+        """차량 속도 갱신 및 조건 평가(타이머 제어)"""
+        if not self._is_active:
+            return
+
+        vx = float(msg.twist.twist.linear.x)
+        vy = float(msg.twist.twist.linear.y)
+        self._current_velocity = math.hypot(vx, vy)
+
+        # 속도 조건 평가 및 타이머 제어
+        if self._check_completion_conditions():
+            self._start_completion_timer()
+        else:
+            self._cancel_completion_timer()
+
+    # ============================================================================
+    # 헬퍼 함수들 (상태 관리 및 타이머 제어)
+    # ============================================================================
 
     def _check_completion_conditions(self) -> bool:
         """완료 조건: (옵션) 속도 조건"""
@@ -90,16 +146,13 @@ class DeliveryPlanner(Node):
             self.get_logger().info('완료 타이머 취소')
 
     def _completion_timer_cb(self):
-        """타이머 만료 → 조건 재확인 후 완료 플래그 발행"""
+        """타이머 만료 → 완료 플래그 발행 (4초 조건 이미 충족)"""
         if self._completion_timer:
             self._completion_timer.cancel()
             self._completion_timer = None
         self._timer_active = False
 
-        if self._check_completion_conditions():
-            self._handle_completion()
-        else:
-            self.get_logger().warn('타이머 만료 시 조건 불만족 - 완료 취소')
+        self._handle_completion()
 
     def _handle_completion(self) -> None:
         """상차/하차 완료 플래그 발행"""
@@ -118,57 +171,6 @@ class DeliveryPlanner(Node):
 
         # 플래너 비활성화
         self._is_active = False
-
-    # ---------------- 콜백 ----------------
-
-    def _on_vehicle_pose(self, msg: Odometry) -> None:
-        """차량 속도 갱신 및 조건 평가(타이머 제어)"""
-        if not self._is_active:
-            return
-
-        vx = float(msg.twist.twist.linear.x)
-        vy = float(msg.twist.twist.linear.y)
-        self._current_velocity = math.hypot(vx, vy)
-
-        if self._check_completion_conditions():
-            self._start_completion_timer()
-        else:
-            self._cancel_completion_timer()
-
-    def _on_target_sign(self, msg: Int32) -> None:
-        """타깃 표지판 ID 갱신. 임무 전환 시 상태 리셋."""
-        sign_id = int(msg.data)
-        if 1 <= sign_id <= 6:
-            if self._target_sign_id != sign_id:
-                self._cancel_completion_timer()
-                self._is_active = False
-                self._pickup_completed = False
-                self._dropoff_completed = False
-            self._target_sign_id = sign_id
-            self.get_logger().info(f'표지판 ID 수신: {sign_id} ({"상차" if sign_id <= 3 else "하차"})')
-
-    def _on_mode_state(self, msg: ModeState) -> None:
-        """모드 상태에 따른 활성화 제어"""
-        self._current_mode = msg.current_mode
-
-        # 배달 모드가 아니면 비활성화
-        if msg.current_mode != ModeState.DELIVERY:
-            self._is_active = False
-            self._cancel_completion_timer()
-            return
-
-        # 배달 모드일 때만 동작
-        if not self._target_sign_id:
-            self._is_active = False
-            return
-
-        # 상차/하차 완료 여부에 따라 활성화
-        if 1 <= self._target_sign_id <= 3:
-            self._is_active = not self._pickup_completed
-        elif 4 <= self._target_sign_id <= 6:
-            self._is_active = not self._dropoff_completed
-        else:
-            self._is_active = False
 
 
 def main(args=None):
