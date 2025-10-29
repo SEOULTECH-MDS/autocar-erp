@@ -399,9 +399,9 @@ class ModeSelector(Node):
             self.uturn_complete_flag = True
             self.get_logger().info(f'U턴 완료 플래그 수신! 현재 모드: {self.current_mode}')
 
-    # ===========================================
-    # 메인 로직
-    # ===========================================
+# ===========================================
+# # 메인 로직
+# ===========================================
     def _on_timer(self) -> None:
         """주기적으로 모드를 결정하고 퍼블리시"""
         new_mode = self._determine_mode()
@@ -422,16 +422,15 @@ class ModeSelector(Node):
         # 예선/본선에 따른 모드 결정 분기
         if self.competition_type == CompetitionType.QUALIFYING:
             return self._determine_qualifying_mode()
-        else:  # FINAL
+        else:
             return self._determine_final_mode()
     
     def _determine_qualifying_mode(self) -> str:
-        """예선 모드 결정 로직"""
-        
+
         # ===========================================
         # 예선 모드: QUALIFYING_DRIVING, QUALIFYING_PARKING, QUALIFYING_UTURN, QUALIFYING_GPS_OFF
         # ===========================================
-        
+
         # 1. 주차 미션 처리
         #    (a) pose_ready 기반 전환: 플래너가 준비 신호를 보낸 경우 즉시 예선 주차 시작
         if (self.parking_pose_ready and
@@ -451,7 +450,11 @@ class ModeSelector(Node):
             self.parking_mission_started = False
             self.get_logger().info(f'예선 주차 완료 - 모드 전환: {self.current_mode} → QUALIFYING_DRIVING')
             return ModeType.QUALIFYING_DRIVING
-        
+
+        #    (c) 주차 모드 유지
+        if self.current_mode == ModeType.QUALIFYING_PARKING:
+            return ModeType.QUALIFYING_PARKING
+
         # 2. U턴 모드 처리 (플래그 기반만 사용)
         # (a) U턴 시작 처리 (DRIVING 모드에서만)
         if (self.uturn_start_flag and 
@@ -460,14 +463,14 @@ class ModeSelector(Node):
             self.get_logger().info('U턴 시작 - UTURN 모드로 전환')
             return ModeType.QUALIFYING_UTURN
         
-        # (b) U턴 완료 처리 (UTURN 모드에서만)
-        if (self.uturn_complete_flag and 
-            self.current_mode == ModeType.QUALIFYING_UTURN):
+        # (b) U턴 완료 처리 (UTURN 모드에서만) - 먼저 처리
+        if (self.current_mode == ModeType.QUALIFYING_UTURN and 
+            self.uturn_complete_flag):
             self.uturn_complete_flag = False
             self.get_logger().info('U턴 완료 - DRIVING 모드로 복귀')
             return ModeType.QUALIFYING_DRIVING
 
-        # (c) U턴 모드 유지
+        # (c) U턴 모드 유지 - 완료가 없을 때만 유지
         if self.current_mode == ModeType.QUALIFYING_UTURN:
             return ModeType.QUALIFYING_UTURN
             
@@ -488,13 +491,55 @@ class ModeSelector(Node):
         return self.current_mode
     
     def _determine_final_mode(self) -> str:
-        """본선 모드 결정 로직"""
 
         # ===========================================
         # 본선 모드: FINAL_DRIVING, FINAL_PAUSE, FINAL_PARKING, FINAL_배달_상차, FINAL_배달_하차
         # ===========================================
         
-        # 1. 우회전 정지선 처리 (최우선 - 신호등보다 상위)
+        # 1. 배달 미션 처리
+        # 상차 모드 시작 조건 (target_sign 1,2,3 + 상차 구역)
+        if (self.target_sign is not None and 
+            1 <= self.target_sign <= 3 and                    # 상차 표지판
+            not self.delivery_mission_started and             # 미션 시작 전
+            self.current_mode == ModeType.FINAL_DRIVING and   # 주행 중
+            self._is_in_delivery_pickup_zone()):              # 상차 구역 내
+
+            self.delivery_mission_started = True
+            self.get_logger().info(f'상차 구역 {self.current_lanelet_id}에서 상차 표지판 {self.target_sign} 인식 - 상차 모드 시작')
+            self.target_sign = None  # 플래그 리셋 (로그 출력 후 초기화)
+            return ModeType.FINAL_DELIVERY_PICKUP
+
+        # 상차 완료 조건 (PICKUP 모드에서 상차 완료 플래그 수신 시)
+        if (self.current_mode == ModeType.FINAL_DELIVERY_PICKUP and 
+            self.pickup_complete_flag):
+            
+            self.pickup_complete_flag = False  # 플래그 리셋
+            self.get_logger().info('상차 완료 - DRIVING 모드로 복귀 (하차 구역으로 이동)')
+            return ModeType.FINAL_DRIVING
+
+        # 하차 모드 전환 조건 (target_sign 4,5,6 + 하차구역)
+        if (self.target_sign is not None and
+            (4 <= self.target_sign <= 6) and
+            self.delivery_mission_started and
+            self.current_mode == ModeType.FINAL_DRIVING and
+            self._is_in_delivery_dropoff_zone()):
+
+            self.get_logger().info(f'하차 구역 {self.current_lanelet_id}에서 하차 표지판 {self.target_sign} 인식 - 하차 모드 시작')
+            self.target_sign = None  # 플래그 리셋 (로그 출력 후 초기화)
+            return ModeType.FINAL_DELIVERY_DROPOFF
+            
+        # 하차 완료 조건 (DROPOFF 모드에서 하차 완료 플래그 수신 시)
+        if (self.current_mode == ModeType.FINAL_DELIVERY_DROPOFF and 
+            self.delivery_complete_flag):
+
+            self.delivery_complete_flag = False  # 플래그 리셋
+            self.delivery_mission_started = False
+            self.get_logger().info('하차 완료 - 배달 미션 종료, DRIVING 모드로 복귀')
+            return ModeType.FINAL_DRIVING
+
+
+
+        # 2. 우회전 정지선 처리
         # 우회전 정지 구역을 벗어났는지 확인하여 타이머 초기화
         if not self._is_in_right_pause_zone(): # 우회전 정지 구역을 벗어남 - 타이머 초기화
             if self.stopline_pause_start_time is not None:
@@ -538,8 +583,10 @@ class ModeSelector(Node):
                 self.stopline_pause_start_time = None
                 self.get_logger().info('우회전 정지선 대기 완료 - DRIVING 모드 복귀')
                 return ModeType.FINAL_DRIVING
+
+       
         
-        # 2. 일반 신호등 처리 (우회전 정지선 구역이 아닐 때만)
+        # 3. 일반 신호등 처리 (우회전 정지선 구역이 아닐 때만)
         if not self._is_in_right_pause_zone():
             # Red 신호등 → PAUSE 모드 (즉시 전환)
             if self.traffic_sign == "Red" and self.current_mode == ModeType.FINAL_DRIVING:
@@ -571,7 +618,7 @@ class ModeSelector(Node):
                         self.get_logger().info(f'신호등 확인 완료 ({self.traffic_sign}) - DRIVING 모드 전환')
                         return ModeType.FINAL_DRIVING
 
-        # 2. 주차 미션 처리
+        # 4. 주차 미션 처리
         #    (a) 주차 완료 처리 (PARKING 모드에서만)
         if (self.parking_complete_flag and 
             self.current_mode == ModeType.FINAL_PARKING):
@@ -591,45 +638,9 @@ class ModeSelector(Node):
             self.get_logger().info('주차 포즈 계산 완료 - PARKING 모드로 전환')
             return ModeType.FINAL_PARKING
 
-        # 3. 배달 미션 처리
-        # 상차 모드 시작 조건 (target_sign 1,2,3 + 상차 구역)
-        if (self.target_sign is not None and 
-            1 <= self.target_sign <= 3 and                    # 상차 표지판
-            not self.delivery_mission_started and             # 미션 시작 전
-            self.current_mode == ModeType.FINAL_DRIVING and   # 주행 중
-            self._is_in_delivery_pickup_zone()):              # 상차 구역 내
-            
-            self.delivery_mission_started = True
-            self.get_logger().info(f'상차 구역 {self.current_lanelet_id}에서 상차 표지판 {self.target_sign} 인식 - 상차 모드 시작')
-            self.target_sign = None  # 플래그 리셋 (로그 출력 후 초기화)
-            return ModeType.FINAL_DELIVERY_PICKUP
 
-        # 상차 완료 조건 (PICKUP 모드에서 상차 완료 플래그 수신 시)
-        if self.pickup_complete_flag and self.current_mode == ModeType.FINAL_DELIVERY_PICKUP:
-            self.pickup_complete_flag = False  # 플래그 리셋
-            self.get_logger().info('상차 완료 - DRIVING 모드로 복귀 (하차 구역으로 이동)')
-            return ModeType.FINAL_DRIVING
 
-        # 하차 모드 전환 조건 (target_sign 4,5,6 + 하차구역)
-        if (self.current_mode == ModeType.FINAL_DRIVING and      # 주행 중
-            self.delivery_mission_started and                    # 상차 완료 상태
-            self._is_in_delivery_dropoff_zone() and             # 하차 구역 내
-            self.target_sign is not None and
-            4 <= self.target_sign <= 6 and
-            not (self._is_in_right_pause_zone() and self.stopline_pause_start_time is not None)):                        # 하차 표지판
-            
-            self.get_logger().info(f'하차 구역 {self.current_lanelet_id}에서 하차 표지판 {self.target_sign} 인식 - 하차 모드 시작')
-            self.target_sign = None  # 플래그 리셋 (로그 출력 후 초기화)
-            return ModeType.FINAL_DELIVERY_DROPOFF
-            
-        # 하차 완료 조건 (DROPOFF 모드에서 하차 완료 플래그 수신 시)
-        if self.delivery_complete_flag and self.current_mode == ModeType.FINAL_DELIVERY_DROPOFF:
-            self.delivery_complete_flag = False  # 플래그 리셋
-            self.delivery_mission_started = False
-            self.get_logger().info('하차 완료 - 배달 미션 종료, DRIVING 모드로 복귀')
-            return ModeType.FINAL_DRIVING
-
-        # 4. 현재 모드 유지
+        # 5. 현재 모드 유지
         return self.current_mode
 
     def _is_in_parking_zone(self) -> bool:
