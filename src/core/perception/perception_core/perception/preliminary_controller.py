@@ -17,7 +17,7 @@ class PreliminaryController(Node):
         # 미션별 enable 상태 초기화
         self.mission_states = {
             'obstacle': False,
-            'rubber': False,
+            # 'rubber': False,
             'rubber_uturn': False
         }
         
@@ -38,7 +38,7 @@ class PreliminaryController(Node):
         # 발행자: 각 미션별 enable 토픽
         self.mission_publishers = {
             'obstacle': self.create_publisher(Bool, '/mission/obstacle/enable', 10),
-            'rubber': self.create_publisher(Bool, '/mission/rubber/enable', 10),
+            # 'rubber': self.create_publisher(Bool, '/mission/rubber/enable', 10),
             'rubber_uturn': self.create_publisher(Bool, '/mission/rubber_uturn/enable', 10)
         }
 
@@ -75,9 +75,9 @@ class PreliminaryController(Node):
             'obstacle': [
                 {'start': 10, 'end': 10},  # 터널 구간(드럼통, 사람)
             ],
-            'rubber': [
-                {'start': 2, 'end': 2},  # 주차
-            ],
+            # 'rubber': [
+            #     {'start': 2, 'end': 2},  # 주차
+            # ],
             'rubber_uturn': [
                 {'start': 5, 'end': 7}   # 유턴
             ]

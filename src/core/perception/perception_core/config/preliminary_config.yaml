@@ -4,12 +4,14 @@ mission_mapping:
     - start: 10   # 터널 구간(드럼통, 사람)
       end: 10
 
-  # 라바콘 탐지 미션
-  rubber:
-    - start: 2   # 사선 주차
-      end: 2
+  # # 라바콘 탐지 미션
+  # rubber:
+  #   - start: 2   # 사선 주차
+  #     end: 2
 
   # U-turn 미션
   rubber_uturn:
-    - start: 5   # 유턴
-      end: 7
+    # - start: 5   # 유턴
+    #   end: 7
+    - start: 1  # 흙운동장 맵
+      end: 3
