@@ -142,8 +142,8 @@ class ModeSelector(Node):
         self.declare_parameter('use_uturn_flags', True)  # U턴 모드 제어 방식 (플래그 기반 여부)
         
         # K-City 맵 구역 설정 (예선/본선 분리)
-        self.declare_parameter('kcity_qualifying_parking_zones', [1])           # 예선 주차 구역 1은 운동장 테스트
-        self.declare_parameter('kcity_uturn_zones', [5, 6])                     # 예선 유턴 구역
+        self.declare_parameter('kcity_qualifying_parking_zones', [1])           # 예선 주차 구역 1은 운동장 테스트 기존 2
+        self.declare_parameter('kcity_uturn_zones', [5, 6])                     # 예선 유턴 구역 유턴도 1이라 사선 주차랑 바꿔가면서 해야 함
         self.declare_parameter('kcity_gps_off_zones', [10])                     # 예선 GPS 차단 구역
         # 본선 배달 구역 (상차/하차 구분)
         self.declare_parameter('kcity_delivery_pickup_zones', [2])              # 본선 상차 구역 2번
