@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple, Optional
 import geopandas as gpd
 import numpy as np
 from shapely.geometry import LineString, MultiLineString, GeometryCollection, Polygon, MultiPolygon
-from shapely.ops import linemerge
+from shapely.ops import linemerge, unary_union
 from lxml import etree
 
 
@@ -500,50 +500,110 @@ def build_kcity_extras(osm_path: str, extras_dir: str, crs_out: Optional[str]) -
         return cnt
 
     def add_parking_paths(shp_name: str) -> int:
-        """Add parking paths twice: (1) viz line_thin/subtype=parking_path, (2) planner tag type=parking_path with path_id.
-        - Robust to missing shapefile (returns 0)
-        - path_id source preference: 'path_id' | 'id' | 'name' | sequential index starting at 1
+        """Add parking paths grouped by parking_id so each path_id appears ONCE.
+        For each parking_id group, merge segments to a single LineString (best-effort):
+          1) Visualization way: type=line_thin, subtype=parking_path
+          2) Planner way: type=parking_path, path_id=<parking_id>
+        If no explicit id column, uses sequential ids starting from 1.
         """
         shp_path = os.path.join(extras_dir, shp_name)
         gdf = _read_shp(shp_path, crs_out)
         if gdf is None or gdf.empty:
             return 0
 
-        # normalize columns
+        # normalize columns (prefer parking_id explicitly)
         cols = {c.lower(): c for c in gdf.columns}
         path_id_col = None
-        for c in ('path_id', 'id', 'name'):
+        for c in ('parking_id', 'path_id', 'id', 'name'):
             if c in cols:
                 path_id_col = cols[c]
                 break
 
-        cnt = 0
+        # group by path id value
+        groups: Dict[str, List[LineString]] = {}
         seq = 1
         for _, row in gdf.iterrows():
-            geom = row.geometry
-            line_list = _extract_lines(geom)
-            for ls in line_list:
-                if ls.is_empty:
-                    continue
-                coords = list(ls.coords)
-                # 1) Visualization way
-                viz_tags = {'type': 'line_thin', 'subtype': 'parking_path'}
-                append_way(coords, viz_tags)
-                # 2) Planner way with path_id
-                pid_val = None
-                if path_id_col is not None:
+            # determine id
+            pid_val: Optional[str] = None
+            if path_id_col is not None:
+                try:
+                    v = row[path_id_col]
+                    if v is not None and str(v) != '':
+                        # normalize e.g., 1.0 -> 1
+                        if isinstance(v, (int, np.integer)):
+                            pid_val = str(int(v))
+                        else:
+                            try:
+                                fv = float(v)
+                                if abs(fv - round(fv)) < 1e-6:
+                                    pid_val = str(int(round(fv)))
+                                else:
+                                    pid_val = str(v)
+                            except Exception:
+                                pid_val = str(v)
+                except Exception:
+                    pid_val = None
+            if pid_val is None:
+                pid_val = str(seq)
+                seq += 1
+            # collect lines
+            line_list = _extract_lines(row.geometry)
+            if not line_list:
+                continue
+            groups.setdefault(pid_val, [])
+            groups[pid_val].extend(line_list)
+
+        # merge and write once per id
+        cnt = 0
+        for pid_val, lines in groups.items():
+            # try merging segments into a single LineString, robustly handle geometry types
+            final_ls: LineString = LineString()
+            try:
+                u = unary_union(lines)
+                if isinstance(u, LineString):
+                    final_ls = _clean_linestring(u)
+                elif isinstance(u, MultiLineString):
+                    lm = linemerge(u)
+                    if isinstance(lm, LineString):
+                        final_ls = _clean_linestring(lm)
+                    elif isinstance(lm, MultiLineString):
+                        parts = list(lm.geoms)
+                        parts.sort(key=lambda g: g.length, reverse=True)
+                        final_ls = _clean_linestring(parts[0]) if parts else LineString()
+                else:
+                    # fallback to longest of input lines
+                    parts = list(lines)
+                    parts.sort(key=lambda g: g.length, reverse=True)
+                    if parts:
+                        final_ls = _clean_linestring(parts[0])
+            except Exception:
+                # fallback: if single line, use it; else try linemerge on MultiLineString
+                if len(lines) == 1:
+                    final_ls = _clean_linestring(lines[0])
+                else:
                     try:
-                        v = row[path_id_col]
-                        if v is not None and str(v) != '':
-                            pid_val = str(v)
+                        lm = linemerge(MultiLineString(lines))
+                        if isinstance(lm, LineString):
+                            final_ls = _clean_linestring(lm)
+                        elif isinstance(lm, MultiLineString):
+                            parts = list(lm.geoms)
+                            parts.sort(key=lambda g: g.length, reverse=True)
+                            final_ls = _clean_linestring(parts[0]) if parts else LineString()
                     except Exception:
-                        pid_val = None
-                if pid_val is None:
-                    pid_val = str(seq)
-                    seq += 1
-                plan_tags = {'type': 'parking_path', 'path_id': pid_val}
-                append_way(coords, plan_tags)
-                cnt += 1
+                        parts = list(lines)
+                        parts.sort(key=lambda g: g.length, reverse=True)
+                        if parts:
+                            final_ls = _clean_linestring(parts[0])
+            if final_ls.is_empty:
+                continue
+            coords = list(final_ls.coords)
+            # 1) Visualization
+            viz_tags = {'type': 'line_thin', 'subtype': 'parking_path'}
+            append_way(coords, viz_tags)
+            # 2) Planner
+            plan_tags = {'type': 'parking_path', 'path_id': str(pid_val)}
+            append_way(coords, plan_tags)
+            cnt += 1
         return cnt
 
     # Map known layers → lanelet2 types used by yabloc ll2_decomposer
