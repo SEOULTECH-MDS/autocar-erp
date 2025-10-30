@@ -65,8 +65,8 @@ class QualifyingParkingPlanner(Node):
         self.declare_parameter('path_id', 1) 
         self.declare_parameter('activation_lanelet_id', 1) # kcity 2
         self.declare_parameter('stop_duration_sec', 3.0)
-        self.declare_parameter('reverse_distance_m', 8.0)
-        self.declare_parameter('reach_dist_thresh_m', 1.0)
+        self.declare_parameter('reverse_distance_m', 7.0)
+        self.declare_parameter('reach_dist_thresh_m', 1.8)
         self.declare_parameter('reach_speed_thresh_mps', 0.05)
         self.declare_parameter('reach_yaw_thresh_deg', 30.0)
         self.declare_parameter('publish_rate_hz', 10.0)

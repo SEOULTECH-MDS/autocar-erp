@@ -19,7 +19,7 @@ def generate_launch_description():
     )
 
     path_id_arg = DeclareLaunchArgument(
-        'path_id', default_value='1',
+        'path_id', default_value='6',
         description='Selected parking_path path_id'
     )
 
@@ -29,12 +29,12 @@ def generate_launch_description():
     )
 
     reverse_distance_arg = DeclareLaunchArgument(
-        'reverse_distance_m', default_value='8.0',
+        'reverse_distance_m', default_value='7.0',
         description='Reverse distance after stopping'
     )
 
     stop_duration_arg = DeclareLaunchArgument(
-        'stop_duration_sec', default_value='3.0',
+        'stop_duration_sec', default_value='4.0',
         description='Stop duration at final forward pose'
     )
 
