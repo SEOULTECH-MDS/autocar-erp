@@ -134,6 +134,12 @@ class YOLOv11(Node):
         
         # Enable 상태 확인 - 비활성화 상태에서는 빈 결과 발행
         if not self.is_enabled:
+            # target_sign이 설정되어 있다면 지속적으로 발행 (Lane 1 -> Lane 19 구간)
+            if  self.target_sign is not None:
+                msg = Int32()
+                msg.data = int(self.target_sign)
+                self.target_sign_pub.publish(msg)
+            
             # 원본 이미지 발행
             self.detected_pub.publish(bridge.cv2_to_imgmsg(cap, encoding="bgr8"))
             return
