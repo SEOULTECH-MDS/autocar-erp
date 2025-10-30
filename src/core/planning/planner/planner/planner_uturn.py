@@ -78,7 +78,7 @@ class UturnPlanner(Node):
         self.declare_parameter('frame_id', 'map')  # 기본 좌표계
         
         # U턴 구역 ID (selector.py와 동일)
-        self.declare_parameter('kcity_uturn_zones', [5, 6])  # K-City U턴 구역
+        self.declare_parameter('kcity_uturn_zones', [5, 6])  # K-City U턴 구역 5, 6
         self.declare_parameter('mirae_uturn_zones', [39])  # 미래관 U턴 구역
         self.declare_parameter('map_type', 'kcity')  # 맵 타입
         

@@ -58,17 +58,23 @@ class QualifyingParkingPlanner(Node):
             'map_osm_path',
             'src/core/localization/localization_core/data/kcity_qualifying/lanelet2_map.osm',
         )
-        self.declare_parameter('path_id', 1)
-        self.declare_parameter('activation_lanelet_id', 2)
+        # self.declare_parameter(
+        #     'map_osm_path',
+        #     'src/core/localization/localization_core/data/testing_parking/lanelet2_map.osm',
+        # )
+        self.declare_parameter('path_id', 1) 
+        self.declare_parameter('activation_lanelet_id', 1) # kcity 2
         self.declare_parameter('stop_duration_sec', 3.0)
-        self.declare_parameter('reverse_distance_m', 5.0)
-        self.declare_parameter('reach_dist_thresh_m', 0.8)
-        self.declare_parameter('reach_speed_thresh_mps', 0.3)
+        self.declare_parameter('reverse_distance_m', 8.0)
+        self.declare_parameter('reach_dist_thresh_m', 1.0)
+        self.declare_parameter('reach_speed_thresh_mps', 0.05)
         self.declare_parameter('reach_yaw_thresh_deg', 30.0)
         self.declare_parameter('publish_rate_hz', 10.0)
         # Map origin for lat/lon → local map conversion (align with map.launch.py defaults)
         self.declare_parameter('map_origin_lat', 37.239205)
         self.declare_parameter('map_origin_lon', 126.773193)
+
+        
 
         qos = QoSProfile(depth=10)
 
@@ -312,14 +318,48 @@ class QualifyingParkingPlanner(Node):
         dy = (lat - lat0) * meters_per_deg_lat
         return dx, dy
 
+    def _latlon_to_utm(self, lat: float, lon: float) -> Tuple[float, float]:
+            """Convert WGS84 lat/lon to UTM coordinates (absolute UTM, not relative to origin)."""
+            if _HAS_PYPROJ:
+                # Determine UTM zone
+                zone = int(math.floor((lon + 180.0) / 6.0) + 1)
+                is_north = lat >= 0.0
+                epsg = 32600 + zone if is_north else 32700 + zone  # 326xx: north, 327xx: south
+                transformer = Transformer.from_crs("EPSG:4326", f"EPSG:{epsg}", always_xy=True)
+                e, n = transformer.transform(lon, lat)
+                return e, n
+            else:
+                # Fallback: use simple approximation (less accurate)
+                # This is a very rough approximation and should not be used for precise calculations
+                meters_per_deg_lat = 111320.0
+                meters_per_deg_lon = 111320.0 * math.cos(math.radians(lat))
+                x = lon * meters_per_deg_lon
+                y = lat * meters_per_deg_lat
+                return x, y
+
+
     def _has_reached_path_end(self, path: Path) -> bool:
         if self._odom is None or not path.poses:
             return False
         # Use last pose as goal
         gx = path.poses[-1].pose.position.x
         gy = path.poses[-1].pose.position.y
-        ox = self._odom.pose.pose.position.x
-        oy = self._odom.pose.pose.position.y
+        
+        # Convert odom from UTM to map coordinates by subtracting map origin
+        lat0 = float(self.get_parameter('map_origin_lat').value)
+        lon0 = float(self.get_parameter('map_origin_lon').value)
+        
+        # Get current odom position in UTM
+        odom_utm_x = self._odom.pose.pose.position.x 
+        odom_utm_y = self._odom.pose.pose.position.y
+        
+        # Convert map origin to UTM coordinates
+        origin_utm_x, origin_utm_y = self._latlon_to_utm(lat0, lon0)
+        
+        # Convert odom to map coordinates
+        ox = odom_utm_x - origin_utm_x
+        oy = odom_utm_y - origin_utm_y
+        
         dist = math.hypot(gx - ox, gy - oy)
         if dist > float(self.get_parameter('reach_dist_thresh_m').value):
             return False
@@ -328,7 +368,7 @@ class QualifyingParkingPlanner(Node):
             speed = abs(self._odom.twist.twist.linear.x)
         except Exception:
             speed = 0.0
-        if speed > float(self.get_parameter('reach_speed_thresh_mps').value):
+        if speed >= float(self.get_parameter('reach_speed_thresh_mps').value):
             return False
         return True
 

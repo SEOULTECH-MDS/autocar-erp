@@ -138,8 +138,8 @@ class Control(Node):
             1: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # PAUSE
             2: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_STATIC (사용X)
             3: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # OBSTACLE_DYNAMIC (사용X)
-            4: np.array([0.01, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]), # DELIVERY 
-            5: np.array([0.1, 0.08, 5.0, 0.5, 0.7, 8.0, 10.0]), # PARKING
+            4: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # DELIVERY 
+            5: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # PARKING
             6: np.array([0.05, 0.2, 2.0, 0.5, 1.0, 0.5, 0.1]),  # RETURN (사용X)
             7: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0]), # UTURN
             8: np.array([0.3, 0.04, 50.0, 15.0, 0.1, 1.0, 5.0])  # GPS_OFF
@@ -154,7 +154,7 @@ class Control(Node):
             2: 2.0,  # OBSTACLE_STATIC (사용X)
             3: 2.0,  # OBSTACLE_DYNAMIC (사용X)
             4: 1.0,  # DELIVERY
-            5: 1.5,  # PARKING
+            5: 1.0,  # PARKING
             6: 3.0,  # RETURN (사용X)
             7: 2.0,  # UTURN
             8: 2.0   # GPS_OFF

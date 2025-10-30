@@ -356,9 +356,9 @@ class erp42(Node):
     if self.last_estop == 1:
       desired = ('RED_ON', 'GREEN_OFF', 'BUZZER_OFF')
     elif self.last_aorm == 0:
-      desired = ('RED_OFF', 'GREEN_BLINK', 'BUZZER_A')
-    elif self.last_aorm == 1:
       desired = ('RED_OFF', 'GREEN_OFF', 'BUZZER_OFF')
+    elif self.last_aorm == 1:
+      desired = ('RED_OFF', 'GREEN_BLINK', 'BUZZER_A')
     else:
       return
 

@@ -13,7 +13,8 @@ def generate_launch_description():
 
     map_osm_arg = DeclareLaunchArgument(
         'map_osm_path',
-        default_value='src/core/localization/localization_core/data/kcity_qualifying/lanelet2_map.osm',
+        default_value='src/core/localization/localization_core/data/kcity_qualifying/lanelet2_map.osm', # kcity qualifying
+        # default_value='src/core/localization/localization_core/data/testing_parking/lanelet2_map.osm', # testing parking
         description='OSM file path containing parking_path ways'
     )
 
@@ -23,12 +24,12 @@ def generate_launch_description():
     )
 
     activation_lanelet_id_arg = DeclareLaunchArgument(
-        'activation_lanelet_id', default_value='2',
+        'activation_lanelet_id', default_value='2', # kcity 2
         description='Lanelet ID to trigger qualifying parking'
     )
 
     reverse_distance_arg = DeclareLaunchArgument(
-        'reverse_distance_m', default_value='5.0',
+        'reverse_distance_m', default_value='8.0',
         description='Reverse distance after stopping'
     )
 
@@ -38,11 +39,13 @@ def generate_launch_description():
     )
 
     map_origin_lat_arg = DeclareLaunchArgument(
-        'map_origin_lat', default_value='37.239205',
+        'map_origin_lat', default_value='37.239205', # kcity
+        # 'map_origin_lat', default_value='37.62972829', # testing
         description='Map origin latitude for local projection'
     )
     map_origin_lon_arg = DeclareLaunchArgument(
-        'map_origin_lon', default_value='126.773193',
+        'map_origin_lon', default_value='126.773193', # kcity
+        # 'map_origin_lon', default_value='127.077597458', # testing
         description='Map origin longitude for local projection'
     )
 
