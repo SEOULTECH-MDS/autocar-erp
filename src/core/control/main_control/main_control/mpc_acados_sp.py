@@ -685,7 +685,7 @@ class Control(Node):
         if self.obs_type == 1: # 드럼
             r_safe = 1.2
         elif self.obs_type == 2: # 차량
-            r_safe = 2.0
+            r_safe = 2.8
         else:
             r_safe = 0.0
 
