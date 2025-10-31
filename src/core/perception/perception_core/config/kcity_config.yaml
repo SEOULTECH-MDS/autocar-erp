@@ -19,8 +19,8 @@ mission_mapping:
     #   end: 16
     - start: 20
       end: 20
-    # - start: 22
-    #   end: 22
+    - start: 22
+      end: 22
     
   # 표지판 탐지 미션 (배달 구역)  
   sign:

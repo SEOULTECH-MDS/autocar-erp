@@ -104,8 +104,8 @@ class LaneMissionController(Node):
                 # {'start': 12, 'end': 12}, # 우회전 구간
                 {'start': 15, 'end': 15},
                 # {'start': 16, 'end': 16},
-                {'start': 20, 'end': 20}
-                # {'start': 22, 'end': 22}
+                {'start': 20, 'end': 20},
+                {'start': 22, 'end': 22}
             ],
             'sign': [
                 {'start': 1, 'end': 19}   # 배달A,B
