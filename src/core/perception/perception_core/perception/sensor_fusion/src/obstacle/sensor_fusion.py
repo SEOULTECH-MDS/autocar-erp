@@ -61,7 +61,7 @@ class SensorFusion(Node):
         self.bbox_sub_car = message_filters.Subscriber(self, PoseArray, "/bounding_boxes/car")
 
         self.sync = message_filters.ApproximateTimeSynchronizer(
-            [self.cluster_sub, self.bbox_sub_drum, self.bbox_sub_car], queue_size=10,
+            [self.cluster_sub, self.bbox_sub_drum, self.bbox_sub_car], queue_size=15,
             slop=0.5, allow_headerless=True)
         self.sync.registerCallback(self.callback_fusion)
 

@@ -38,7 +38,7 @@ def generate_launch_description():
             name='drum_detect',
             output='screen'
         ),
-        Node( # 드럼통 인식
+        Node( # 자동차 인식
             package='perception',
             executable='car_detect',
             name='cars_detect',

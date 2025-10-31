@@ -101,15 +101,15 @@ class LaneMissionController(Node):
                 {'start': 5, 'end': 5},
                 {'start': 7, 'end': 7},
                 {'start': 10, 'end': 10},
-                # {'start': 12, 'end': 12},
+                # {'start': 12, 'end': 12}, # 우회전 구간
                 {'start': 15, 'end': 15},
                 # {'start': 16, 'end': 16},
-                {'start': 20, 'end': 20},
-                {'start': 22, 'end': 22}
+                {'start': 20, 'end': 20}
+                # {'start': 22, 'end': 22}
             ],
             'sign': [
-                {'start': 1, 'end': 2},   # 배달A
-                {'start': 19, 'end': 19},   # 배달B
+                {'start': 1, 'end': 19}   # 배달A,B
+                # {'start': 19, 'end': 19},   # 배달B
             ],
             'obstacle': [
                 {'start': 9, 'end': 9},  # 대형 정적장애물

@@ -11,7 +11,7 @@ mission_mapping:
       end: 7
     - start: 10
       end: 10     
-    # - start: 12
+    # - start: 12 # 우회전 구간
     #   end: 12
     - start: 15
       end: 15
@@ -19,15 +19,15 @@ mission_mapping:
     #   end: 16
     - start: 20
       end: 20
-    - start: 22
-      end: 22
+    # - start: 22
+    #   end: 22
     
   # 표지판 탐지 미션 (배달 구역)  
   sign:
-    - start: 1    # 배달A
-      end: 2
-    - start: 19   # 배달B
-      end: 19      
+    - start: 1    # 배달A,B
+      end: 19
+    # - start: 19   # 배달B
+    #   end: 19      
     
   # 장애물 탐지 미션 (장애물 회피 구간)
   obstacle:
