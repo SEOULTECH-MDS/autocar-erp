@@ -105,8 +105,7 @@ class ModeSelector(Node):
     - competition_type: "qualifying" | "final" (기본: final)
     - map_type: "kcity" | "mirae" (기본: kcity)
     - traffic_signal_confirm_duration: 신호등 확인 시간 (기본: 0.1초)
-    - stopline_pause_duration: 우회전 정지 시간 (기본: 5.0초)
-    - vehicle_stop_velocity_threshold: 정지 판단 속도 (기본: 0.01 m/s)
+    - vehicle_stop_velocity_threshold: 정지 판단 속도 (기본: 0.05 m/s)
     """
 
     def __init__(self) -> None:
@@ -118,8 +117,8 @@ class ModeSelector(Node):
         self.declare_parameter('publish_rate', 10.0)
         
         # 대회 및 맵 구분 (먼저 선언)
-        self.declare_parameter('competition_type', CompetitionType.QUALIFYING)  # "qualifying" | "final" 예선 / 본선
-        #self.declare_parameter('competition_type', CompetitionType.FINAL)         # "qualifying" | "final" 예선 / 본선
+        # self.declare_parameter('competition_type', CompetitionType.QUALIFYING)  # "qualifying" | "final" 예선 / 본선
+        self.declare_parameter('competition_type', CompetitionType.FINAL)         # "qualifying" | "final" 예선 / 본선
         self.declare_parameter('map_type', MapType.KCITY)                         # "kcity" | "mirae"
 
         # 대회 타입에 따른 기본 모드 설정
@@ -130,10 +129,7 @@ class ModeSelector(Node):
             self.declare_parameter('default_mode', ModeType.FINAL_DRIVING)
         
         # 우회전 정지선 관련 파라미터
-        self.declare_parameter('stopline_pause_distance', 5.0)                  # 정지선 감지 거리 (m)
-        self.declare_parameter('enable_distance_condition', True)               # 거리 조건 사용 여부 on/off
-        self.declare_parameter('stopline_pause_duration', 5.0)                  # 정지선 정지 시간 (s)
-        self.declare_parameter('vehicle_stop_velocity_threshold', 0.01)         # 차량 정지 판단 속도 임계값 (m/s)
+        self.declare_parameter('vehicle_stop_velocity_threshold', 0.05)         # 차량 정지 판단 속도 임계값 (m/s)
 
         # 신호등 전환 타이머 파라미터
         self.declare_parameter('traffic_signal_confirm_duration', 0.1)          # 신호등 전환 확인 시간 (s)
@@ -142,8 +138,8 @@ class ModeSelector(Node):
         self.declare_parameter('use_uturn_flags', True)  # U턴 모드 제어 방식 (플래그 기반 여부)
         
         # K-City 맵 구역 설정 (예선/본선 분리)
-        self.declare_parameter('kcity_qualifying_parking_zones', [1, 2])           # 예선 주차 구역 1은 운동장 테스트 기존 2
-        self.declare_parameter('kcity_uturn_zones', [5, 6])                     # 예선 유턴 구역 5, 6
+        self.declare_parameter('kcity_qualifying_parking_zones', [1, 2])        # 예선 주차 구역
+        self.declare_parameter('kcity_uturn_zones', [5, 6])                     # 예선 유턴 구역
         self.declare_parameter('kcity_gps_off_zones', [10])                     # 예선 GPS 차단 구역
         # 본선 배달 구역 (상차/하차 구분)
         self.declare_parameter('kcity_delivery_pickup_zones', [2])              # 본선 상차 구역 2번
@@ -539,50 +535,45 @@ class ModeSelector(Node):
 
 
 
-        # 2. 우회전 정지선 처리
-        # 우회전 정지 구역을 벗어났는지 확인하여 타이머 초기화
-        if not self._is_in_right_pause_zone(): # 우회전 정지 구역을 벗어남 - 타이머 초기화
-            if self.stopline_pause_start_time is not None:
-                self.get_logger().info(f'우회전 정지 구역 이탈 - 타이머 초기화')
-                self.stopline_pause_start_time = None
-                
-            if self.current_mode == ModeType.FINAL_PAUSE: # 구역 이탈 시 모드 자동 복귀 추가
-                self.get_logger().info('우회전 정지 구역 이탈 - DRIVING 모드 복귀')
-                return ModeType.FINAL_DRIVING
+        # 2. 우회전 정지선 처리 (간소화 로직)
+        # - 우회전 정지 구역 진입 → PAUSE 모드로 전환
+        # - 차량 정지 후 → 4초 대기
+        # - 4초 후 → DRIVING 모드로 복귀
         
-        # 우회전 정지선 조건 체크
-        if self._should_pause_for_right_stopline():
-            if self.current_mode == ModeType.FINAL_DRIVING:
-                # 우회전 정지선 조건 만족 - PAUSE 모드 진입 (타이머는 아직 시작 안함)
-                self.get_logger().info('우회전 정지선 감지 - PAUSE 모드 진입 (차량 정지 대기 중)')
-                return ModeType.FINAL_PAUSE
-        
-        # 우회전 정지선 PAUSE 모드에서 실제 정지 확인 후 타이머 시작
-        if (self.current_mode == ModeType.FINAL_PAUSE and 
-            self._should_pause_for_right_stopline() and
-            self.stopline_pause_start_time is None):
+        # 우회전 정지 구역 벗어남 - 타이머 초기화 및 모드 복귀, 구역 벗어나는 경우 없다고 판단. 주석처리함.
+        # if not self._is_in_right_pause_zone():
+        #     was_paused = self.stopline_pause_start_time is not None
+        #     self.stopline_pause_start_time = None
             
-            # 차량이 실제로 정지했는지 확인
+        #     if self.current_mode == ModeType.FINAL_PAUSE and was_paused:
+        #         self.get_logger().info('우회전 정지 구역 이탈 - DRIVING 모드 복귀')
+        #         return ModeType.FINAL_DRIVING
+        
+        # # 우회전 정지 구역 진입 - 즉시 PAUSE 모드로 전환
+        # if self.current_mode == ModeType.FINAL_DRIVING and self._is_in_right_pause_zone():
+        #     self.get_logger().info('우회전 정지 구역 진입 - PAUSE 모드 전환')
+        #     return ModeType.FINAL_PAUSE
+        
+        # PAUSE 모드 상태 관리
+        if self.current_mode == ModeType.FINAL_PAUSE and self._is_in_right_pause_zone():
             velocity_threshold = float(self.get_parameter('vehicle_stop_velocity_threshold').value)
             
-            if self.current_velocity <= velocity_threshold:
-                # 실제 정지 확인 - 타이머 시작
+            # 차량 정지 확인 - 타이머 시작 (한 번만)
+            if self.stopline_pause_start_time is None and self.current_velocity <= velocity_threshold:
                 self.stopline_pause_start_time = self.get_clock().now().nanoseconds * 1e-9
-                self.get_logger().info(f'차량 정지 확인 (속도: {self.current_velocity:.2f} m/s) - 5.0초 타이머 시작')
-        
-        # 우회전 정지선 정지 시간 완료 확인
-        if (self.current_mode == ModeType.FINAL_PAUSE and 
-            self.stopline_pause_start_time is not None and
-            self._should_pause_for_right_stopline()):
+                self.get_logger().info(f'차량 정지 (속도: {self.current_velocity:.2f} m/s) - 4초 타이머 시작')
             
-            current_time = self.get_clock().now().nanoseconds * 1e-9
-            pause_duration = float(self.get_parameter('stopline_pause_duration').value)
-            
-            if current_time - self.stopline_pause_start_time >= pause_duration:
-                # 5.0초 대기 완료 - 자동 출발
-                self.stopline_pause_start_time = None
-                self.get_logger().info('우회전 정지선 대기 완료 - DRIVING 모드 복귀')
-                return ModeType.FINAL_DRIVING
+            # 타이머 진행 중
+            if self.stopline_pause_start_time is not None:
+                current_time = self.get_clock().now().nanoseconds * 1e-9
+                pause_duration = 3.3  # 3.3초로 고정
+                elapsed_time = current_time - self.stopline_pause_start_time
+                
+                # 3.3초 완료 - 자동 출발
+                if elapsed_time >= pause_duration:
+                    self.stopline_pause_start_time = None
+                    self.get_logger().info('우회전 정지 완료 - DRIVING 모드 복귀')
+                    return ModeType.FINAL_DRIVING
 
        
         
@@ -672,31 +663,6 @@ class ModeSelector(Node):
         """현재 우회전 정지선 구역에 있는지 확인"""
         return (self.current_lanelet_id is not None and 
                 self.current_lanelet_id in self.right_pause_zone_ids)
-                
-    def _should_pause_for_right_stopline(self) -> bool:
-        """우회전 정지선으로 인해 정지해야 하는지 확인"""
-        # 우회전 정지선 구역에 있고
-        if not self._is_in_right_pause_zone():
-            return False
-        
-        # nonstop 정지선이면 정지하지 않음
-        if self.stopline_type == "nonstop":
-            return False
-            
-        # 정지선 타입이 "virtual"이고
-        if self.stopline_type != "virtual":
-            return False
-            
-        # 거리 조건 확인
-        enable_distance = bool(self.get_parameter('enable_distance_condition').value)
-        
-        if enable_distance:
-            # 거리 조건 ON: 정지선까지의 거리가 임계값 이내일 때만 정지
-            distance_threshold = float(self.get_parameter('stopline_pause_distance').value)
-            return self.stopline_distance <= distance_threshold
-        else:
-            # 거리 조건 OFF: 구역과 정지선 타입만 확인하고 거리 무관하게 정지
-            return True
     
 
     def get_current_mode_info(self) -> dict:
@@ -721,14 +687,12 @@ class ModeSelector(Node):
             'traffic_signal_timer_active': self.traffic_signal_change_start_time is not None,
             'pending_traffic_signal': self.pending_traffic_signal,
             'traffic_signal_confirm_duration': float(self.get_parameter('traffic_signal_confirm_duration').value),
-            'enable_distance_condition': bool(self.get_parameter('enable_distance_condition').value),
             'in_parking_zone': self._is_in_parking_zone(),
             'in_delivery_pickup_zone': self._is_in_delivery_pickup_zone(),
             'in_delivery_dropoff_zone': self._is_in_delivery_dropoff_zone(),
             'in_uturn_zone': self._is_in_uturn_zone(),
             'in_gps_off_zone': self._is_in_gps_off_zone(),
             'in_right_pause_zone': self._is_in_right_pause_zone(),
-            'should_pause_for_stopline': self._should_pause_for_right_stopline(),
         }
 
 

@@ -124,7 +124,7 @@ class DeliveryPlanner(Node):
     # ============================================================================
 
     def _check_completion_conditions(self) -> bool:
-        """완료 조건: (옵션) 속도 조건"""
+        """완료 조건: 속도 조건"""
         if self.get_parameter('use_velocity_check').value:
             v_th = float(self.get_parameter('velocity_threshold').value)
             return self._current_velocity <= v_th
@@ -135,7 +135,7 @@ class DeliveryPlanner(Node):
         if not self._timer_active and self._check_completion_conditions():
             self._timer_active = True
             self._completion_timer = self.create_timer(4.0, self._completion_timer_cb, oneshot=True)
-            self.get_logger().info('완료 타이머 시작 (4초)')
+            self.get_logger().info('타이머 시작 (4초)')
 
     def _cancel_completion_timer(self) -> None:
         """타이머 취소"""
@@ -143,10 +143,10 @@ class DeliveryPlanner(Node):
             self._completion_timer.cancel()
             self._completion_timer = None
             self._timer_active = False
-            self.get_logger().info('완료 타이머 취소')
+            self.get_logger().info('타이머 취소')
 
     def _completion_timer_cb(self):
-        """타이머 만료 → 완료 플래그 발행 (4초 조건 이미 충족)"""
+        """타이머 완료 → 완료 플래그 발행 (4초 충족)"""
         if self._completion_timer:
             self._completion_timer.cancel()
             self._completion_timer = None
