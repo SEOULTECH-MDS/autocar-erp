@@ -156,8 +156,8 @@ class Control(Node):
             4: 1.0,  # DELIVERY
             5: 1.0,  # PARKING
             6: 3.0,  # RETURN (사용X)
-            7: 2.0,  # UTURN
-            8: 2.0   # GPS_OFF
+            7:  2.0,  # UTURN
+            8: 2.0  # GPS_OFF
         }
         self.target_vel = self.mode_target_vel[self.mode]
 
@@ -685,7 +685,7 @@ class Control(Node):
         if self.obs_type == 1: # 드럼
             r_safe = 1.2
         elif self.obs_type == 2: # 차량
-            r_safe = 2.8
+            r_safe = 2.3
         else:
             r_safe = 0.0
 

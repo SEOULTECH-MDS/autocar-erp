@@ -152,7 +152,7 @@ class PlannerNode(Node):
         self._parking_pose: Optional[PoseStamped] = None      # 주차 공간 위치
         self._odom: Optional[Odometry] = None                 # 차량 현재 위치 (오도메트리)
         self._current_lanelet_id: Optional[int] = None        # 현재 차량이 위치한 Lanelet ID
-        self._parking_zone_ids: List[int] = [1, 2, 3]             # 주차 구역 ID (K-City 본선 기준)
+        self._parking_zone_ids: List[int] = [27]             # 주차 구역 ID (K-City 본선 기준)
         self._last_stage1_path: Optional[Path] = None          # Stage-1 경로 캐시
         self._stage2_path_cached: Optional[Path] = None        # Stage-2 경로 캐시
         self._stage3_path_cached: Optional[Path] = None        # Stage-3 경로 캐시
