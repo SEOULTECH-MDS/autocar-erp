@@ -749,7 +749,7 @@ class Control(Node):
         if remaining_distance <= 1.7: # 1.7m 이내에 도달했으면 정지
             self.velocity = 0.0 # path의 끝점 근처에서 속도를 0으로 설정 -> 브레이크
 
-        if self.mode == 1 and self.stopline_distance < 4.0: # PAUSE 모드이고 정지선 까지 거리가 4.0m 이내이면 정지
+        if self.mode == 1 and self.stopline_distance < 4.5: # PAUSE 모드이고 정지선 까지 거리가 4.5m 이내이면 정지
             self.velocity = 0.0
 
         if self.mode == 4 and self.delivery_distance < 1.5: # Delivery 모드이고 배달 지점 까지 거리가 1.5m 이내이면 정지
